@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Seletor de Cifras</title>
+  <link rel="preload" href="https://cdn.tailwindcss.com" as="script">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    :root {
+      --primary-color: #3b82f6;
+      --primary-dark: #2563eb;
+      --primary-hover: #e0e7ff;
+      --danger-color: #ef4444;
+      --danger-dark: #dc2626;
+      --gray-light: #f3f4f6;
+      --gray-medium: #e5e7eb;
+      --text-gray: #333;
+      --shadow-primary: 0 0 10px rgba(37, 99, 235, 0.3);
+    }
+
+    html, body {
+      overflow-x: hidden;
+      overflow-y: auto;
+      background-color: var(--gray-light);
+      font-family: 'Inter', sans-serif;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 2px solid #ddd;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      border-radius: 0.5rem 0.5rem 0 0;
+      background-color: #f9fafb;
+      border: 1px solid transparent;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s ease;
+      outline-offset: 2px;
+    }
+
+    [role="tab"] {
+      user-select: none;
+    }
+
+    .tab:hover,
+    .tab:focus-visible {
+      background-color: var(--primary-hover);
+      border-color: var(--primary-color) transparent transparent;
+      outline: none;
+    }
+
+    .tab.active {
+      background-color: white;
+      border-color: var(--primary-color) var(--primary-color) white;
+      font-weight: 600;
+      color: var(--primary-dark);
+    }
+
+    .image-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      border: 1px solid transparent;
+      border-radius: 0.5rem;
+      overflow: hidden;
+      cursor: grab;
+      transition: all 0.2s ease;
+      background-color: white;
+      padding: 8px;
+      user-select: none;
+    }
+
+    .image-container:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
+
+    .image-container:hover {
+      border-color: var(--primary-color);
+    }
+
+    .image-container.selected {
+      border-color: var(--primary-dark);
+      box-shadow: var(--shadow-primary);
+    }
+
+    .drag-over {
+      border: 2px dashed var(--primary-color) !important;
+    }
+
+    .image-container.dragging {
+      opacity: 0.6;
+    }
+
+    .image-container img {
+      width: 2cm;
+      height: 3cm;
+      object-fit: cover;
+      cursor: pointer;
+      border-radius: 0.25rem;
+      flex-shrink: 0;
+    }
+
+    .image-name {
+      font-size: 0.875rem;
+      color: var(--text-gray);
+      cursor: pointer;
+      user-select: text;
+      overflow-wrap: break-word;
+      max-width: calc(100% - 2.5cm);
+    }
+
+    .fullscreen-image {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0, 0, 0, 0.9);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: zoom-out;
+      z-index: 9999;
+      touch-action: none;
+    }
+
+    .fullscreen-image img {
+      max-width: 90%;
+      max-height: 90%;
+      object-fit: contain;
+      transition: transform 0.25s ease;
+      border-radius: 0.5rem;
+      box-shadow: 0 0 15px rgba(0,0,0,0.7);
+      transform-origin: center center;
+    }
+
+    .fullscreen-controls {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      background: rgba(0,0,0,0.7);
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    .zoom-btn {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .zoom-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .loading-spinner {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10000;
+    }
+
+    .loading-spinner.active {
+      display: block;
+    }
+
+    #status-message {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(0,0,0,0.7);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    #status-message.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased">
+  <header class="bg-blue-600 text-white p-4 shadow-md">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="text-xl font-bold">Seletor de Cifras</h1>
+      <div class="flex items-center space-x-4">
+        <button id="sync-btn" class="p-2 rounded-full hover:bg-blue-700 transition" aria-label="Sincronizar" title="Sincronizar">
+          <i class="fas fa-sync-alt" aria-hidden="true"></i>
+        </button>
+        <button id="settings-btn" class="p-2 rounded-full hover:bg-blue-700 transition" aria-label="Configurações" title="Configurações">
+          <i class="fas fa-cog" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container mx-auto p-4 flex flex-col gap-4" role="main">
+    <section class="w-full bg-white rounded-xl shadow-md overflow-hidden flex flex-col" aria-label="Seletor de músicas e imagens">
+      <div class="p-4 bg-gray-50 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <h2 class="font-semibold text-lg">Músicas</h2>
+        <div>
+          <button id="open-file-dialog" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition" aria-label="Buscar imagens" title="Buscar imagens">
+            <i class="fas fa-search" aria-hidden="true"></i> Buscar
+          </button>
+          <input type="file" id="file-input" class="hidden" accept="image/*" multiple aria-hidden="true" tabindex="-1" />
+        </div>
+      </div>
+
+      <!-- Abas -->
+      <nav class="tabs" id="tabs-container" role="tablist" aria-label="Abas das músicas">
+        <!-- Abas serão adicionadas dinamicamente -->
+      </nav>
+
+      <div class="p-4 flex flex-col gap-2 flex-1">
+        <div class="flex items-center gap-4 mb-4">
+          <label class="inline-flex items-center gap-1 cursor-pointer" for="select-all">
+            <input type="checkbox" id="select-all" class="form-checkbox h-5 w-5 text-blue-600" aria-label="Selecionar todas as imagens" />
+            <span>Selecionar todas</span>
+          </label>
+          <button id="clear-selection-btn" class="bg-gray-400 text-white px-3 py-1 rounded hover:bg-gray-500 transition" disabled aria-disabled="true" aria-label="Limpar seleção">
+            <i class="fas fa-times" aria-hidden="true"></i> Limpar seleção
+          </button>
+          <button id="delete-selected-btn" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled aria-disabled="true" aria-label="Excluir imagens selecionadas">
+            <i class="fas fa-trash-alt" aria-hidden="true"></i> Excluir selecionadas
+          </button>
+        </div>
+
+        <div id="image-list" class="flex flex-col gap-4" aria-live="polite" aria-atomic="true">
+          <p class="text-center text-gray-500">Nenhuma imagem encontrada.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="loading-spinner" class="loading-spinner">
+    <i class="fas fa-spinner fa-spin fa-3x text-blue-600"></i>
+  </div>
+
+  <div id="status-message" aria-live="polite"></div>
+
+  <script>
+    // Cache de elementos DOM
+    const DOM = {
+      tabsContainer: document.getElementById('tabs-container'),
+      imageList: document.getElementById('image-list'),
+      fileInput: document.getElementById('file-input'),
+      openFileDialogButton: document.getElementById('open-file-dialog'),
+      selectAllCheckbox: document.getElementById('select-all'),
+      deleteSelectedBtn: document.getElementById('delete-selected-btn'),
+      clearSelectionBtn: document.getElementById('clear-selection-btn'),
+      syncBtn: document.getElementById('sync-btn'),
+      settingsBtn: document.getElementById('settings-btn'),
+      loadingSpinner: document.getElementById('loading-spinner'),
+      statusMessage: document.getElementById('status-message')
+    };
+
+    // Abas desejadas
+    const tabs = ["Domingo Manhã", "Domingo Noite", "Segunda", "Quarta", "Culto Jovem", "Santa Ceia", "Outros"];
+
+    // Estado otimizado com Map/Set
+    let imageGalleryByTab = new Map();
+    let selectedImagesByTab = new Map();
+    let currentTab = tabs[0];
+    let dragStartIndex = null;
+
+    // Inicializar estado
+    tabs.forEach(tab => {
+      imageGalleryByTab.set(tab, []);
+      selectedImagesByTab.set(tab, new Set());
+    });
+
+    // Funções utilitárias
+    const Utils = {
+      removeFileExtension: filename => filename.replace(/\.[^/.]+$/, ""),
+      sanitizeFilename: filename => filename.replace(/[^\w.-]/g, '_'),
+      showStatus: message => {
+        DOM.statusMessage.textContent = message;
+        DOM.statusMessage.classList.add('show');
+        setTimeout(() => DOM.statusMessage.classList.remove('show'), 3000);
+      },
+      debounce: (func, timeout = 100) => {
+        let timer;
+        return (...args) => {
+          clearTimeout(timer);
+          timer = setTimeout(() => { func.apply(this, args); }, timeout);
+        };
+      }
+    };
+
+    // Gerenciamento de estado
+    const StateManager = {
+      saveState: async () => {
+        const state = {
+          images: Object.fromEntries(imageGalleryByTab),
+          selected: {},
+          currentTab,
+          _timestamp: Date.now()
+        };
+        
+        for (const [tab, set] of selectedImagesByTab) {
+          state.selected[tab] = Array.from(set);
+        }
+        
+        try {
+          const compressed = JSON.stringify(state);
+          localStorage.setItem('imageSelectorState', compressed);
+        } catch (e) {
+          console.warn('Storage cheio, tentando limpar...');
+          const freedSpace = StateManager.clearOldStorageItems();
+          if (freedSpace > 0) {
+            try {
+              localStorage.setItem('imageSelectorState', JSON.stringify(state));
+              Utils.showStatus('Dados salvos com sucesso');
+            } catch (e2) {
+              console.error('Falha ao salvar após limpeza:', e2);
+              Utils.showStatus('Erro ao salvar: armazenamento cheio');
+            }
+          } else {
+            Utils.showStatus('Armazenamento cheio. Libere espaço.');
+          }
+        }
+      },
+      
+      clearOldStorageItems: () => {
+        try {
+          const items = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            const value = localStorage.getItem(key);
+            items.push({
+              key,
+              size: new Blob([value]).size,
+              timestamp: key === 'imageSelectorState' 
+                ? (JSON.parse(value)._timestamp || 0) 
+                : 0
+            });
+          }
+          
+          items.sort((a, b) => a.timestamp - b.timestamp);
+          const totalSpace = items.reduce((sum, item) => sum + item.size, 0);
+          const maxSpace = 5 * 1024 * 1024;
+          
+          if (totalSpace > maxSpace * 0.8) {
+            let freedSpace = 0;
+            for (const item of items) {
+              if (freedSpace >= maxSpace * 0.2) break;
+              localStorage.removeItem(item.key);
+              freedSpace += item.size;
+            }
+            return freedSpace;
+          }
+          return 0;
+        } catch (e) {
+          console.error('Erro ao limpar storage:', e);
+          return 0;
+        }
+      },
+      
+      loadState: () => {
+        const stateJSON = localStorage.getItem('imageSelectorState');
+        if (stateJSON) {
+          try {
+            const state = JSON.parse(stateJSON);
+            imageGalleryByTab = new Map(Object.entries(state.images || {}));
+            selectedImagesByTab = new Map();
+            
+            for (const tab of tabs) {
+              selectedImagesByTab.set(tab, new Set(state.selected?.[tab] || []));
+            }
+            
+            currentTab = state.currentTab || tabs[0];
+          } catch (e) {
+            console.error('Erro ao carregar do localStorage:', e);
+            StateManager.initEmptyState();
+          }
+        } else {
+          StateManager.initEmptyState();
+        }
+      },
+      
+      initEmptyState: () => {
+        imageGalleryByTab = new Map();
+        selectedImagesByTab = new Map();
+        tabs.forEach(tab => {
+          imageGalleryByTab.set(tab, []);
+          selectedImagesByTab.set(tab, new Set());
+        });
+      }
+    };
+
+    // Processamento de imagens
+    const ImageProcessor = {
+      processImageFile: file => new Promise((resolve) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_SIZE = 800;
+          let width = img.width;
+          let height = img.height;
+          
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height *= MAX_SIZE / width;
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width *= MAX_SIZE / height;
+              height = MAX_SIZE;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          URL.revokeObjectURL(url);
+          resolve({
+            name: Utils.sanitizeFilename(file.name),
+            dataUrl: canvas.toDataURL('image/webp', 0.75)
+          });
+        };
+        
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          resolve(null);
+        };
+        
+        img.src = url;
+      }),
+      
+      readFileAsDataURL: file => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+        reader.readAsDataURL(file);
+      })
+    };
+
+    // Interface do usuário
+    const UI = {
+      showLoading: () => DOM.loadingSpinner.classList.add('active'),
+      hideLoading: () => DOM.loadingSpinner.classList.remove('active'),
+      
+      createTabs: () => {
+        DOM.tabsContainer.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+        
+        tabs.forEach((tab, index) => {
+          const tabBtn = document.createElement('button');
+          tabBtn.className = 'tab';
+          tabBtn.setAttribute('role', 'tab');
+          tabBtn.setAttribute('tabindex', index === 0 ? '0' : '-1');
+          tabBtn.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
+          tabBtn.id = `tab-${tab.replace(/\s+/g, '-').toLowerCase()}`;
+          tabBtn.textContent = tab;
+          
+          tabBtn.addEventListener('click', () => TabManager.switchTab(tab));
+          tabBtn.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              TabManager.switchTab(tab);
+            }
+          });
+          
+          fragment.appendChild(tabBtn);
+        });
+        
+        DOM.tabsContainer.appendChild(fragment);
+      },
+      
+      updateTabsUI: () => {
+        const buttons = DOM.tabsContainer.querySelectorAll('.tab');
+        buttons.forEach(btn => {
+          const isActive = btn.textContent === currentTab;
+          btn.classList.toggle('active', isActive);
+          btn.setAttribute('aria-selected', isActive);
+          btn.setAttribute('tabindex', isActive ? '0' : '-1');
+          
+          if (isActive) {
+            btn.focus();
+          }
+        });
+      },
+      
+      renderImages: () => {
+        const images = imageGalleryByTab.get(currentTab) || [];
+        const fragment = document.createDocumentFragment();
+        
+        if (images.length === 0) {
+          const p = document.createElement('p');
+          p.className = 'text-center text-gray-500';
+          p.textContent = 'Nenhuma imagem encontrada.';
+          fragment.appendChild(p);
+          DOM.selectAllCheckbox.checked = false;
+          DOM.selectAllCheckbox.disabled = true;
+          DOM.deleteSelectedBtn.disabled = true;
+          DOM.clearSelectionBtn.disabled = true;
+        } else {
+          DOM.selectAllCheckbox.disabled = false;
+          
+          images.forEach((image, index) => {
+            const container = UI.createImageElement(image, index);
+            fragment.appendChild(container);
+          });
+        }
+        
+        DOM.imageList.innerHTML = '';
+        DOM.imageList.appendChild(fragment);
+        UI.updateSelectAllCheckbox();
+        UI.updateButtonsState();
+      },
+      
+      createImageElement: (image, index) => {
+        const container = document.createElement('div');
+        container.className = 'image-container';
+        container.setAttribute('draggable', 'true');
+        container.setAttribute('tabindex', '0');
+        container.setAttribute('role', 'checkbox');
+        container.setAttribute('aria-checked', selectedImagesByTab.get(currentTab).has(image.name));
+        container.dataset.index = index;
+        container.dataset.name = image.name;
+
+        if (selectedImagesByTab.get(currentTab).has(image.name)) {
+          container.classList.add('selected');
+        }
+
+        const img = document.createElement('img');
+        img.src = image.dataUrl;
+        img.alt = Utils.removeFileExtension(image.name);
+        img.title = "Clique para ampliar";
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'image-name';
+        nameSpan.textContent = Utils.removeFileExtension(image.name);
+        nameSpan.title = "Clique para ampliar";
+
+        container.appendChild(img);
+        container.appendChild(nameSpan);
+
+        return container;
+      },
+      
+      updateSelectAllCheckbox: () => {
+        const images = imageGalleryByTab.get(currentTab) || [];
+        if (images.length === 0) {
+          DOM.selectAllCheckbox.checked = false;
+          DOM.selectAllCheckbox.indeterminate = false;
+          return;
+        }
+        
+        const selectedCount = selectedImagesByTab.get(currentTab).size;
+        DOM.selectAllCheckbox.checked = selectedCount === images.length;
+        DOM.selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < images.length;
+      },
+      
+      updateButtonsState: () => {
+        const anySelected = selectedImagesByTab.get(currentTab).size > 0;
+        DOM.deleteSelectedBtn.disabled = !anySelected;
+        DOM.clearSelectionBtn.disabled = !anySelected;
+        
+        DOM.deleteSelectedBtn.setAttribute('aria-disabled', !anySelected);
+        DOM.clearSelectionBtn.setAttribute('aria-disabled', !anySelected);
+      },
+      
+      openFullscreen: (src, alt) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'fullscreen-image';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-label', `Visualização da imagem ${alt}`);
+
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = alt;
+        img.tabIndex = 0;
+        img.style.transform = 'scale(1)';
+
+        // Controles de zoom
+        const controls = document.createElement('div');
+        controls.className = 'fullscreen-controls';
+        
+        const zoomInBtn = document.createElement('button');
+        zoomInBtn.className = 'zoom-btn';
+        zoomInBtn.innerHTML = '<i class="fas fa-search-plus"></i>';
+        zoomInBtn.setAttribute('aria-label', 'Zoom in');
+        
+        const zoomOutBtn = document.createElement('button');
+        zoomOutBtn.className = 'zoom-btn';
+        zoomOutBtn.innerHTML = '<i class="fas fa-search-minus"></i>';
+        zoomOutBtn.setAttribute('aria-label', 'Zoom out');
+        
+        const resetZoomBtn = document.createElement('button');
+        resetZoomBtn.className = 'zoom-btn';
+        resetZoomBtn.innerHTML = '<i class="fas fa-expand"></i>';
+        resetZoomBtn.setAttribute('aria-label', 'Reset zoom');
+
+        let scale = 1;
+        let isDragging = false;
+        let startX, startY, translateX = 0, translateY = 0;
+
+        const updateTransform = () => {
+          img.style.transform = `scale(${scale}) translate(${translateX}px, ${translateY}px)`;
+        };
+
+        // Eventos de zoom
+        zoomInBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          scale *= 1.2;
+          updateTransform();
+        });
+
+        zoomOutBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          scale /= 1.2;
+          if (scale < 1) {
+            scale = 1;
+            translateX = 0;
+            translateY = 0;
+          }
+          updateTransform();
+        });
+
+        resetZoomBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          scale = 1;
+          translateX = 0;
+          translateY = 0;
+          updateTransform();
+        });
+
+        // Zoom com roda do mouse
+        img.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          const delta = -e.deltaY;
+          if (delta > 0) {
+            scale *= 1.1;
+          } else {
+            scale /= 1.1;
+          }
+          updateTransform();
+        });
+
+        // Arrastar imagem
+        img.addEventListener('mousedown', (e) => {
+          if (scale > 1) {
+            isDragging = true;
+            startX = e.clientX - translateX;
+            startY = e.clientY - translateY;
+            img.style.cursor = 'grabbing';
+          }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+          if (!isDragging) return;
+          translateX = e.clientX - startX;
+          translateY = e.clientY - startY;
+          updateTransform();
+        });
+
+        document.addEventListener('mouseup', () => {
+          isDragging = false;
+          img.style.cursor = 'zoom-out';
+        });
+
+        // Toque para dispositivos móveis
+        let touchStartX, touchStartY, touchTranslateX = 0, touchTranslateY = 0;
+
+        img.addEventListener('touchstart', (e) => {
+          if (scale > 1) {
+            isDragging = true;
+            touchStartX = e.touches[0].clientX - touchTranslateX;
+            touchStartY = e.touches[0].clientY - touchTranslateY;
+          }
+        }, { passive: false });
+
+        img.addEventListener('touchmove', (e) => {
+          if (!isDragging) return;
+          e.preventDefault();
+          touchTranslateX = e.touches[0].clientX - touchStartX;
+          touchTranslateY = e.touches[0].clientY - touchStartY;
+          img.style.transform = `scale(${scale}) translate(${touchTranslateX}px, ${touchTranslateY}px)`;
+        }, { passive: false });
+
+        img.addEventListener('touchend', () => {
+          isDragging = false;
+          translateX = touchTranslateX;
+          translateY = touchTranslateY;
+        });
+
+        controls.appendChild(zoomInBtn);
+        controls.appendChild(zoomOutBtn);
+        controls.appendChild(resetZoomBtn);
+        overlay.appendChild(img);
+        overlay.appendChild(controls);
+        document.body.appendChild(overlay);
+        img.focus();
+
+        const closeFullscreen = () => {
+          document.body.removeChild(overlay);
+          overlay.removeEventListener('click', closeFullscreen);
+          document.removeEventListener('keydown', handleKeyDown);
+          document.removeEventListener('mousemove', handleMouseMove);
+          document.removeEventListener('mouseup', handleMouseUp);
+        };
+
+        const handleKeyDown = (e) => {
+          if (e.key === 'Escape') closeFullscreen();
+        };
+
+        overlay.addEventListener('click', closeFullscreen);
+        document.addEventListener('keydown', handleKeyDown);
+      }
+    };
+
+    // Gerenciamento de abas
+    const TabManager = {
+      switchTab: tabName => {
+        if (currentTab === tabName) return;
+        currentTab = tabName;
+        UI.updateTabsUI();
+        UI.renderImages();
+        UI.updateButtonsState();
+        StateManager.saveState();
+      }
+    };
+
+    // Gerenciamento de imagens
+    const ImageManager = {
+      toggleSelectImage: (imageName, container) => {
+        const selectedSet = selectedImagesByTab.get(currentTab);
+        
+        if (selectedSet.has(imageName)) {
+          selectedSet.delete(imageName);
+          container.classList.remove('selected');
+          container.setAttribute('aria-checked', 'false');
+        } else {
+          selectedSet.add(imageName);
+          container.classList.add('selected');
+          container.setAttribute('aria-checked', 'true');
+        }
+        
+        UI.updateSelectAllCheckbox();
+        UI.updateButtonsState();
+        StateManager.saveState();
+      },
+      
+      deleteImage: imageName => {
+        if (!confirm(`Tem certeza que deseja excluir "${Utils.removeFileExtension(imageName)}"?`)) return;
+        
+        const images = imageGalleryByTab.get(currentTab).filter(img => img.name !== imageName);
+        imageGalleryByTab.set(currentTab, images);
+        selectedImagesByTab.get(currentTab).delete(imageName);
+        
+        UI.renderImages();
+        StateManager.saveState();
+        Utils.showStatus('Imagem excluída');
+      },
+      
+      reorderImages: (fromIndex, toIndex) => {
+        const images = imageGalleryByTab.get(currentTab) || [];
+        const movedImage = images.splice(fromIndex, 1)[0];
+        images.splice(toIndex, 0, movedImage);
+        imageGalleryByTab.set(currentTab, images);
+        
+        UI.renderImages();
+        StateManager.saveState();
+      },
+      
+      deleteSelected: () => {
+        const count = selectedImagesByTab.get(currentTab).size;
+        if (!count || !confirm(`Excluir ${count} imagem(ns) selecionada(s)?`)) return;
+        
+        const images = imageGalleryByTab.get(currentTab).filter(img => 
+          !selectedImagesByTab.get(currentTab).has(img.name)
+        );
+        
+        imageGalleryByTab.set(currentTab, images);
+        selectedImagesByTab.get(currentTab).clear();
+        
+        UI.renderImages();
+        UI.updateButtonsState();
+        StateManager.saveState();
+        Utils.showStatus(`${count} imagens excluídas`);
+      },
+      
+      clearSelection: () => {
+        selectedImagesByTab.get(currentTab).clear();
+        UI.renderImages();
+        UI.updateButtonsState();
+        StateManager.saveState();
+      },
+      
+      handleFileSelection: async (e) => {
+        const files = e.target.files;
+        if (!files.length) return;
+
+        UI.showLoading();
+        
+        if (!imageGalleryByTab.get(currentTab)) imageGalleryByTab.set(currentTab, []);
+        if (!selectedImagesByTab.get(currentTab)) selectedImagesByTab.set(currentTab, new Set());
+
+        try {
+          for (const file of files) {
+            if (!file.type.startsWith('image/')) continue;
+            
+            try {
+              const processed = await ImageProcessor.processImageFile(file);
+              if (!processed) continue;
+              
+              const images = imageGalleryByTab.get(currentTab);
+              if (!images.some(img => img.name === processed.name)) {
+                images.push(processed);
+              }
+            } catch (error) {
+              console.error(`Erro ao processar ${file.name}:`, error);
+            }
+          }
+
+          UI.renderImages();
+          StateManager.saveState();
+          Utils.showStatus(`${files.length} imagens carregadas`);
+        } catch (error) {
+          console.error('Erro geral no carregamento:', error);
+          Utils.showStatus('Erro ao carregar imagens');
+        } finally {
+          UI.hideLoading();
+        }
+      }
+    };
+
+    // Configuração de eventos
+    const EventManager = {
+      setup: () => {
+        // Delegação de eventos
+        DOM.imageList.addEventListener('click', (e) => {
+          const container = e.target.closest('.image-container');
+          if (container) {
+            const imageName = container.dataset.name;
+            ImageManager.toggleSelectImage(imageName, container);
+          }
+          
+          if (e.target.tagName === 'IMG' || e.target.classList.contains('image-name')) {
+            e.stopPropagation();
+            const container = e.target.closest('.image-container');
+            const img = container.querySelector('img');
+            UI.openFullscreen(img.src, img.alt);
+          }
+        });
+        
+        DOM.imageList.addEventListener('keydown', (e) => {
+          const container = e.target.closest('.image-container');
+          if (!container) return;
+          
+          const imageName = container.dataset.name;
+          
+          if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault();
+            ImageManager.toggleSelectImage(imageName, container);
+          }
+          if (e.key === 'Delete' || e.key === 'Backspace') {
+            e.preventDefault();
+            ImageManager.deleteImage(imageName);
+          }
+        });
+        
+        // Drag and Drop
+        DOM.imageList.addEventListener('dragstart', (e) => {
+          const container = e.target.closest('.image-container');
+          if (!container) return;
+          
+          dragStartIndex = parseInt(container.dataset.index);
+          container.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+        });
+        
+        DOM.imageList.addEventListener('dragover', (e) => {
+          const container = e.target.closest('.image-container');
+          if (!container) return;
+          
+          e.preventDefault();
+          container.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'move';
+        });
+        
+        DOM.imageList.addEventListener('dragleave', (e) => {
+          const container = e.target.closest('.image-container');
+          if (container) container.classList.remove('drag-over');
+        });
+        
+        DOM.imageList.addEventListener('drop', (e) => {
+          const container = e.target.closest('.image-container');
+          if (!container) return;
+          
+          e.preventDefault();
+          container.classList.remove('drag-over');
+          const dragEndIndex = parseInt(container.dataset.index);
+          if (dragStartIndex !== null && dragEndIndex !== dragStartIndex) {
+            ImageManager.reorderImages(dragStartIndex, dragEndIndex);
+          }
+          dragStartIndex = null;
+        });
+        
+        DOM.imageList.addEventListener('dragend', (e) => {
+          const container = e.target.closest('.image-container');
+          if (container) container.classList.remove('dragging');
+        });
+        
+        // Outros eventos
+        DOM.selectAllCheckbox.addEventListener('change', () => {
+          const images = imageGalleryByTab.get(currentTab) || [];
+          const selectedSet = selectedImagesByTab.get(currentTab);
+          
+          if (DOM.selectAllCheckbox.checked) {
+            images.forEach(img => selectedSet.add(img.name));
+          } else {
+            selectedSet.clear();
+          }
+          
+          UI.renderImages();
+          UI.updateButtonsState();
+          StateManager.saveState();
+        });
+        
+        DOM.clearSelectionBtn.addEventListener('click', ImageManager.clearSelection);
+        DOM.deleteSelectedBtn.addEventListener('click', ImageManager.deleteSelected);
+        DOM.openFileDialogButton.addEventListener('click', () => {
+          DOM.fileInput.value = '';
+          DOM.fileInput.click();
+        });
+        DOM.fileInput.addEventListener('change', ImageManager.handleFileSelection);
+        
+        DOM.syncBtn.addEventListener('click', () => {
+          Utils.showStatus('Sincronização em desenvolvimento');
+        });
+        
+        DOM.settingsBtn.addEventListener('click', () => {
+          Utils.showStatus('Configurações em desenvolvimento');
+        });
+      }
+    };
+
+    // Inicialização
+    function init() {
+      StateManager.loadState();
+      UI.createTabs();
+      UI.updateTabsUI();
+      UI.renderImages();
+      UI.updateButtonsState();
+      EventManager.setup();
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
