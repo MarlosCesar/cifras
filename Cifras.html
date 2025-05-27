@@ -19,6 +19,10 @@
       --gray-medium: #e5e7eb;
       --text-gray: #333;
       --shadow-primary: 0 0 10px rgba(37, 99, 235, 0.3);
+      /* Novas variáveis para cores do cabeçalho */
+      --header-bg: #1A202C; /* Um cinza bem escuro, quase preto */
+      --header-text: #E2E8F0; /* Um cinza claro para o texto */
+      --header-hover: #2D3748; /* Um tom um pouco mais claro para o hover */
     }
 
     html, body {
@@ -26,6 +30,21 @@
       overflow-y: auto;
       background-color: var(--gray-light);
       font-family: 'Inter', sans-serif;
+    }
+
+    /* Estilo do cabeçalho modificado */
+    .header-professional {
+      background-color: var(--header-bg);
+      color: var(--header-text);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Sombra mais suave */
+    }
+
+    .header-professional button {
+      transition: background-color 0.3s ease; /* Transição para o hover */
+    }
+
+    .header-professional button:hover {
+      background-color: var(--header-hover);
     }
 
     .tabs {
@@ -208,16 +227,12 @@
   </style>
 </head>
 <body class="bg-gray-100 font-sans antialiased">
-  <header class="bg-blue-600 text-white p-4 shadow-md">
-    <div class="container mx-auto flex justify-between items-center">
-      <h1 class="text-xl font-bold">Seletor de Cifras</h1>
-      <div class="flex items-center space-x-4">
-        <button id="sync-btn" class="p-2 rounded-full hover:bg-blue-700 transition" aria-label="Sincronizar" title="Sincronizar">
-          <i class="fas fa-sync-alt" aria-hidden="true"></i>
-        </button>
-        <button id="settings-btn" class="p-2 rounded-full hover:bg-blue-700 transition" aria-label="Configurações" title="Configurações">
-          <i class="fas fa-cog" aria-hidden="true"></i>
-        </button>
+  <header class="header-professional p-4"> <div class="container mx-auto flex justify-between items-center">
+      <h1 class="text-2xl font-semibold tracking-wide">Seletor de Cifras</h1> <div class="flex items-center space-x-4">
+        <button id="sync-btn" class="p-2 rounded-full" aria-label="Sincronizar" title="Sincronizar">
+          <i class="fas fa-sync-alt text-lg" aria-hidden="true"></i> </button>
+        <button id="settings-btn" class="p-2 rounded-full" aria-label="Configurações" title="Configurações">
+          <i class="fas fa-cog text-lg" aria-hidden="true"></i> </button>
       </div>
     </div>
   </header>
@@ -226,7 +241,8 @@
     <section class="w-full bg-white rounded-xl shadow-md overflow-hidden flex flex-col" aria-label="Seletor de músicas e imagens">
       <div class="p-4 bg-gray-50 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <h2 class="font-semibold text-lg">Músicas</h2>
-        <div class="flex flex-wrap gap-2"> <button id="open-file-dialog" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition" aria-label="Buscar imagens localmente" title="Buscar imagens localmente">
+        <div class="flex flex-wrap gap-2">
+          <button id="open-file-dialog" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition" aria-label="Buscar imagens localmente" title="Buscar imagens localmente">
             <i class="fas fa-folder-open" aria-hidden="true"></i> Buscar Local
           </button>
           <button id="open-cloud-folder" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition" aria-label="Buscar imagens na nuvem (OneDrive)" title="Buscar imagens na nuvem (OneDrive)">
@@ -458,7 +474,7 @@
     const ImageProcessor = {
       processImageFile: file => new Promise((resolve, reject) => {
         const img = new Image();
-        const url = Utils.createObjectURL(file); // Use Utils.createObjectURL
+        const url = Utils.createObjectURL(file);
 
         img.onload = () => {
           const canvas = document.createElement('canvas');
@@ -484,10 +500,10 @@
           ctx.drawImage(img, 0, 0, width, height);
 
           canvas.toBlob(blob => {
-            Utils.revokeObjectURL(url); // Revogar o URL temporário da imagem original
+            Utils.revokeObjectURL(url);
             if (blob) {
                 resolve({
-                    name: file.name, // Usa o nome do arquivo original
+                    name: file.name,
                     blob: blob
                 });
             } else {
@@ -910,7 +926,8 @@
             UI.updateButtonsState();
             StateManager.saveState();
             Utils.showStatus(`${count} imagens excluídas`);
-        } catch (error) {
+        }
+        catch (error) {
             console.error('Erro ao excluir imagens selecionadas:', error);
             Utils.showStatus('Erro ao excluir imagens.');
         } finally {
@@ -973,15 +990,13 @@
     // Configuração de eventos
     const EventManager = {
       setup: () => {
-        // Delegação de eventos para click (para abrir fullscreen OU toggle seleção)
         DOM.imageList.addEventListener('click', async (e) => {
           const container = e.target.closest('.image-container');
           if (container) {
             const imageName = container.dataset.name;
 
-            // Se o clique foi direto na imagem ou no nome, abre o fullscreen
             if (e.target.tagName === 'IMG' || e.target.classList.contains('image-name')) {
-              e.stopPropagation(); // Evita que o evento de click do container seja disparado duas vezes
+              e.stopPropagation();
               const blob = await IndexedDBManager.getImageBlob(imageName);
               if (blob) {
                   const objectURL = Utils.createObjectURL(blob);
@@ -990,7 +1005,6 @@
                   Utils.showStatus('Erro: Imagem não encontrada para ampliar.');
               }
             } else {
-              // Se o clique foi no container, mas não diretamente na imagem ou nome, alterna a seleção
               ImageManager.toggleSelectImage(imageName, container);
             }
           }
@@ -1012,7 +1026,6 @@
           }
         });
 
-        // Drag and Drop
         DOM.imageList.addEventListener('dragstart', (e) => {
           const container = e.target.closest('.image-container');
           if (!container) return;
@@ -1074,16 +1087,14 @@
         DOM.clearSelectionBtn.addEventListener('click', ImageManager.clearSelection);
         DOM.deleteSelectedBtn.addEventListener('click', ImageManager.deleteSelected);
 
-        // Evento para o botão "Buscar Local"
         DOM.openFileDialogButton.addEventListener('click', () => {
           DOM.fileInput.value = '';
           DOM.fileInput.click();
         });
         DOM.fileInput.addEventListener('change', ImageManager.handleFileSelection);
 
-        // Evento para o novo botão "Buscar em Nuvem"
         DOM.openCloudFolderButton.addEventListener('click', () => {
-          window.open(ONE_DRIVE_FOLDER_URL, '_blank'); // Abre a URL em uma nova aba
+          window.open(ONE_DRIVE_FOLDER_URL, '_blank');
           Utils.showStatus('Abrindo pasta do OneDrive em uma nova aba.');
         });
 
@@ -1097,7 +1108,6 @@
       }
     };
 
-    // Inicialização
     async function init() {
       UI.showLoading();
       try {
