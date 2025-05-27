@@ -226,9 +226,11 @@
     <section class="w-full bg-white rounded-xl shadow-md overflow-hidden flex flex-col" aria-label="Seletor de músicas e imagens">
       <div class="p-4 bg-gray-50 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <h2 class="font-semibold text-lg">Músicas</h2>
-        <div>
-          <button id="open-file-dialog" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition" aria-label="Buscar imagens" title="Buscar imagens">
-            <i class="fas fa-search" aria-hidden="true"></i> Buscar
+        <div class="flex flex-wrap gap-2"> <button id="open-file-dialog" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition" aria-label="Buscar imagens localmente" title="Buscar imagens localmente">
+            <i class="fas fa-folder-open" aria-hidden="true"></i> Buscar Local
+          </button>
+          <button id="open-cloud-folder" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition" aria-label="Buscar imagens na nuvem (OneDrive)" title="Buscar imagens na nuvem (OneDrive)">
+            <i class="fas fa-cloud" aria-hidden="true"></i> Buscar em Nuvem
           </button>
           <input type="file" id="file-input" class="hidden" accept="image/*" multiple aria-hidden="true" tabindex="-1" />
         </div>
@@ -271,6 +273,7 @@
       imageList: document.getElementById('image-list'),
       fileInput: document.getElementById('file-input'),
       openFileDialogButton: document.getElementById('open-file-dialog'),
+      openCloudFolderButton: document.getElementById('open-cloud-folder'), // Novo botão
       selectAllCheckbox: document.getElementById('select-all'),
       deleteSelectedBtn: document.getElementById('delete-selected-btn'),
       clearSelectionBtn: document.getElementById('clear-selection-btn'),
@@ -282,6 +285,9 @@
 
     // Abas desejadas
     const tabs = ["Domingo Manhã", "Domingo Noite", "Segunda", "Quarta", "Culto Jovem", "Santa Ceia", "Outros"];
+
+    // URL da pasta do OneDrive
+    const ONE_DRIVE_FOLDER_URL = "https://1drv.ms/f/c/a71268bf66931c02/EpYyUsypAQhGgpWC9YuvE54BD_o9NX9tRar0piSzq4V4Xg";
 
     // Estado otimizado com Map/Set
     let imageGalleryByTab = new Map(); // Armazena APENAS os nomes das imagens por aba
@@ -298,7 +304,6 @@
     // Funções utilitárias
     const Utils = {
       removeFileExtension: filename => filename.replace(/\.[^/.]+$/, ""),
-      // sanitizeFilename removido
       showStatus: message => {
         DOM.statusMessage.textContent = message;
         DOM.statusMessage.classList.add('show');
@@ -326,17 +331,17 @@
       }
     };
 
-    // --- NOVO: IndexedDB Manager ---
+    // --- IndexedDB Manager ---
     const DB_NAME = 'ImageSelectorDB';
-    const DB_VERSION = 2; // Incrementar versão para forçar onupgradeneeded em mudanças de schema
+    const DB_VERSION = 2;
     const STORE_IMAGES = 'images';
-    const STORE_METADATA = 'metadata'; // Para armazenar o estado das abas e seleções
+    const STORE_METADATA = 'metadata';
 
     const IndexedDBManager = {
       db: null,
 
       open: () => new Promise((resolve, reject) => {
-        if (IndexedDBManager.db) { // Se já aberto, retorna a instância
+        if (IndexedDBManager.db) {
             resolve(IndexedDBManager.db);
             return;
         }
@@ -346,10 +351,10 @@
         request.onupgradeneeded = (event) => {
           const db = event.target.result;
           if (!db.objectStoreNames.contains(STORE_IMAGES)) {
-            db.createObjectStore(STORE_IMAGES, { keyPath: 'name' }); // Armazenará { name: 'cifra.webp', blob: Blob }
+            db.createObjectStore(STORE_IMAGES, { keyPath: 'name' });
           }
           if (!db.objectStoreNames.contains(STORE_METADATA)) {
-            db.createObjectStore(STORE_METADATA, { keyPath: 'id' }); // Armazenará { id: 'appState', state: {...} }
+            db.createObjectStore(STORE_METADATA, { keyPath: 'id' });
           }
         };
 
@@ -364,7 +369,6 @@
         };
       }),
 
-      // Imagens (Blobs)
       addImageBlob: (imageName, blob) => new Promise(async (resolve, reject) => {
         try {
           const db = await IndexedDBManager.open();
@@ -412,7 +416,7 @@
               const db = await IndexedDBManager.open();
               const transaction = db.transaction([STORE_IMAGES], 'readonly');
               const store = transaction.objectStore(STORE_IMAGES);
-              const request = store.getAllKeys(); // Pega apenas as chaves (nomes)
+              const request = store.getAllKeys();
 
               request.onsuccess = (event) => resolve(event.target.result);
               request.onerror = (event) => reject(event.target.error);
@@ -421,7 +425,6 @@
           }
       }),
 
-      // Metadados (estado da aplicação)
       saveMetadata: (state) => new Promise(async (resolve, reject) => {
         try {
           const db = await IndexedDBManager.open();
@@ -455,11 +458,11 @@
     const ImageProcessor = {
       processImageFile: file => new Promise((resolve, reject) => {
         const img = new Image();
-        const url = URL.createObjectURL(file);
+        const url = Utils.createObjectURL(file); // Use Utils.createObjectURL
 
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_SIZE = 800; // Redimensionar para um tamanho razoável
+          const MAX_SIZE = 800;
           let width = img.width;
           let height = img.height;
 
@@ -480,22 +483,21 @@
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
-          // Criar um Blob em vez de Data URL
           canvas.toBlob(blob => {
-            URL.revokeObjectURL(url); // Revogar o URL temporário da imagem original
+            Utils.revokeObjectURL(url); // Revogar o URL temporário da imagem original
             if (blob) {
                 resolve({
-                    name: file.name, // Usa o nome do arquivo original, sem sanitização
-                    blob: blob // Retorna o Blob
+                    name: file.name, // Usa o nome do arquivo original
+                    blob: blob
                 });
             } else {
                 reject(new Error('Falha ao criar Blob da imagem.'));
             }
-          }, 'image/webp', 0.75); // Salva como WebP com compressão de 75%
+          }, 'image/webp', 0.75);
         };
 
         img.onerror = () => {
-          URL.revokeObjectURL(url);
+          Utils.revokeObjectURL(url);
           reject(new Error('Erro ao carregar a imagem para processamento.'));
         };
 
@@ -505,9 +507,8 @@
 
     // Gerenciamento de estado
     const StateManager = {
-        saveState: Utils.debounce(async () => { // Debounce para evitar salvar demais
+        saveState: Utils.debounce(async () => {
             const state = {
-                // Apenas os nomes das imagens por aba
                 images: Object.fromEntries(Array.from(imageGalleryByTab.entries()).map(([tab, names]) => [tab, Array.from(names)])),
                 selected: Object.fromEntries(Array.from(selectedImagesByTab.entries()).map(([tab, set]) => [tab, Array.from(set)])),
                 currentTab,
@@ -518,7 +519,7 @@
                 console.error('Erro ao salvar estado no IndexedDB:', e);
                 Utils.showStatus('Erro ao salvar dados.');
             }
-        }, 500), // Salva a cada 500ms no máximo
+        }, 500),
 
         loadState: async () => {
             try {
@@ -548,7 +549,6 @@
             });
         }
     };
-
 
     // Interface do usuário
     const UI = {
@@ -597,7 +597,6 @@
       },
 
       renderImages: async () => {
-        // Antes de renderizar, revogar URLs de objeto antigos para evitar vazamentos de memória
         DOM.imageList.querySelectorAll('img[data-object-url]').forEach(img => {
             Utils.revokeObjectURL(img.dataset.objectUrl);
         });
@@ -617,14 +616,13 @@
         } else {
           DOM.selectAllCheckbox.disabled = false;
 
-          for (const imageName of imageNames) { // Iterar de forma síncrona para manter ordem
+          for (const imageName of imageNames) {
             const blob = await IndexedDBManager.getImageBlob(imageName);
             if (blob) {
                 const container = UI.createImageElement(imageName, blob);
                 fragment.appendChild(container);
             } else {
                 console.warn(`Imagem ${imageName} não encontrada no IndexedDB.`);
-                // Opcional: remover a referência da imageGalleryByTab se o blob não existir
                 imageGalleryByTab.set(currentTab, imageNames.filter(name => name !== imageName));
             }
           }
@@ -643,22 +641,22 @@
         container.setAttribute('tabindex', '0');
         container.setAttribute('role', 'checkbox');
         container.setAttribute('aria-checked', selectedImagesByTab.get(currentTab).has(imageName));
-        container.dataset.name = imageName; // Usar o nome como identificador único
+        container.dataset.name = imageName;
 
         if (selectedImagesByTab.get(currentTab).has(imageName)) {
           container.classList.add('selected');
         }
 
         const img = document.createElement('img');
-        const objectURL = Utils.createObjectURL(imageBlob); // Criar URL de objeto temporário
+        const objectURL = Utils.createObjectURL(imageBlob);
         img.src = objectURL;
-        img.dataset.objectUrl = objectURL; // Guardar para revogar depois
+        img.dataset.objectUrl = objectURL;
         img.alt = Utils.removeFileExtension(imageName);
         img.title = "Clique para ampliar";
 
         const nameSpan = document.createElement('span');
         nameSpan.className = 'image-name';
-        nameSpan.textContent = Utils.removeFileExtension(imageName); // Exibe o nome sem a extensão, mas sem sanitização
+        nameSpan.textContent = Utils.removeFileExtension(imageName);
         nameSpan.title = "Clique para ampliar";
 
         container.appendChild(img);
@@ -702,7 +700,6 @@
         img.tabIndex = 0;
         img.style.transform = 'scale(1)';
 
-        // Controles de zoom
         const controls = document.createElement('div');
         controls.className = 'fullscreen-controls';
 
@@ -729,7 +726,6 @@
           img.style.transform = `scale(${scale}) translate(${translateX}px, ${translateY}px)`;
         };
 
-        // Eventos de zoom
         zoomInBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           scale *= 1.2;
@@ -755,7 +751,6 @@
           updateTransform();
         });
 
-        // Zoom com roda do mouse
         img.addEventListener('wheel', (e) => {
           e.preventDefault();
           const delta = -e.deltaY;
@@ -767,7 +762,6 @@
           updateTransform();
         });
 
-        // Arrastar imagem
         img.addEventListener('mousedown', (e) => {
           if (scale > 1) {
             isDragging = true;
@@ -789,7 +783,6 @@
           img.style.cursor = 'zoom-out';
         });
 
-        // Toque para dispositivos móveis
         let touchStartX, touchStartY, touchTranslateX = 0, touchTranslateY = 0;
 
         img.addEventListener('touchstart', (e) => {
@@ -828,7 +821,6 @@
           document.removeEventListener('keydown', handleKeyDown);
           document.removeEventListener('mousemove', handleMouseMove);
           document.removeEventListener('mouseup', handleMouseUp);
-          // Revogar o Object URL quando o fullscreen for fechado
           Utils.revokeObjectURL(img.src);
         };
 
@@ -847,7 +839,7 @@
         if (currentTab === tabName) return;
         currentTab = tabName;
         UI.updateTabsUI();
-        await UI.renderImages(); // Aguarda a renderização das imagens
+        await UI.renderImages();
         UI.updateButtonsState();
         StateManager.saveState();
       }
@@ -876,12 +868,10 @@
       deleteImage: async imageName => {
         if (!confirm(`Tem certeza que deseja excluir "${Utils.removeFileExtension(imageName)}"?`)) return;
 
-        // Remover do IndexedDB
         await IndexedDBManager.deleteImageBlob(imageName);
-        // Remover da lista de nomes por aba
         const images = imageGalleryByTab.get(currentTab).filter(name => name !== imageName);
         imageGalleryByTab.set(currentTab, images);
-        selectedImagesByTab.get(currentTab).delete(imageName); // Garantir que não está selecionado
+        selectedImagesByTab.get(currentTab).delete(imageName);
 
         await UI.renderImages();
         StateManager.saveState();
@@ -954,16 +944,13 @@
               const processed = await ImageProcessor.processImageFile(file);
               if (!processed) continue;
 
-              // Adicionar ao IndexedDB
               await IndexedDBManager.addImageBlob(processed.name, processed.blob);
 
-              // Adicionar à lista de nomes da aba apenas se ainda não existir
               if (!currentImageNamesInTab.has(processed.name)) {
                 imageGalleryByTab.get(currentTab).push(processed.name);
-                currentImageNamesInTab.add(processed.name); // Atualiza o Set localmente
+                currentImageNamesInTab.add(processed.name);
               } else {
                 console.warn(`Imagem "${processed.name}" já existe na aba atual. Sobrescrevendo no DB.`);
-                // Se já existe, o IndexedDB.put() já sobrescreve o blob.
               }
             } catch (error) {
               console.error(`Erro ao processar ${file.name}:`, error);
@@ -971,8 +958,8 @@
             }
           }
 
-          await UI.renderImages(); // Re-renderiza a galeria após todos os arquivos serem processados
-          StateManager.saveState(); // Salva o novo estado da galeria e seleções
+          await UI.renderImages();
+          StateManager.saveState();
           Utils.showStatus(`${files.length} imagens carregadas`);
         } catch (error) {
           console.error('Erro geral no carregamento:', error);
@@ -1017,7 +1004,6 @@
 
           if (e.key === ' ' || e.key === 'Enter') {
             e.preventDefault();
-            // Acessibilidade: Enter/Espaço também podem selecionar
             ImageManager.toggleSelectImage(imageName, container);
           }
           if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -1031,7 +1017,6 @@
           const container = e.target.closest('.image-container');
           if (!container) return;
 
-          // Encontra o índice da imagem pelo nome na lista atual da aba
           const currentImageNames = imageGalleryByTab.get(currentTab);
           dragStartIndex = currentImageNames.indexOf(container.dataset.name);
 
@@ -1059,7 +1044,7 @@
 
           e.preventDefault();
           container.classList.remove('drag-over');
-          const dragEndIndex = imageGalleryByTab.get(currentTab).indexOf(container.dataset.name); // Encontra o índice pelo nome
+          const dragEndIndex = imageGalleryByTab.get(currentTab).indexOf(container.dataset.name);
           if (dragStartIndex !== null && dragEndIndex !== -1 && dragEndIndex !== dragStartIndex) {
             ImageManager.reorderImages(dragStartIndex, dragEndIndex);
           }
@@ -1071,13 +1056,12 @@
           if (container) container.classList.remove('dragging');
         });
 
-        // Outros eventos
         DOM.selectAllCheckbox.addEventListener('change', () => {
           const images = imageGalleryByTab.get(currentTab) || [];
           const selectedSet = selectedImagesByTab.get(currentTab);
 
           if (DOM.selectAllCheckbox.checked) {
-            images.forEach(name => selectedSet.add(name)); // Adiciona nomes
+            images.forEach(name => selectedSet.add(name));
           } else {
             selectedSet.clear();
           }
@@ -1089,11 +1073,19 @@
 
         DOM.clearSelectionBtn.addEventListener('click', ImageManager.clearSelection);
         DOM.deleteSelectedBtn.addEventListener('click', ImageManager.deleteSelected);
+
+        // Evento para o botão "Buscar Local"
         DOM.openFileDialogButton.addEventListener('click', () => {
-          DOM.fileInput.value = ''; // Limpa o input para que o evento 'change' dispare mesmo se o mesmo arquivo for selecionado novamente
+          DOM.fileInput.value = '';
           DOM.fileInput.click();
         });
         DOM.fileInput.addEventListener('change', ImageManager.handleFileSelection);
+
+        // Evento para o novo botão "Buscar em Nuvem"
+        DOM.openCloudFolderButton.addEventListener('click', () => {
+          window.open(ONE_DRIVE_FOLDER_URL, '_blank'); // Abre a URL em uma nova aba
+          Utils.showStatus('Abrindo pasta do OneDrive em uma nova aba.');
+        });
 
         DOM.syncBtn.addEventListener('click', () => {
           Utils.showStatus('Sincronização em desenvolvimento');
@@ -1109,11 +1101,11 @@
     async function init() {
       UI.showLoading();
       try {
-        await IndexedDBManager.open(); // Abrir o DB primeiro
+        await IndexedDBManager.open();
         await StateManager.loadState();
         UI.createTabs();
         UI.updateTabsUI();
-        await UI.renderImages(); // Aguardar a renderização inicial das imagens
+        await UI.renderImages();
         UI.updateButtonsState();
         EventManager.setup();
       } catch (e) {
