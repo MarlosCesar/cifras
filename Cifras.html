@@ -169,7 +169,7 @@
       flex-grow: 1; /* Permite que o nome ocupe o espaço restante */
       overflow-wrap: break-word; /* Garante que nomes longos quebrem a linha */
       word-break: break-word; /* Para compatibilidade */
-      max-width: calc(100% - 2.5cm - 12px); /* Ajusta a largura máxima para o nome, considerando a imagem e o gap */
+      max-width: calc(100% - 2.2cm - 12px); /* Ajusta a largura máxima para o nome, considerando a imagem e o gap */
       line-height: 1.4; /* Melhor espaçamento entre linhas */
     }
 
@@ -302,6 +302,7 @@
         padding: 0.75rem; /* Menor padding para o conteúdo principal */
       }
 
+      /* Image container em mobile */
       .image-container {
         flex-direction: row; /* Mantém a imagem e o nome na mesma linha */
         align-items: center;
@@ -414,8 +415,8 @@
           </button>
         </div>
 
-        <div id="image-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" aria-live="polite" aria-atomic="true">
-          <p class="text-center text-gray-500 col-span-full">Nenhuma imagem encontrada.</p>
+        <div id="image-list" class="flex flex-col gap-4" aria-live="polite" aria-atomic="true">
+          <p class="text-center text-gray-500 py-8">Nenhuma imagem encontrada nesta categoria.</p>
         </div>
       </div>
     </section>
@@ -786,7 +787,7 @@
 
         if (imageNames.length === 0) {
           const p = document.createElement('p');
-          p.className = 'text-center text-gray-500 col-span-full py-8'; // Adicionado col-span-full para centralizar no grid
+          p.className = 'text-center text-gray-500 py-8'; // Centralizado, sem col-span-full porque agora é flex-col
           p.textContent = 'Nenhuma imagem encontrada nesta categoria.';
           fragment.appendChild(p);
           DOM.selectAllCheckbox.checked = false;
@@ -1068,8 +1069,8 @@
           document.body.removeChild(overlay);
           overlay.removeEventListener('click', closeFullscreen);
           document.removeEventListener('keydown', handleKeyDown);
-          document.removeEventListener('mousemove', handleMouseMove); // Removido para mouseup global
-          document.removeEventListener('mouseup', handleMouseUp); // Removido para mouseup global
+          // Removido para mouseup global: document.removeEventListener('mousemove', handleMouseMove); 
+          // Removido para mouseup global: document.removeEventListener('mouseup', handleMouseUp); 
           Utils.revokeObjectURL(img.src); // Libera o Object URL
         };
 
