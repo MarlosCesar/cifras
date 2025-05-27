@@ -73,7 +73,7 @@
       border: 1px solid transparent;
       border-radius: 0.5rem;
       overflow: hidden;
-      cursor: pointer; /* Alterado para indicar clique */
+      cursor: grab;
       transition: all 0.2s ease;
       background-color: white;
       padding: 8px;
@@ -288,8 +288,6 @@
     let selectedImagesByTab = new Map();
     let currentTab = tabs[0];
     let dragStartIndex = null;
-    let pressTimer = null; // Adicionado para long press
-    let isLongPress = false; // Flag para controlar se foi long press
 
     // Inicializar estado
     tabs.forEach(tab => {
@@ -988,16 +986,20 @@
     // Configuração de eventos
     const EventManager = {
       setup: () => {
-        // Delegação de eventos para click (para abrir fullscreen)
-        DOM.imageList.addEventListener('click', async (e) => {
-          // Ignora o clique se ele foi parte de um "long press"
-          if (isLongPress) {
-            isLongPress = false; // Reseta a flag
-            return;
-          }
-
+        // Delegação de eventos
+        DOM.imageList.addEventListener('click', async (e) => { // Tornar assíncrono para UI.openFullscreen
           const container = e.target.closest('.image-container');
           if (container) {
+            const imageName = container.dataset.name;
+            // Se o clique for direto no container (não na imagem ou nome), alterna seleção
+            if (e.target === container || (e.target.tagName !== 'IMG' && !e.target.classList.contains('image-name'))) {
+                ImageManager.toggleSelectImage(imageName, container);
+            }
+          }
+
+          if (e.target.tagName === 'IMG' || e.target.classList.contains('image-name')) {
+            e.stopPropagation();
+            const container = e.target.closest('.image-container');
             const imageName = container.dataset.name;
             const blob = await IndexedDBManager.getImageBlob(imageName);
             if (blob) {
@@ -1009,54 +1011,6 @@
           }
         });
 
-        // Eventos para Long Press (mousedown, mouseup, mouseleave)
-        DOM.imageList.addEventListener('mousedown', (e) => {
-            const container = e.target.closest('.image-container');
-            if (container) {
-                const imageName = container.dataset.name;
-                isLongPress = false; // Reseta a flag
-                // Inicia o timer para detectar clique longo
-                pressTimer = setTimeout(() => {
-                    ImageManager.toggleSelectImage(imageName, container);
-                    isLongPress = true; // Define a flag como true para indicar que foi um long press
-                }, 700); // 700ms para ser considerado um long press
-            }
-        });
-
-        DOM.imageList.addEventListener('mouseup', (e) => {
-            clearTimeout(pressTimer); // Cancela o timer se o mouse for solto antes do tempo
-        });
-
-        DOM.imageList.addEventListener('mouseleave', (e) => {
-            const container = e.target.closest('.image-container');
-            // Só cancela o timer se o mouse sair do container que iniciou o mousedown
-            if (container && e.buttons === 1) { // Se o botão do mouse ainda estiver pressionado
-                clearTimeout(pressTimer);
-            }
-        });
-
-        // Eventos de toque para Long Press em dispositivos móveis
-        DOM.imageList.addEventListener('touchstart', (e) => {
-            const container = e.target.closest('.image-container');
-            if (container) {
-                const imageName = container.dataset.name;
-                isLongPress = false;
-                pressTimer = setTimeout(() => {
-                    ImageManager.toggleSelectImage(imageName, container);
-                    isLongPress = true;
-                }, 700);
-            }
-        }, { passive: true }); // Use passive: true para melhor performance de scroll
-
-        DOM.imageList.addEventListener('touchend', (e) => {
-            clearTimeout(pressTimer);
-        });
-
-        DOM.imageList.addEventListener('touchcancel', (e) => {
-            clearTimeout(pressTimer);
-        });
-
-
         DOM.imageList.addEventListener('keydown', (e) => {
           const container = e.target.closest('.image-container');
           if (!container) return;
@@ -1065,7 +1019,6 @@
 
           if (e.key === ' ' || e.key === 'Enter') {
             e.preventDefault();
-            // Acessibilidade: Enter/Espaço também podem selecionar
             ImageManager.toggleSelectImage(imageName, container);
           }
           if (e.key === 'Delete' || e.key === 'Backspace') {
