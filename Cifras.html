@@ -1183,13 +1183,16 @@
         }
       },
 
-      reorderImages: async (fromIndex, toIndex) => {
+      reorderImages: async (fromIndex, toIndex, draggedImageName) => { // Adicionado draggedImageName como parâmetro
         const images = imageGalleryByTab.get(currentTab) || [];
         const movedImageName = images.splice(fromIndex, 1)[0];
         images.splice(toIndex, 0, movedImageName);
         imageGalleryByTab.set(currentTab, images);
 
-        await UI.renderImages(); // Re-renderiza para refletir a nova ordem
+        // Desmarca o checkbox do arquivo arrastado
+        selectedImagesByTab.get(currentTab).delete(draggedImageName);
+
+        await UI.renderImages(); // Re-renderiza para refletir a nova ordem e o estado do checkbox
         StateManager.saveState();
       },
 
@@ -1410,11 +1413,11 @@
           const container = e.target.closest('.image-container');
           if (container) {
             container.classList.remove('drag-over');
-            const draggedImageName = e.dataTransfer.getData('text/plain');
+            const draggedImageName = e.dataTransfer.getData('text/plain'); // Pega o nome da imagem arrastada
             const dragEndIndex = imageGalleryByTab.get(currentTab).indexOf(container.dataset.name);
             
             if (dragStartIndex !== null && dragEndIndex !== -1 && dragStartIndex !== dragEndIndex) {
-              ImageManager.reorderImages(dragStartIndex, dragEndIndex);
+              ImageManager.reorderImages(dragStartIndex, dragEndIndex, draggedImageName); // Passa o nome da imagem arrastada
             }
           }
           dragStartIndex = null; // Reseta o índice de início
