@@ -4,64 +4,83 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Seletor de Cifras</title>
+  
   <link rel="preload" href="https://cdn.tailwindcss.com" as="script">
+  
   <link rel="preconnect" href="https://cdnjs.cloudflare.com">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
   <script src="https://cdn.tailwindcss.com"></script>
+  
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
+    /* Variáveis CSS para um tema mais profissional e fácil manutenção */
     :root {
-      --primary-color: #3b82f6;
-      --primary-dark: #2563eb;
-      --primary-hover: #e0e7ff;
-      --danger-color: #ef4444;
-      --danger-dark: #dc2626;
-      --gray-light: #f3f4f6;
-      --gray-medium: #e5e7eb;
-      --text-color-dark: #333333;
-      --text-color-light: #4b5563;
+      --primary-color: #3b82f6; /* Azul primário */
+      --primary-dark: #2563eb; /* Azul mais escuro para hover/ativo */
+      --primary-hover: #e0e7ff; /* Azul muito claro para fundo de hover */
+      --danger-color: #ef4444; /* Vermelho para ações perigosas */
+      --danger-dark: #dc2626; /* Vermelho mais escuro */
+      --gray-light: #f3f4f6; /* Cinza claro para o background geral */
+      --gray-medium: #e5e7eb; /* Cinza médio para bordas/divisores */
+      --text-color-dark: #333333; /* Texto escuro quase preto */
+      --text-color-light: #4b5563; /* Texto cinza escuro */
       --shadow-base: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
       --shadow-primary: 0 0 10px rgba(37, 99, 235, 0.3);
-      --header-bg: #1A202C;
-      --header-text: #E2E8F0;
-      --header-hover: #2D3748;
+
+      /* Cores do cabeçalho */
+      --header-bg: #1A202C; /* Cinza bem escuro para o cabeçalho */
+      --header-text: #E2E8F0; /* Cinza claro para o texto do cabeçalho */
+      --header-hover: #2D3748; /* Tom um pouco mais claro para hover dos botões do cabeçalho */
     }
+
     html, body {
-      overflow-x: hidden;
+      /* Garante que o overflow-x seja escondido para evitar barras de rolagem horizontais em mobile */
+      overflow-x: hidden; 
       overflow-y: auto;
       background-color: var(--gray-light);
-      font-family: 'Inter', sans-serif;
-      color: var(--text-color-dark);
+      font-family: 'Inter', sans-serif; /* Usando a fonte Inter */
+      color: var(--text-color-dark); /* Cor de texto padrão */
     }
+
+    /* Estilo do cabeçalho profissional */
     .header-professional {
       background-color: var(--header-bg);
       color: var(--header-text);
-      box-shadow: var(--shadow-base);
+      box-shadow: var(--shadow-base); /* Sombra suave para o cabeçalho */
     }
+
     .header-professional button {
-      transition: background-color 0.3s ease, transform 0.1s ease;
-      display: flex;
+      transition: background-color 0.3s ease, transform 0.1s ease; /* Transição suave e pequena escala no clique */
+      display: flex; /* Para alinhar ícone e texto se houver */
       align-items: center;
       justify-content: center;
     }
+
     .header-professional button:hover {
       background-color: var(--header-hover);
     }
+
     .header-professional button:active {
-      transform: scale(0.98);
+        transform: scale(0.98); /* Pequeno efeito de clique */
     }
+
+    /* Estilos para as abas */
     .tabs {
       display: flex;
       gap: 0.5rem;
-      border-bottom: 2px solid var(--gray-medium);
+      border-bottom: 2px solid var(--gray-medium); /* Borda inferior para separar as abas do conteúdo */
       margin-bottom: 1rem;
-      flex-wrap: wrap;
-      padding: 0 1rem;
+      flex-wrap: wrap; /* Permite que as abas quebrem a linha em telas menores */
+      padding: 0 1rem; /* Padding horizontal para não colar nas bordas em mobile */
     }
+
     .tab {
-      padding: 0.65rem 1.2rem;
+      padding: 0.65rem 1.2rem; /* Um pouco mais de padding */
       cursor: pointer;
       border-radius: 0.5rem 0.5rem 0 0;
       background-color: #f9fafb;
@@ -69,145 +88,172 @@
       border-bottom: 2px solid transparent;
       transition: all 0.2s ease;
       outline-offset: 2px;
-      color: var(--text-color-light);
-      font-weight: 500;
+      color: var(--text-color-light); /* Cor do texto das abas não selecionadas */
+      font-weight: 500; /* Um pouco mais de peso */
     }
+
     [role="tab"] {
       user-select: none;
     }
-    .tab:hover, .tab:focus-visible {
+
+    .tab:hover,
+    .tab:focus-visible {
       background-color: var(--primary-hover);
       border-color: var(--primary-color) transparent transparent;
       outline: none;
       color: var(--primary-dark);
     }
+
     .tab.active {
       background-color: white;
       border-color: var(--primary-color) var(--primary-color) white;
       font-weight: 600;
       color: var(--primary-dark);
-      box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+      box-shadow: 0 -2px 5px rgba(0,0,0,0.05); /* Sombra sutil na aba ativa */
     }
+
+    /* Estilo para o contêiner de imagem individual */
     .image-container {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 12px;
-      border: 1px solid var(--gray-medium);
-      border-radius: 0.75rem;
+      gap: 12px; /* Aumentei o espaçamento entre imagem e nome */
+      padding: 12px; /* Mais padding interno */
+      border: 1px solid var(--gray-medium); /* Borda sutil */
+      border-radius: 0.75rem; /* Bordas mais arredondadas */
       overflow: hidden;
-      cursor: pointer;
+      cursor: pointer; /* Cursor de ponteiro para indicar que é clicável */
       transition: all 0.2s ease;
       background-color: white;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-      position: relative;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05); /* Sombra mais sutil por padrão */
+      position: relative; /* Para posicionar o checkbox */
     }
+
     .image-container:focus-visible {
       outline: 2px solid var(--primary-color);
-      outline-offset: 3px;
+      outline-offset: 3px; /* Aumentei o offset para melhor visibilidade */
     }
+
     .image-container.selected {
       border-color: var(--primary-dark);
-      box-shadow: var(--shadow-primary);
-      background-color: var(--primary-hover);
+      box-shadow: var(--shadow-primary); /* Sombra primária quando selecionado */
+      background-color: var(--primary-hover); /* Fundo levemente azulado quando selecionado */
     }
+
+    /* Estilos para o checkbox */
     .image-container .image-checkbox {
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      z-index: 10;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s ease;
+        position: absolute; /* Posiciona o checkbox dentro do container */
+        top: 8px; /* Ajuste a posição conforme necessário */
+        left: 8px; /* Ajuste a posição conforme necessário */
+        z-index: 10; /* Garante que o checkbox esteja acima da imagem */
+        opacity: 0; /* Oculto por padrão */
+        pointer-events: none; /* Não interage com o mouse por padrão */
+        transition: opacity 0.2s ease;
     }
+
+    /* Regra para mostrar checkboxes quando a classe 'show-checkboxes' estiver ativa */
     .show-checkboxes .image-container .image-checkbox {
-      opacity: 1;
-      pointer-events: all;
+        opacity: 1;
+        pointer-events: all; /* Permite interação quando visível */
     }
+    /* Também mostra o "Selecionar todas" quando checkboxes são visíveis */
     .show-checkboxes #select-all-container {
-      display: flex !important;
+      display: flex !important; /* Força a exibição do container "Selecionar todas" */
     }
+
+    /* Estilos para drag-and-drop */
     .drag-over {
-      border: 2px dashed var(--primary-dark) !important;
-      background-color: rgba(59, 130, 246, 0.1) !important;
+      border: 2px dashed var(--primary-dark) !important; /* Borda mais visível para drag-over */
+      background-color: rgba(59, 130, 246, 0.1) !important; /* Fundo levemente azulado */
     }
+
     .image-container.dragging {
-      opacity: 0.4;
-      transform: scale(0.98);
+      opacity: 0.4; /* Reduz a opacidade para indicar que está sendo arrastado */
+      transform: scale(0.98); /* Pequeno encolhimento visual */
     }
+
     .image-container img {
-      width: 2.2cm;
-      height: 3.3cm;
+      width: 2.2cm; /* Ligeiramente maior */
+      height: 3.3cm; /* Ligeiramente maior */
       object-fit: cover;
-      border-radius: 0.35rem;
+      border-radius: 0.35rem; /* Bordas um pouco mais arredondadas */
       flex-shrink: 0;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-      cursor: zoom-in;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1); /* Sombra sutil na imagem miniatura */
+      cursor: zoom-in; /* Cursor de zoom para a imagem */
     }
+
     .image-name {
-      font-size: 0.95rem;
+      font-size: 0.95rem; /* Aumentei ligeiramente o tamanho da fonte */
       color: var(--text-color-dark);
-      flex-grow: 1;
-      overflow-wrap: break-word;
-      word-break: break-word;
-      max-width: calc(100% - 2.2cm - 12px);
-      line-height: 1.4;
-      cursor: zoom-in;
+      flex-grow: 1; /* Permite que o nome ocupe o espaço restante */
+      overflow-wrap: break-word; /* Garante que nomes longos quebrem a linha */
+      word-break: break-word; /* Para compatibilidade */
+      max-width: calc(100% - 2.2cm - 12px); /* Ajusta a largura máxima para o nome, considerando a imagem e o gap */
+      line-height: 1.4; /* Melhor espaçamento entre linhas */
+      cursor: zoom-in; /* Cursor de zoom para o nome */
     }
+
+    /* Estilo para a visualização em tela cheia */
     .fullscreen-image {
       position: fixed;
       top: 0;
       left: 0;
       width: 100vw;
       height: 100vh;
-      background-color: rgba(0, 0, 0, 0.95);
+      background-color: rgba(0, 0, 0, 0.95); /* Fundo mais escuro */
       display: flex;
       justify-content: center;
       align-items: center;
       cursor: zoom-out;
       z-index: 9999;
-      touch-action: none;
+      touch-action: none; /* Desabilita o scroll padrão da tela */
     }
+
     .fullscreen-image img {
-      max-width: 95%;
-      max-height: 95%;
+      max-width: 95%; /* Aumenta o max-width para telas maiores */
+      max-height: 95%; /* Aumenta o max-height para telas maiores */
       object-fit: contain;
       transition: transform 0.25s ease;
-      border-radius: 0.75rem;
-      box-shadow: 0 0 25px rgba(0,0,0,0.8);
+      border-radius: 0.75rem; /* Bordas mais arredondadas */
+      box-shadow: 0 0 25px rgba(0,0,0,0.8); /* Sombra mais pronunciada */
       transform-origin: center center;
     }
+
     .fullscreen-controls {
       position: absolute;
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
       display: flex;
-      gap: 15px;
+      gap: 15px; /* Aumentei o espaçamento entre os botões */
       background: rgba(0,0,0,0.7);
-      padding: 12px 20px;
-      border-radius: 8px;
+      padding: 12px 20px; /* Mais padding */
+      border-radius: 8px; /* Bordas arredondadas */
     }
+
     .zoom-btn {
       background: rgba(255,255,255,0.2);
       color: white;
       border: none;
-      width: 50px;
-      height: 50px;
+      width: 50px; /* Maior para facilitar o toque em mobile */
+      height: 50px; /* Maior para facilitar o toque em mobile */
       border-radius: 50%;
-      font-size: 24px;
+      font-size: 24px; /* Ícone maior */
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       transition: background-color 0.3s ease, transform 0.1s ease;
     }
+
     .zoom-btn:hover {
       background: rgba(255,255,255,0.3);
     }
+
     .zoom-btn:active {
-      transform: scale(0.95);
+        transform: scale(0.95); /* Efeito de clique */
     }
+
+    /* Loading Spinner */
     .loading-spinner {
       display: none;
       position: fixed;
@@ -218,13 +264,16 @@
       padding: 20px;
       border-radius: 12px;
       z-index: 10000;
-      color: white;
+      color: white; /* Cor do spinner e do fundo */
     }
+
     .loading-spinner.active {
-      display: flex;
+      display: flex; /* Usar flexbox para centralizar o ícone */
       align-items: center;
       justify-content: center;
     }
+
+    /* Mensagem de status */
     #status-message {
       position: fixed;
       bottom: 20px;
@@ -237,34 +286,104 @@
       z-index: 1000;
       opacity: 0;
       transition: opacity 0.3s ease-in-out;
-      pointer-events: none;
+      pointer-events: none; /* Permite cliques através da mensagem */
       text-align: center;
     }
+
     #status-message.show {
       opacity: 1;
     }
-    @media (max-width: 640px) {
-      .header-professional h1 { font-size: 1.5rem; }
-      .header-professional .space-x-4 { gap: 0.5rem; }
-      .header-professional button { padding: 0.6rem; }
-      .tabs { flex-wrap: wrap; justify-content: center; gap: 0.35rem; padding: 0 0.5rem; }
-      .tab { padding: 0.5rem 0.8rem; font-size: 0.9rem; }
-      .main-content-area { padding: 0.75rem; }
-      .image-container { flex-direction: row; align-items: center; gap: 10px; padding: 10px; }
-      .image-container img { width: 1.8cm; height: 2.7cm; }
-      .image-name { font-size: 0.875rem; max-width: calc(100% - 1.8cm - 10px); }
-      .flex-wrap.gap-2 { flex-direction: column; width: 100%; }
-      .flex-wrap.gap-2 button { width: 100%; justify-content: center; }
-      .flex-wrap.gap-2 button i { margin-right: 0.5rem; }
-      .fullscreen-controls { flex-direction: row; gap: 10px; padding: 10px 15px; }
-      .zoom-btn { width: 45px; height: 45px; font-size: 22px; }
+
+    /* Media Queries para responsividade */
+    @media (max-width: 640px) { /* Pequenas telas (mobile) */
+      .header-professional h1 {
+        font-size: 1.5rem; /* Ajusta o tamanho do título em mobile */
+      }
+      .header-professional .space-x-4 {
+        gap: 0.5rem; /* Ajusta o espaçamento dos botões do cabeçalho */
+      }
+      .header-professional button {
+        padding: 0.6rem; /* Ajusta o padding dos botões do cabeçalho */
+      }
+
+      .tabs {
+        flex-wrap: wrap; /* Garante que as abas quebrem em múltiplas linhas */
+        justify-content: center; /* Centraliza as abas */
+        gap: 0.35rem; /* Espaçamento menor entre as abas */
+        padding: 0 0.5rem;
+      }
+      .tab {
+        padding: 0.5rem 0.8rem; /* Padding menor para as abas */
+        font-size: 0.9rem; /* Fonte menor para as abas */
+      }
+
+      .main-content-area { /* Nova classe para o main container */
+        padding: 0.75rem; /* Menor padding para o conteúdo principal */
+      }
+
+      /* Image container em mobile */
+      .image-container {
+        flex-direction: row; /* Mantém a imagem e o nome na mesma linha */
+        align-items: center;
+        gap: 10px;
+        padding: 10px;
+      }
+
+      .image-container img {
+        width: 1.8cm; /* Miniatura um pouco menor em mobile */
+        height: 2.7cm;
+      }
+
+      .image-name {
+        font-size: 0.875rem; /* Fonte menor para o nome da imagem */
+        max-width: calc(100% - 1.8cm - 10px); /* Ajusta max-width */
+      }
+
+      .flex-wrap.gap-2 { /* Botões "Buscar Local" e "Buscar em Nuvem" */
+        flex-direction: column; /* Empilha os botões verticalmente em telas pequenas */
+        width: 100%; /* Ocupa a largura total */
+      }
+      .flex-wrap.gap-2 button {
+        width: 100%; /* Faz com que os botões ocupem a largura total */
+        justify-content: center; /* Centraliza o texto/ícone nos botões */
+      }
+      .flex-wrap.gap-2 button i {
+        margin-right: 0.5rem; /* Adiciona espaçamento entre o ícone e o texto */
+      }
+
+      .fullscreen-controls {
+          flex-direction: row; /* Mantém os botões de zoom na mesma linha */
+          gap: 10px;
+          padding: 10px 15px;
+      }
+      .zoom-btn {
+          width: 45px;
+          height: 45px;
+          font-size: 22px;
+      }
     }
-    @media (min-width: 641px) and (max-width: 1024px) {
-      .tabs { justify-content: flex-start; padding: 0 1.5rem; }
-      .tab { padding: 0.6rem 1.1rem; font-size: 0.95rem; }
-      .image-container { padding: 10px; gap: 10px; }
-      .image-container img { width: 2cm; height: 3cm; }
-      .image-name { font-size: 0.9rem; max-width: calc(100% - 2cm - 10px); }
+
+    @media (min-width: 641px) and (max-width: 1024px) { /* Telas médias (tablets) */
+        .tabs {
+            justify-content: flex-start; /* Alinha as abas à esquerda */
+            padding: 0 1.5rem;
+        }
+        .tab {
+            padding: 0.6rem 1.1rem;
+            font-size: 0.95rem;
+        }
+        .image-container {
+            padding: 10px;
+            gap: 10px;
+        }
+        .image-container img {
+            width: 2cm;
+            height: 3cm;
+        }
+        .image-name {
+            font-size: 0.9rem;
+            max-width: calc(100% - 2cm - 10px);
+        }
     }
   </style>
 </head>
@@ -282,12 +401,13 @@
       </div>
     </div>
   </header>
+
   <main class="container mx-auto p-4 flex flex-col gap-4 main-content-area" role="main">
     <section class="w-full bg-white rounded-xl shadow-md overflow-hidden flex flex-col" aria-label="Seletor de músicas e imagens">
       <div class="p-4 bg-gray-50 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <h2 class="font-semibold text-xl text-gray-700">Minhas Cifras</h2>
         <div class="flex flex-wrap gap-2 justify-end">
-          <button id="open-cloud-folder" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition flex items-center" aria-label="Buscar cifras na nuvem (OneDrive)" title="Buscar em Nuvem">
+          <button id="open-cloud-folder" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition flex items-center" aria-label="Buscar cifras na nuvem (OneDrive)" title="Buscar cifras na nuvem (OneDrive)">
             <i class="fas fa-cloud mr-2" aria-hidden="true"></i> Buscar em Nuvem
           </button>
           <button id="open-file-dialog" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center" aria-label="Buscar cifras localmente" title="Buscar cifras localmente">
@@ -296,31 +416,38 @@
           <input type="file" id="file-input" class="hidden" accept="image/*" multiple aria-hidden="true" tabindex="-1" />
         </div>
       </div>
-      <nav class="tabs" id="tabs-container" role="tablist" aria-label="Abas das categorias de cifras"></nav>
+
+      <nav class="tabs" id="tabs-container" role="tablist" aria-label="Abas das categorias de cifras">
+        </nav>
+
       <div class="p-4 flex flex-col gap-4 flex-1">
         <div id="select-all-container" class="flex flex-wrap items-center gap-4 mb-2 hidden">
           <label class="inline-flex items-center gap-2 cursor-pointer text-gray-700 font-medium" for="select-all">
             <input type="checkbox" id="select-all" class="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500" aria-label="Selecionar todas as imagens" />
             <span>Selecionar todas</span>
           </label>
-          <button id="clear-selection-btn" class="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center" disabled>
+          <button id="clear-selection-btn" class="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center" disabled aria-disabled="true" aria-label="Limpar seleção">
             <i class="fas fa-undo mr-2" aria-hidden="true"></i> Limpar seleção
           </button>
-          <button id="delete-selected-btn" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center" disabled>
+          <button id="delete-selected-btn" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center" disabled aria-disabled="true" aria-label="Excluir imagens selecionadas">
             <i class="fas fa-trash-alt mr-2" aria-hidden="true"></i> Excluir selecionadas
           </button>
         </div>
+
         <div id="image-list" class="flex flex-col gap-4" aria-live="polite" aria-atomic="true">
           <p class="text-center text-gray-500 py-8">Nenhuma imagem encontrada nesta categoria.</p>
         </div>
       </div>
     </section>
   </main>
+
   <div id="loading-spinner" class="loading-spinner">
     <i class="fas fa-spinner fa-spin fa-3x text-blue-600" aria-hidden="true"></i>
     <span class="sr-only">Carregando...</span>
   </div>
+
   <div id="status-message" aria-live="polite"></div>
+
   <script>
     // Cache de elementos DOM
     const DOM = {
@@ -329,7 +456,7 @@
       fileInput: document.getElementById('file-input'),
       openFileDialogButton: document.getElementById('open-file-dialog'),
       openCloudFolderButton: document.getElementById('open-cloud-folder'),
-      selectAllContainer: document.getElementById('select-all-container'),
+      selectAllContainer: document.getElementById('select-all-container'), // Novo elemento
       selectAllCheckbox: document.getElementById('select-all'),
       deleteSelectedBtn: document.getElementById('delete-selected-btn'),
       clearSelectionBtn: document.getElementById('clear-selection-btn'),
@@ -337,23 +464,30 @@
       settingsBtn: document.getElementById('settings-btn'),
       loadingSpinner: document.getElementById('loading-spinner'),
       statusMessage: document.getElementById('status-message'),
-      body: document.body,
+      body: document.body, // Referência ao body para adicionar/remover classes
     };
 
     // Abas desejadas
     const tabs = ["Domingo Manhã", "Domingo Noite", "Segunda", "Quarta", "Culto Jovem", "Santa Ceia", "Outros"];
 
+    // URL da pasta do OneDrive
+    const ONE_DRIVE_FOLDER_URL = "https://1drv.ms/f/c/a71268bf66931c02/EpYyUsypAQhGgpWC9YuvE54BD_o9NX9tRar0piSzq4V4Xg"; // Seu link original
+
     // Estado otimizado com Map/Set
-    let imageGalleryByTab = new Map();
+    let imageGalleryByTab = new Map(); // Armazena APENAS os nomes das imagens por aba
     let selectedImagesByTab = new Map();
     let currentTab = tabs[0];
+    let dragStartIndex = null;
+    let longPressTimer; // Para detectar o clique longo/segurar
+    let isLongPress = false; // Flag para diferenciar clique curto de longo
 
+    // Inicializar estado
     tabs.forEach(tab => {
       imageGalleryByTab.set(tab, []);
       selectedImagesByTab.set(tab, new Set());
     });
 
-    // Utils
+    // Funções utilitárias
     const Utils = {
       removeFileExtension: filename => filename.replace(/\.[^/.]+$/, ""),
       showStatus: message => {
@@ -361,178 +495,446 @@
         DOM.statusMessage.classList.add('show');
         setTimeout(() => DOM.statusMessage.classList.remove('show'), 3000);
       },
+      debounce: (func, timeout = 100) => {
+        let timer;
+        return (...args) => {
+          clearTimeout(timer);
+          timer = setTimeout(() => { func.apply(this, args); }, timeout);
+        };
+      },
+      // Cache para Object URLs criados a partir de Blobs (para revogar depois)
       objectURLCache: new Map(),
       revokeObjectURL: (url) => {
-        if (Utils.objectURLCache.has(url)) {
-          URL.revokeObjectURL(url);
-          Utils.objectURLCache.delete(url);
-        }
+          if (Utils.objectURLCache.has(url)) {
+              URL.revokeObjectURL(url);
+              Utils.objectURLCache.delete(url);
+          }
       },
       createObjectURL: (blob) => {
-        const url = URL.createObjectURL(blob);
-        Utils.objectURLCache.set(url, true);
-        return url;
+          const url = URL.createObjectURL(blob);
+          Utils.objectURLCache.set(url, true); // Adiciona ao cache para revogação
+          return url;
       }
     };
 
-    // Gerenciamento de abas
-    const TabManager = {
-      switchTab: (tab) => {
-        if (!tabs.includes(tab)) return;
-        currentTab = tab;
-        UI.updateTabsUI();
-        UI.renderImages();
-      }
-    };
-
-    // IndexedDB (simples para imagens)
+    // --- IndexedDB Manager ---
     const DB_NAME = 'ImageSelectorDB';
     const DB_VERSION = 2;
     const STORE_IMAGES = 'images';
+    const STORE_METADATA = 'metadata';
 
     const IndexedDBManager = {
       db: null,
+
       open: () => new Promise((resolve, reject) => {
         if (IndexedDBManager.db) {
-          resolve(IndexedDBManager.db);
-          return;
+            resolve(IndexedDBManager.db);
+            return;
         }
+
         const request = indexedDB.open(DB_NAME, DB_VERSION);
+
         request.onupgradeneeded = (event) => {
           const db = event.target.result;
           if (!db.objectStoreNames.contains(STORE_IMAGES)) {
             db.createObjectStore(STORE_IMAGES, { keyPath: 'name' });
           }
+          if (!db.objectStoreNames.contains(STORE_METADATA)) {
+            db.createObjectStore(STORE_METADATA, { keyPath: 'id' });
+          }
         };
+
         request.onsuccess = (event) => {
           IndexedDBManager.db = event.target.result;
           resolve(IndexedDBManager.db);
         };
+
         request.onerror = (event) => {
           console.error('IndexedDB error:', event.target.errorCode);
           reject(event.target.errorCode);
         };
       }),
+
       addImageBlob: (imageName, blob) => new Promise(async (resolve, reject) => {
         try {
           const db = await IndexedDBManager.open();
           const transaction = db.transaction([STORE_IMAGES], 'readwrite');
           const store = transaction.objectStore(STORE_IMAGES);
           const request = store.put({ name: imageName, blob: blob });
+
           request.onsuccess = () => resolve();
           request.onerror = (event) => reject(event.target.error);
-        } catch (e) { reject(e); }
+        } catch (e) {
+          reject(e);
+        }
       }),
+
       getImageBlob: (imageName) => new Promise(async (resolve, reject) => {
         try {
           const db = await IndexedDBManager.open();
-          const store = db.transaction([STORE_IMAGES], 'readonly').objectStore(STORE_IMAGES);
+          const transaction = db.transaction([STORE_IMAGES], 'readonly');
+          const store = transaction.objectStore(STORE_IMAGES);
           const request = store.get(imageName);
+
           request.onsuccess = (event) => resolve(event.target.result ? event.target.result.blob : null);
           request.onerror = (event) => reject(event.target.error);
-        } catch (e) { reject(e); }
+        } catch (e) {
+          reject(e);
+        }
       }),
+
       deleteImageBlob: (imageName) => new Promise(async (resolve, reject) => {
         try {
           const db = await IndexedDBManager.open();
-          const store = db.transaction([STORE_IMAGES], 'readwrite').objectStore(STORE_IMAGES);
+          const transaction = db.transaction([STORE_IMAGES], 'readwrite');
+          const store = transaction.objectStore(STORE_IMAGES);
           const request = store.delete(imageName);
+
           request.onsuccess = () => resolve();
           request.onerror = (event) => reject(event.target.error);
-        } catch (e) { reject(e); }
+        } catch (e) {
+          reject(e);
+        }
       }),
+
+      getAllImageNames: () => new Promise(async (resolve, reject) => {
+          try {
+              const db = await IndexedDBManager.open();
+              const transaction = db.transaction([STORE_IMAGES], 'readonly');
+              const store = db.transaction(STORE_IMAGES, 'readonly').objectStore(STORE_IMAGES);
+              const request = store.getAllKeys();
+
+              request.onsuccess = (event) => resolve(event.target.result);
+              request.onerror = (event) => reject(event.target.error);
+          } catch (e) {
+              reject(e);
+          }
+      }),
+
+      saveMetadata: (state) => new Promise(async (resolve, reject) => {
+        try {
+          const db = await IndexedDBManager.open();
+          const transaction = db.transaction([STORE_METADATA], 'readwrite');
+          const store = transaction.objectStore(STORE_METADATA);
+          const request = store.put({ id: 'appState', state: state });
+
+          request.onsuccess = () => resolve();
+          request.onerror = (event) => reject(event.target.error);
+        } catch (e) {
+          reject(e);
+        }
+      }),
+
+      loadMetadata: () => new Promise(async (resolve, reject) => {
+        try {
+          const db = await IndexedDBManager.open();
+          const transaction = db.transaction([STORE_METADATA], 'readonly');
+          const store = transaction.objectStore(STORE_METADATA);
+          const request = store.get('appState');
+
+          request.onsuccess = (event) => resolve(event.target.result ? event.target.result.state : null);
+          request.onerror = (event) => reject(event.target.error);
+        } catch (e) {
+          reject(e);
+        }
+      })
     };
 
-    // UI
+    // Processamento de imagens
+    const ImageProcessor = {
+      processImageFile: file => new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = Utils.createObjectURL(file);
+
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_SIZE = 800; // Define um tamanho máximo para a maior dimensão da imagem
+          let width = img.width;
+          let height = img.height;
+
+          // Redimensiona se a imagem for maior que o MAX_SIZE, mantendo a proporção
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height *= MAX_SIZE / width;
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width *= MAX_SIZE / height;
+              height = MAX_SIZE;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Converte para WebP com compressão de 75% para melhor performance e qualidade
+          canvas.toBlob(blob => {
+            Utils.revokeObjectURL(url); // Libera o Object URL da imagem original
+            if (blob) {
+                resolve({
+                    name: file.name,
+                    blob: blob
+                });
+            } else {
+                reject(new Error('Falha ao criar Blob da imagem.'));
+            }
+          }, 'image/webp', 0.75);
+        };
+
+        img.onerror = () => {
+          Utils.revokeObjectURL(url); // Libera o Object URL em caso de erro
+          reject(new Error('Erro ao carregar a imagem para processamento.'));
+        };
+
+        img.src = url;
+      })
+    };
+
+    // Gerenciamento de estado
+    const StateManager = {
+        saveState: Utils.debounce(async () => {
+            const state = {
+                images: Object.fromEntries(Array.from(imageGalleryByTab.entries()).map(([tab, names]) => [tab, Array.from(names)])),
+                selected: Object.fromEntries(Array.from(selectedImagesByTab.entries()).map(([tab, set]) => [tab, Array.from(set)])),
+                currentTab,
+            };
+            try {
+                await IndexedDBManager.saveMetadata(state);
+            } catch (e) {
+                console.error('Erro ao salvar estado no IndexedDB:', e);
+                Utils.showStatus('Erro ao salvar dados.');
+            }
+        }, 500),
+
+        loadState: async () => {
+            try {
+                const state = await IndexedDBManager.loadMetadata();
+                if (state) {
+                    // Reconstroi os Maps a partir dos objetos planos
+                    imageGalleryByTab = new Map(Object.entries(state.images || {}));
+                    selectedImagesByTab = new Map();
+                    for (const tab of tabs) {
+                        selectedImagesByTab.set(tab, new Set(state.selected?.[tab] || []));
+                    }
+                    currentTab = state.currentTab || tabs[0];
+                } else {
+                    StateManager.initEmptyState();
+                }
+            } catch (e) {
+                console.error('Erro ao carregar estado do IndexedDB:', e);
+                StateManager.initEmptyState();
+            }
+        },
+
+        initEmptyState: () => {
+            imageGalleryByTab = new Map();
+            selectedImagesByTab = new Map();
+            tabs.forEach(tab => {
+                imageGalleryByTab.set(tab, []);
+                selectedImagesByTab.set(tab, new Set());
+            });
+        }
+    };
+
+    // Interface do usuário
     const UI = {
       showLoading: () => DOM.loadingSpinner.classList.add('active'),
       hideLoading: () => DOM.loadingSpinner.classList.remove('active'),
+
       createTabs: () => {
         DOM.tabsContainer.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+
         tabs.forEach((tab, index) => {
           const tabBtn = document.createElement('button');
           tabBtn.className = 'tab';
           tabBtn.setAttribute('role', 'tab');
           tabBtn.setAttribute('tabindex', index === 0 ? '0' : '-1');
           tabBtn.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
-          tabBtn.id = `tab-${tab.replace(/\s+/g, '-').toLowerCase()}`;
+          tabBtn.id = `tab-${tab.replace(/\s+/g, '-').toLowerCase()}`; // ID único para a aba
           tabBtn.textContent = tab;
+
           tabBtn.addEventListener('click', () => TabManager.switchTab(tab));
-          DOM.tabsContainer.appendChild(tabBtn);
+          tabBtn.addEventListener('keydown', (e) => {
+            // Navegação por teclado entre as abas
+            const currentActiveIndex = tabs.indexOf(currentTab);
+            let nextIndex = currentActiveIndex;
+
+            if (e.key === 'ArrowRight') {
+              nextIndex = (currentActiveIndex + 1) % tabs.length;
+            } else if (e.key === 'ArrowLeft') {
+              nextIndex = (currentActiveIndex - 1 + tabs.length) % tabs.length;
+            } else if (e.key === 'Home') {
+              nextIndex = 0;
+            } else if (e.key === 'End') {
+              nextIndex = tabs.length - 1;
+            }
+
+            if (nextIndex !== currentActiveIndex) {
+              e.preventDefault();
+              TabManager.switchTab(tabs[nextIndex]);
+              DOM.tabsContainer.querySelector(`#tab-${tabs[nextIndex].replace(/\s+/g, '-').toLowerCase()}`).focus();
+            } else if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              TabManager.switchTab(tab);
+            }
+          });
+
+          fragment.appendChild(tabBtn);
         });
-        UI.updateTabsUI();
+
+        DOM.tabsContainer.appendChild(fragment);
       },
+
       updateTabsUI: () => {
         const buttons = DOM.tabsContainer.querySelectorAll('.tab');
         buttons.forEach(btn => {
           const isActive = btn.textContent === currentTab;
           btn.classList.toggle('active', isActive);
           btn.setAttribute('aria-selected', isActive);
-          btn.setAttribute('tabindex', isActive ? '0' : '-1');
+          btn.setAttribute('tabindex', isActive ? '0' : '-1'); // Apenas a aba ativa é tab-focável
         });
       },
+
       renderImages: async () => {
+        // Revoga Object URLs antigos para liberar memória
         DOM.imageList.querySelectorAll('img[data-object-url]').forEach(img => {
-          Utils.revokeObjectURL(img.dataset.objectUrl);
+            Utils.revokeObjectURL(img.dataset.objectUrl);
         });
+
         const imageNames = imageGalleryByTab.get(currentTab) || [];
         const fragment = document.createDocumentFragment();
+
         if (imageNames.length === 0) {
           const p = document.createElement('p');
-          p.className = 'text-center text-gray-500 py-8';
+          p.className = 'text-center text-gray-500 py-8'; // Centralizado, sem col-span-full porque agora é flex-col
           p.textContent = 'Nenhuma imagem encontrada nesta categoria.';
           fragment.appendChild(p);
         } else {
+          // Garante que o checkbox de "Selecionar todas" está sempre habilitado se houver imagens
+          DOM.selectAllCheckbox.disabled = false; 
+
+          // Processa as imagens em lotes ou de forma assíncrona para não travar a UI
+          const imagesToRender = [];
           for (const imageName of imageNames) {
             const blob = await IndexedDBManager.getImageBlob(imageName);
             if (blob) {
-              fragment.appendChild(UI.createImageElement(imageName, blob));
+                imagesToRender.push({ name: imageName, blob: blob });
+            } else {
+                console.warn(`Imagem ${imageName} não encontrada no IndexedDB. Removendo da lista.`);
+                // Remove a imagem do estado se o blob não for encontrado
+                imageGalleryByTab.set(currentTab, imageNames.filter(name => name !== imageName));
+                selectedImagesByTab.get(currentTab).delete(imageName); // Garante que também é removida da seleção
             }
           }
+
+          imagesToRender.forEach(({ name, blob }) => {
+            const container = UI.createImageElement(name, blob);
+            fragment.appendChild(container);
+          });
         }
+
         DOM.imageList.innerHTML = '';
         DOM.imageList.appendChild(fragment);
+        UI.updateSelectAllCheckbox();
+        UI.updateButtonsState();
+        UI.updateCheckboxesVisibility(); // Chamada adicionada aqui para garantir o estado inicial
       },
+
       createImageElement: (imageName, imageBlob) => {
         const container = document.createElement('div');
-        container.className = 'image-container';
+        container.className = 'image-container'; // Classe base
         container.setAttribute('draggable', 'true');
-        container.setAttribute('tabindex', '0');
-        container.dataset.name = imageName;
+        container.setAttribute('tabindex', '0'); // Torna o container focável
+        container.dataset.name = imageName; // Armazena o nome da imagem
 
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
-        checkbox.className = 'form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 image-checkbox';
+        checkbox.className = 'form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 image-checkbox'; // Adiciona classe específica
         checkbox.setAttribute('aria-label', `Selecionar ${Utils.removeFileExtension(imageName)}`);
         checkbox.checked = selectedImagesByTab.get(currentTab).has(imageName);
         checkbox.addEventListener('change', (e) => {
-          e.stopPropagation();
-          // ... lógica de seleção ...
+            e.stopPropagation(); // Previne que o clique no checkbox acione o handler do container
+            ImageManager.toggleSelectImage(imageName, checkbox.checked, container);
         });
 
-        container.appendChild(checkbox);
+        // Atualiza a classe 'selected' do container com base no estado do checkbox
+        if (checkbox.checked) {
+            container.classList.add('selected');
+        } else {
+            container.classList.remove('selected');
+        }
 
         const img = document.createElement('img');
-        const objectURL = Utils.createObjectURL(imageBlob);
+        const objectURL = Utils.createObjectURL(imageBlob); // Cria Object URL
         img.src = objectURL;
-        img.dataset.objectUrl = objectURL;
+        img.dataset.objectUrl = objectURL; // Armazena o URL para revogação posterior
         img.alt = Utils.removeFileExtension(imageName);
         img.title = "Clique para ampliar";
-        img.addEventListener('click', (e) => {
-          e.stopPropagation();
-          UI.openFullscreen(objectURL, img.alt);
-        });
-
-        container.appendChild(img);
 
         const nameSpan = document.createElement('span');
         nameSpan.className = 'image-name';
         nameSpan.textContent = Utils.removeFileExtension(imageName);
         nameSpan.title = "Clique para ampliar";
+
+        // Botão de exclusão individual
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'ml-auto p-1 text-red-500 hover:text-red-700 rounded-full transition-colors hidden sm:block'; // Oculta em mobile pequeno, para focar no toque no container
+        deleteBtn.innerHTML = '<i class="fas fa-times" aria-hidden="true"></i>';
+        deleteBtn.setAttribute('aria-label', `Excluir cifra ${Utils.removeFileExtension(imageName)}`);
+        deleteBtn.title = `Excluir ${Utils.removeFileExtension(imageName)}`;
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Impede que o clique se propague para o container
+            ImageManager.deleteImage(imageName);
+        });
+
+        container.appendChild(checkbox);
+        container.appendChild(img);
         container.appendChild(nameSpan);
+        container.appendChild(deleteBtn); // Adiciona o botão de exclusão
 
         return container;
       },
+
+      updateSelectAllCheckbox: () => {
+        const images = imageGalleryByTab.get(currentTab) || [];
+        // Se não houver imagens, o "Selecionar todas" fica desabilitado
+        if (images.length === 0) {
+            DOM.selectAllCheckbox.checked = false;
+            DOM.selectAllCheckbox.indeterminate = false;
+            DOM.selectAllCheckbox.disabled = true;
+            return;
+        }
+
+        DOM.selectAllCheckbox.disabled = false; // Habilita se houver imagens
+
+        const selectedCount = selectedImagesByTab.get(currentTab).size;
+        DOM.selectAllCheckbox.checked = selectedCount === images.length;
+        DOM.selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < images.length;
+      },
+
+      updateButtonsState: () => {
+        const anySelected = selectedImagesByTab.get(currentTab).size > 0;
+        DOM.deleteSelectedBtn.disabled = !anySelected;
+        DOM.clearSelectionBtn.disabled = !anySelected;
+
+        DOM.deleteSelectedBtn.setAttribute('aria-disabled', !anySelected);
+        DOM.clearSelectionBtn.setAttribute('aria-disabled', !anySelected);
+      },
+
+      // Nova função para controlar a visibilidade dos checkboxes
+      updateCheckboxesVisibility: () => {
+        const anySelected = selectedImagesByTab.get(currentTab).size > 0;
+        if (anySelected) {
+            DOM.body.classList.add('show-checkboxes');
+        } else {
+            DOM.body.classList.remove('show-checkboxes');
+        }
+      },
+
       openFullscreen: (src, alt) => {
         const overlay = document.createElement('div');
         overlay.className = 'fullscreen-image';
@@ -543,7 +945,7 @@
         const img = document.createElement('img');
         img.src = src;
         img.alt = alt;
-        img.tabIndex = 0;
+        img.tabIndex = 0; // Torna a imagem focável
         img.style.transform = 'scale(1)';
 
         const controls = document.createElement('div');
@@ -567,7 +969,7 @@
         let scale = 1;
         let translateX = 0, translateY = 0;
         let isDragging = false;
-        let startPoint = { x: 0, y: 0 };
+        let startPoint = { x: 0, y: 0 }; // Para mouse e touch
 
         const updateTransform = () => {
           img.style.transform = `scale(${scale}) translate(${translateX}px, ${translateY}px)`;
@@ -575,18 +977,20 @@
 
         zoomInBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          scale = Math.min(scale * 1.2, 5);
+          scale = Math.min(scale * 1.2, 5); // Limita o zoom máximo
           updateTransform();
         });
+
         zoomOutBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          scale = Math.max(scale / 1.2, 1);
-          if (scale === 1) {
+          scale = Math.max(scale / 1.2, 1); // Limita o zoom mínimo a 1
+          if (scale === 1) { // Reseta a posição se o zoom for 1
             translateX = 0;
             translateY = 0;
           }
           updateTransform();
         });
+
         resetZoomBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           scale = 1;
@@ -595,110 +999,510 @@
           updateTransform();
         });
 
-        controls.appendChild(zoomInBtn);
-        controls.appendChild(zoomOutBtn);
-        controls.appendChild(resetZoomBtn);
-
-        overlay.appendChild(img);
-        overlay.appendChild(controls);
-
-        // Função para sair do fullscreen e remover overlay
-        const closeFullscreen = () => {
-          if (document.fullscreenElement) {
-            document.exitFullscreen();
+        // Eventos de mouse para zoom e arrastar
+        img.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          const delta = -e.deltaY;
+          const oldScale = scale;
+          if (delta > 0) {
+            scale = Math.min(scale * 1.1, 5);
+          } else {
+            scale = Math.max(scale / 1.1, 1);
           }
-          overlay.remove();
-          document.removeEventListener('keydown', keyListener);
-        };
 
-        overlay.addEventListener('click', closeFullscreen);
-        img.addEventListener('click', (e) => e.stopPropagation());
-        function keyListener(e) {
-          if (e.key === 'Escape') closeFullscreen();
-        }
-        document.addEventListener('keydown', keyListener);
+          // Ajusta o translateX/Y para manter o ponto de zoom no centro da imagem
+          const rect = img.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          translateX = translateX + mouseX * (1 / oldScale - 1 / scale);
+          translateY = translateY + mouseY * (1 / oldScale - 1 / scale);
+          
+          if (scale === 1) { // Reseta a posição se o zoom for 1
+            translateX = 0;
+            translateY = 0;
+          }
+          updateTransform();
+        });
 
         img.addEventListener('mousedown', (e) => {
           if (scale > 1) {
             isDragging = true;
             startPoint = { x: e.clientX - translateX, y: e.clientY - translateY };
             img.style.cursor = 'grabbing';
-            e.preventDefault();
+            overlay.style.cursor = 'grabbing';
           }
         });
-        window.addEventListener('mousemove', (e) => {
-          if (isDragging) {
-            translateX = e.clientX - startPoint.x;
-            translateY = e.clientY - startPoint.y;
-            updateTransform();
-          }
+
+        document.addEventListener('mousemove', (e) => {
+          if (!isDragging) return;
+          translateX = e.clientX - startPoint.x;
+          translateY = e.clientY - startPoint.y;
+          updateTransform();
         });
-        window.addEventListener('mouseup', () => {
+
+        document.addEventListener('mouseup', () => {
           isDragging = false;
-          img.style.cursor = 'zoom-in';
+          img.style.cursor = 'zoom-out';
+          overlay.style.cursor = 'zoom-out';
         });
+
+        // Eventos de toque para zoom e arrastar (Pan & Pinch-to-zoom)
+        let initialPinchDistance = null;
+        let lastScale = 1;
 
         img.addEventListener('touchstart', (e) => {
-          if (scale > 1 && e.touches.length === 1) {
-            isDragging = true;
-            startPoint = { x: e.touches[0].clientX - translateX, y: e.touches[0].clientY - translateY };
-            img.style.cursor = 'grabbing';
-            e.preventDefault();
-          }
+            if (e.touches.length === 1) {
+                isDragging = true;
+                startPoint = { x: e.touches[0].clientX - translateX, y: e.touches[0].clientY - translateY };
+            } else if (e.touches.length === 2) {
+                initialPinchDistance = Math.hypot(
+                    e.touches[1].pageX - e.touches[0].pageX,
+                    e.touches[1].pageY - e.touches[0].pageY
+                );
+                lastScale = scale; // Salva a escala atual antes do pinch
+            }
+            e.preventDefault(); // Impede o scroll da página
         }, { passive: false });
+
         img.addEventListener('touchmove', (e) => {
-          if (isDragging && e.touches.length === 1) {
-            translateX = e.touches[0].clientX - startPoint.x;
-            translateY = e.touches[0].clientY - startPoint.y;
-            updateTransform();
+            if (e.touches.length === 1 && isDragging) {
+                translateX = e.touches[0].clientX - startPoint.x;
+                translateY = e.touches[0].clientY - startPoint.y;
+                updateTransform();
+            } else if (e.touches.length === 2 && initialPinchDistance) {
+                const currentPinchDistance = Math.hypot(
+                    e.touches[1].pageX - e.touches[0].pageX,
+                    e.touches[1].pageY - e.touches[0].pageY
+                );
+                scale = lastScale * (currentPinchDistance / initialPinchDistance);
+                scale = Math.max(1, Math.min(scale, 5)); // Limita o zoom
+
+                // Recalcula translateX/Y para "pinçar" no centro
+                const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+
+                const rect = img.getBoundingClientRect();
+                const relativeX = centerX - rect.left;
+                const relativeY = centerY - rect.top;
+
+                translateX = translateX + relativeX * (1 / lastScale - 1 / scale);
+                translateY = translateY + relativeY * (1 / lastScale - 1 / scale);
+
+                if (scale === 1) { // Reseta a posição se o zoom for 1
+                    translateX = 0;
+                    translateY = 0;
+                }
+                updateTransform();
+            }
             e.preventDefault();
-          }
         }, { passive: false });
+
         img.addEventListener('touchend', () => {
-          isDragging = false;
-          img.style.cursor = 'zoom-in';
+            isDragging = false;
+            initialPinchDistance = null;
         });
 
-        document.body.appendChild(overlay);
 
-        // Ativa Fullscreen nativo
-        if (overlay.requestFullscreen) {
-          overlay.requestFullscreen();
-        } else if (overlay.webkitRequestFullscreen) {
-          overlay.webkitRequestFullscreen();
-        } else if (overlay.msRequestFullscreen) {
-          overlay.msRequestFullscreen();
+        controls.appendChild(zoomInBtn);
+        controls.appendChild(zoomOutBtn);
+        controls.appendChild(resetZoomBtn);
+        overlay.appendChild(img);
+        overlay.appendChild(controls);
+        document.body.appendChild(overlay);
+        img.focus(); // Foca na imagem para permitir navegação por teclado
+
+        const closeFullscreen = () => {
+          document.body.removeChild(overlay);
+          overlay.removeEventListener('click', closeFullscreen);
+          document.removeEventListener('keydown', handleKeyDown);
+          Utils.revokeObjectURL(img.src); // Libera o Object URL
+        };
+
+        const handleKeyDown = (e) => {
+          if (e.key === 'Escape') closeFullscreen();
+        };
+
+        overlay.addEventListener('click', closeFullscreen); // Clique no overlay fecha
+        img.addEventListener('click', (e) => e.stopPropagation()); // Impede que o clique na imagem feche o fullscreen
+        document.addEventListener('keydown', handleKeyDown);
+      }
+    };
+
+    // Gerenciamento de abas
+    const TabManager = {
+      switchTab: async tabName => {
+        if (currentTab === tabName) return;
+        currentTab = tabName;
+        UI.updateTabsUI();
+        await UI.renderImages();
+        UI.updateButtonsState();
+        UI.updateCheckboxesVisibility(); // Garante visibilidade correta ao trocar de aba
+        StateManager.saveState();
+      }
+    };
+
+    // Gerenciamento de imagens
+    const ImageManager = {
+      toggleSelectImage: (imageName, isChecked, container) => {
+        const selectedSet = selectedImagesByTab.get(currentTab);
+
+        if (isChecked) {
+          selectedSet.add(imageName);
+          container.classList.add('selected');
+        } else {
+          selectedSet.delete(imageName);
+          container.classList.remove('selected');
+        }
+
+        UI.updateSelectAllCheckbox();
+        UI.updateButtonsState();
+        UI.updateCheckboxesVisibility(); // Atualiza a visibilidade dos checkboxes
+        StateManager.saveState();
+      },
+
+      deleteImage: async imageName => {
+        if (!confirm(`Tem certeza que deseja excluir "${Utils.removeFileExtension(imageName)}"?`)) return;
+
+        UI.showLoading();
+        try {
+            await IndexedDBManager.deleteImageBlob(imageName);
+            // Remove o nome da imagem do array da aba
+            const images = imageGalleryByTab.get(currentTab).filter(name => name !== imageName);
+            imageGalleryByTab.set(currentTab, images);
+            selectedImagesByTab.get(currentTab).delete(imageName); // Garante que a imagem seja desmarcada se estiver selecionada
+
+            await UI.renderImages(); // Re-renderiza a lista de imagens
+            StateManager.saveState();
+            Utils.showStatus('Imagem excluída com sucesso!');
+        } catch (error) {
+            console.error('Erro ao excluir imagem:', error);
+            Utils.showStatus('Erro ao excluir imagem.');
+        } finally {
+            UI.hideLoading();
+        }
+      },
+
+      reorderImages: async (fromIndex, toIndex, draggedImageName) => { // Adicionado draggedImageName como parâmetro
+        const images = imageGalleryByTab.get(currentTab) || [];
+        const movedImageName = images.splice(fromIndex, 1)[0];
+        images.splice(toIndex, 0, movedImageName);
+        imageGalleryByTab.set(currentTab, images);
+
+        // Desmarca o checkbox do arquivo arrastado
+        selectedImagesByTab.get(currentTab).delete(draggedImageName);
+
+        await UI.renderImages(); // Re-renderiza para refletir a nova ordem e o estado do checkbox
+        StateManager.saveState();
+      },
+
+      deleteSelected: async () => {
+        const selectedNames = Array.from(selectedImagesByTab.get(currentTab));
+        const count = selectedNames.length;
+        if (!count || !confirm(`Excluir ${count} imagem(ns) selecionada(s)?`)) return;
+
+        UI.showLoading();
+        try {
+            for (const name of selectedNames) {
+                await IndexedDBManager.deleteImageBlob(name);
+            }
+
+            const images = imageGalleryByTab.get(currentTab).filter(name =>
+              !selectedImagesByTab.get(currentTab).has(name)
+            );
+
+            imageGalleryByTab.set(currentTab, images);
+            selectedImagesByTab.get(currentTab).clear(); // Limpa a seleção após a exclusão
+
+            await UI.renderImages();
+            StateManager.saveState();
+            Utils.showStatus(`${count} imagens excluídas.`);
+        }
+        catch (error) {
+            console.error('Erro ao excluir imagens selecionadas:', error);
+            Utils.showStatus('Erro ao excluir imagens.');
+        } finally {
+            UI.hideLoading();
+        }
+      },
+
+      clearSelection: () => {
+        selectedImagesByTab.get(currentTab).clear();
+        UI.renderImages(); // Re-renderiza para remover a classe 'selected' e desmarcar checkboxes
+        StateManager.saveState();
+        Utils.showStatus('Seleção limpa.');
+      },
+
+      handleFileSelection: async (e) => {
+        const files = Array.from(e.target.files); // Converte FileList para Array
+        if (!files.length) return;
+
+        UI.showLoading();
+
+        if (!imageGalleryByTab.get(currentTab)) imageGalleryByTab.set(currentTab, []);
+        if (!selectedImagesByTab.get(currentTab)) selectedImagesByTab.set(currentTab, new Set());
+
+        const currentImageNamesInTab = new Set(imageGalleryByTab.get(currentTab));
+        let loadedCount = 0;
+
+        try {
+          for (const file of files) {
+            if (!file.type.startsWith('image/')) {
+              console.warn(`Arquivo ignorado (não é imagem): ${file.name}`);
+              continue;
+            }
+
+            try {
+              const processed = await ImageProcessor.processImageFile(file);
+              if (!processed) continue;
+
+              await IndexedDBManager.addImageBlob(processed.name, processed.blob);
+
+              if (!currentImageNamesInTab.has(processed.name)) {
+                imageGalleryByTab.get(currentTab).push(processed.name);
+                currentImageNamesInTab.add(processed.name);
+              } else {
+                console.warn(`Imagem "${processed.name}" já existe na aba atual. Conteúdo será atualizado.`);
+              }
+              loadedCount++;
+            } catch (error) {
+              console.error(`Erro ao processar ${file.name}:`, error);
+              Utils.showStatus(`Erro ao carregar ${file.name}`);
+            }
+          }
+
+          await UI.renderImages();
+          StateManager.saveState();
+          Utils.showStatus(`${loadedCount} imagem(ns) carregada(s) com sucesso!`);
+        } catch (error) {
+          console.error('Erro geral no carregamento:', error);
+          Utils.showStatus('Erro ao carregar imagens.');
+        } finally {
+          UI.hideLoading();
         }
       }
     };
 
-    // Inicialização
-    document.addEventListener('DOMContentLoaded', () => {
-      UI.createTabs();
-      UI.renderImages();
-    });
+    // Configuração de eventos
+    const EventManager = {
+      setup: () => {
+        // Eventos de clique longo (long-press) para mostrar os checkboxes
+        DOM.imageList.addEventListener('mousedown', (e) => {
+            const container = e.target.closest('.image-container');
+            if (!container) return;
 
-    // Botão de buscar local
-    DOM.openFileDialogButton.addEventListener('click', () => {
-      DOM.fileInput.click();
-    });
+            // Inicia o timer para detectar clique longo
+            longPressTimer = setTimeout(() => {
+                isLongPress = true;
+                const checkbox = container.querySelector('.image-checkbox');
+                if (checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    ImageManager.toggleSelectImage(container.dataset.name, checkbox.checked, container);
+                }
+            }, 500); // 500ms para ser considerado um clique longo
+        });
 
-    // Carregar imagens do usuário
-    DOM.fileInput.addEventListener('change', async (event) => {
-      const files = Array.from(event.target.files);
-      for (const file of files) {
-        await IndexedDBManager.addImageBlob(file.name, file);
-        imageGalleryByTab.get(currentTab).push(file.name);
+        DOM.imageList.addEventListener('mouseup', () => {
+            clearTimeout(longPressTimer); // Limpa o timer ao soltar o botão do mouse
+            isLongPress = false; // Reseta a flag
+        });
+
+        // Para touch devices
+        DOM.imageList.addEventListener('touchstart', (e) => {
+            const container = e.target.closest('.image-container');
+            if (!container) return;
+
+            longPressTimer = setTimeout(() => {
+                isLongPress = true;
+                const checkbox = container.querySelector('.image-checkbox');
+                if (checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    ImageManager.toggleSelectImage(container.dataset.name, checkbox.checked, container);
+                }
+            }, 500);
+        }, { passive: true }); // Usar passive: true para não bloquear o scroll
+
+        DOM.imageList.addEventListener('touchend', () => {
+            clearTimeout(longPressTimer);
+            isLongPress = false;
+        });
+
+        // Evento de clique no container: Agora só abre fullscreen se o clique for na imagem ou nome E NÃO for um clique longo
+        DOM.imageList.addEventListener('click', async (e) => {
+          const container = e.target.closest('.image-container');
+          if (!container || isLongPress) return; // Se for um clique longo, a lógica já foi tratada
+
+          // Verifica se o clique foi diretamente na imagem ou no span do nome
+          if (e.target.tagName === 'IMG' || e.target.classList.contains('image-name')) {
+            const imageName = container.dataset.name;
+            const blob = await IndexedDBManager.getImageBlob(imageName);
+            if (blob) {
+                const objectURL = Utils.createObjectURL(blob);
+                UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
+            } else {
+                Utils.showStatus('Erro: Imagem não encontrada para ampliar.');
+            }
+          } else if (e.target.type === 'checkbox') {
+            // Se o clique foi no checkbox, a lógica de seleção já é tratada pelo listener do checkbox
+            return; 
+          } else {
+            // Se os checkboxes estiverem visíveis, um clique em qualquer parte do container
+            // deve alternar a seleção (comportamento de edição)
+            if (DOM.body.classList.contains('show-checkboxes')) {
+                const checkbox = container.querySelector('.image-checkbox');
+                if (checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    ImageManager.toggleSelectImage(container.dataset.name, checkbox.checked, container);
+                }
+            }
+          }
+        });
+
+        // Eventos de teclado para acessibilidade na lista de imagens
+        DOM.imageList.addEventListener('keydown', (e) => {
+          const container = e.target.closest('.image-container');
+          if (!container) return;
+
+          const imageName = container.dataset.name;
+
+          if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault(); // Impede o scroll da página ao pressionar espaço
+            const checkbox = container.querySelector('.image-checkbox');
+            if (checkbox) {
+                // Sempre que o checkbox for interagido por teclado, mostre-o
+                DOM.body.classList.add('show-checkboxes');
+                checkbox.checked = !checkbox.checked;
+                ImageManager.toggleSelectImage(imageName, checkbox.checked, container);
+            }
+          }
+          if (e.key === 'Delete' || e.key === 'Backspace') {
+            e.preventDefault();
+            ImageManager.deleteImage(imageName);
+          }
+        });
+
+        // Eventos de Drag and Drop
+        DOM.imageList.addEventListener('dragstart', (e) => {
+          const container = e.target.closest('.image-container');
+          if (!container) return;
+
+          const currentImageNames = imageGalleryByTab.get(currentTab);
+          dragStartIndex = currentImageNames.indexOf(container.dataset.name);
+
+          container.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', container.dataset.name); // Dados para dragover
+        });
+
+        DOM.imageList.addEventListener('dragover', (e) => {
+          e.preventDefault(); // Necessário para permitir o drop
+          const container = e.target.closest('.image-container');
+          if (container && container.dataset.name !== e.dataTransfer.getData('text/plain')) { // Evita highlight no próprio elemento
+            container.classList.add('drag-over');
+          }
+          e.dataTransfer.dropEffect = 'move';
+        });
+
+        DOM.imageList.addEventListener('dragleave', (e) => {
+          const container = e.target.closest('.image-container');
+          if (container) container.classList.remove('drag-over');
+        });
+
+        DOM.imageList.addEventListener('drop', (e) => {
+          e.preventDefault();
+          const container = e.target.closest('.image-container');
+          if (container) {
+            container.classList.remove('drag-over');
+            const draggedImageName = e.dataTransfer.getData('text/plain'); // Pega o nome da imagem arrastada
+            const dragEndIndex = imageGalleryByTab.get(currentTab).indexOf(container.dataset.name);
+            
+            if (dragStartIndex !== null && dragEndIndex !== -1 && dragStartIndex !== dragEndIndex) {
+              ImageManager.reorderImages(dragStartIndex, dragEndIndex, draggedImageName); // Passa o nome da imagem arrastada
+            }
+          }
+          dragStartIndex = null; // Reseta o índice de início
+        });
+
+        DOM.imageList.addEventListener('dragend', (e) => {
+          const allImageContainers = DOM.imageList.querySelectorAll('.image-container');
+          allImageContainers.forEach(container => {
+            container.classList.remove('dragging', 'drag-over'); // Remove todas as classes de drag
+          });
+          dragStartIndex = null; // Garante que o índice é resetado, mesmo se o drop não ocorrer em um alvo válido
+        });
+
+
+        // Eventos dos botões de seleção
+        DOM.selectAllCheckbox.addEventListener('change', () => {
+          const images = imageGalleryByTab.get(currentTab) || [];
+          const selectedSet = selectedImagesByTab.get(currentTab);
+          const imageContainers = DOM.imageList.querySelectorAll('.image-container');
+
+          if (DOM.selectAllCheckbox.checked) {
+            images.forEach(name => selectedSet.add(name));
+            imageContainers.forEach(container => {
+                container.classList.add('selected');
+                container.querySelector('.image-checkbox').checked = true;
+            });
+          } else {
+            selectedSet.clear();
+            imageContainers.forEach(container => {
+                container.classList.remove('selected');
+                container.querySelector('.image-checkbox').checked = false;
+            });
+          }
+
+          UI.updateButtonsState();
+          UI.updateCheckboxesVisibility(); // Atualiza a visibilidade dos checkboxes
+          StateManager.saveState();
+        });
+
+        DOM.clearSelectionBtn.addEventListener('click', ImageManager.clearSelection);
+        DOM.deleteSelectedBtn.addEventListener('click', ImageManager.deleteSelected);
+
+        // Eventos dos botões de arquivo/nuvem
+        DOM.openFileDialogButton.addEventListener('click', () => {
+          DOM.fileInput.value = ''; // Limpa o valor do input para permitir selecionar o mesmo arquivo novamente
+          DOM.fileInput.click();
+        });
+        DOM.fileInput.addEventListener('change', ImageManager.handleFileSelection);
+
+        DOM.openCloudFolderButton.addEventListener('click', () => {
+          window.open(ONE_DRIVE_FOLDER_URL, '_blank');
+          Utils.showStatus('Abrindo pasta do OneDrive em uma nova aba.');
+        });
+
+        // Eventos dos botões do cabeçalho (apenas mensagens de status)
+        DOM.syncBtn.addEventListener('click', () => {
+          Utils.showStatus('Funcionalidade de Sincronização em desenvolvimento...');
+        });
+
+        DOM.settingsBtn.addEventListener('click', () => {
+          Utils.showStatus('Funcionalidade de Configurações em desenvolvimento...');
+        });
       }
-      UI.renderImages();
-      Utils.showStatus('Imagens adicionadas!');
-      DOM.fileInput.value = '';
-    });
+    };
 
-    // Botão de buscar em nuvem
-    DOM.openCloudFolderButton.addEventListener('click', () => {
-      window.open('https://1drv.ms/f/c/a71268bf66931c02/EpYyUsypAQhGgpWC9YuvE54BD_o9NX9tRar0piSzq4V4Xg', '_blank');
-    });
+    // Função de inicialização
+    async function init() {
+      UI.showLoading();
+      try {
+        await IndexedDBManager.open(); // Abre a conexão com o IndexedDB
+        await StateManager.loadState(); // Carrega o estado salvo
+        UI.createTabs(); // Cria as abas dinamicamente
+        UI.updateTabsUI(); // Atualiza o estado visual das abas
+        await UI.renderImages(); // Renderiza as imagens da aba atual
+        EventManager.setup(); // Configura todos os ouvintes de eventos
+        UI.updateCheckboxesVisibility(); // Garante que a visibilidade inicial está correta
+      } catch (e) {
+        console.error("Erro na inicialização:", e);
+        Utils.showStatus("Erro ao iniciar o aplicativo. Tente recarregar a página.");
+      } finally {
+        UI.hideLoading(); // Esconde o spinner de carregamento
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', init); // Inicia quando o DOM estiver pronto
   </script>
 </body>
 </html>
