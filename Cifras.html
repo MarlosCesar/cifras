@@ -6,49 +6,57 @@
   <title>Seletor de Cifras</title>
   
   <link rel="preload" href="https://cdn.tailwindcss.com" as="script">
+  
   <link rel="preconnect" href="https://cdnjs.cloudflare.com">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
   <script src="https://cdn.tailwindcss.com"></script>
+  
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
+    /* Variáveis CSS para um tema mais profissional e fácil manutenção */
     :root {
-      --primary-color: #3b82f6;
-      --primary-dark: #2563eb;
-      --primary-hover: #e0e7ff;
-      --danger-color: #ef4444;
-      --danger-dark: #dc2626;
-      --gray-light: #f3f4f6;
-      --gray-medium: #e5e7eb;
-      --text-color-dark: #333333;
-      --text-color-light: #4b5563;
+      --primary-color: #3b82f6; /* Azul primário */
+      --primary-dark: #2563eb; /* Azul mais escuro para hover/ativo */
+      --primary-hover: #e0e7ff; /* Azul muito claro para fundo de hover */
+      --danger-color: #ef4444; /* Vermelho para ações perigosas */
+      --danger-dark: #dc2626; /* Vermelho mais escuro */
+      --gray-light: #f3f4f6; /* Cinza claro para o background geral */
+      --gray-medium: #e5e7eb; /* Cinza médio para bordas/divisores */
+      --text-color-dark: #333333; /* Texto escuro quase preto */
+      --text-color-light: #4b5563; /* Texto cinza escuro */
       --shadow-base: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
       --shadow-primary: 0 0 10px rgba(37, 99, 235, 0.3);
-      --header-bg: #1A202C;
-      --header-text: #E2E8F0;
-      --header-hover: #2D3748;
+
+      /* Cores do cabeçalho */
+      --header-bg: #1A202C; /* Cinza bem escuro para o cabeçalho */
+      --header-text: #E2E8F0; /* Cinza claro para o texto do cabeçalho */
+      --header-hover: #2D3748; /* Tom um pouco mais claro para hover dos botões do cabeçalho */
     }
 
     html, body {
+      /* Garante que o overflow-x seja escondido para evitar barras de rolagem horizontais em mobile */
       overflow-x: hidden; 
       overflow-y: auto;
       background-color: var(--gray-light);
-      font-family: 'Inter', sans-serif;
-      color: var(--text-color-dark);
+      font-family: 'Inter', sans-serif; /* Usando a fonte Inter */
+      color: var(--text-color-dark); /* Cor de texto padrão */
     }
 
+    /* Estilo do cabeçalho profissional */
     .header-professional {
       background-color: var(--header-bg);
       color: var(--header-text);
-      box-shadow: var(--shadow-base);
+      box-shadow: var(--shadow-base); /* Sombra suave para o cabeçalho */
     }
 
     .header-professional button {
-      transition: background-color 0.3s ease, transform 0.1s ease;
-      display: flex;
+      transition: background-color 0.3s ease, transform 0.1s ease; /* Transição suave e pequena escala no clique */
+      display: flex; /* Para alinhar ícone e texto se houver */
       align-items: center;
       justify-content: center;
     }
@@ -58,20 +66,21 @@
     }
 
     .header-professional button:active {
-      transform: scale(0.98);
+        transform: scale(0.98); /* Pequeno efeito de clique */
     }
 
+    /* Estilos para as abas */
     .tabs {
       display: flex;
       gap: 0.5rem;
-      border-bottom: 2px solid var(--gray-medium);
+      border-bottom: 2px solid var(--gray-medium); /* Borda inferior para separar as abas do conteúdo */
       margin-bottom: 1rem;
-      flex-wrap: wrap;
-      padding: 0 1rem;
+      flex-wrap: wrap; /* Permite que as abas quebrem a linha em telas menores */
+      padding: 0 1rem; /* Padding horizontal para não colar nas bordas em mobile */
     }
 
     .tab {
-      padding: 0.65rem 1.2rem;
+      padding: 0.65rem 1.2rem; /* Um pouco mais de padding */
       cursor: pointer;
       border-radius: 0.5rem 0.5rem 0 0;
       background-color: #f9fafb;
@@ -79,8 +88,8 @@
       border-bottom: 2px solid transparent;
       transition: all 0.2s ease;
       outline-offset: 2px;
-      color: var(--text-color-light);
-      font-weight: 500;
+      color: var(--text-color-light); /* Cor do texto das abas não selecionadas */
+      font-weight: 500; /* Um pouco mais de peso */
     }
 
     [role="tab"] {
@@ -100,90 +109,88 @@
       border-color: var(--primary-color) var(--primary-color) white;
       font-weight: 600;
       color: var(--primary-dark);
-      box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+      box-shadow: 0 -2px 5px rgba(0,0,0,0.05); /* Sombra sutil na aba ativa */
     }
 
+    /* Estilo para o contêiner de imagem individual */
     .image-container {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 12px;
-      border: 1px solid var(--gray-medium);
-      border-radius: 0.75rem;
+      gap: 12px; /* Aumentei o espaçamento entre imagem e nome */
+      padding: 12px; /* Mais padding interno */
+      border: 1px solid var(--gray-medium); /* Borda sutil */
+      border-radius: 0.75rem; /* Bordas mais arredondadas */
       overflow: hidden;
-      cursor: pointer;
+      cursor: pointer; /* Cursor padrão de clique */
       transition: all 0.2s ease;
       background-color: white;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-      -webkit-touch-callout: none;
-      -webkit-user-select: none;
-      user-select: none;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05); /* Sombra mais sutil por padrão */
     }
 
     .image-container:focus-visible {
       outline: 2px solid var(--primary-color);
-      outline-offset: 3px;
-    }
-
-    .image-container:hover {
-      border-color: var(--primary-color);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      outline-offset: 3px; /* Aumentei o offset para melhor visibilidade */
     }
 
     .image-container.selected {
       border-color: var(--primary-dark);
-      box-shadow: var(--shadow-primary);
-      background-color: var(--primary-hover);
+      box-shadow: var(--shadow-primary); /* Sombra primária quando selecionado */
+      background-color: var(--primary-hover); /* Fundo levemente azulado quando selecionado */
     }
 
+    /* Estilos para drag-and-drop */
     .drag-over {
-      border: 2px dashed var(--primary-dark) !important;
-      background-color: rgba(59, 130, 246, 0.1) !important;
+      border: 2px dashed var(--primary-dark) !important; /* Borda mais visível para drag-over */
+      background-color: rgba(59, 130, 246, 0.1) !important; /* Fundo levemente azulado */
     }
 
     .image-container.dragging {
-      opacity: 0.4;
-      transform: scale(0.98);
+      opacity: 0.4; /* Reduz a opacidade para indicar que está sendo arrastado */
+      transform: scale(0.98); /* Pequeno encolhimento visual */
     }
 
     .image-container img {
-      width: 2.2cm;
-      height: 3.3cm;
+      width: 2.2cm; /* Ligeiramente maior */
+      height: 3.3cm; /* Ligeiramente maior */
       object-fit: cover;
-      border-radius: 0.35rem;
+      border-radius: 0.35rem; /* Bordas um pouco mais arredondadas */
       flex-shrink: 0;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1); /* Sombra sutil na imagem miniatura */
     }
 
     .image-name {
-      font-size: 0.95rem;
+      font-size: 0.95rem; /* Aumentei ligeiramente o tamanho da fonte */
       color: var(--text-color-dark);
-      flex-grow: 1;
-      overflow-wrap: break-word;
-      word-break: break-word;
-      max-width: calc(100% - 2.2cm - 12px);
-      line-height: 1.4;
+      flex-grow: 1; /* Permite que o nome ocupe o espaço restante */
+      overflow-wrap: break-word; /* Garante que nomes longos quebrem a linha */
+      word-break: break-word; /* Para compatibilidade */
+      max-width: calc(100% - 2.2cm - 12px - 2rem); /* Ajusta a largura máxima para o nome, considerando a imagem, o gap e o checkbox */
+      line-height: 1.4; /* Melhor espaçamento entre linhas */
     }
 
+    /* Estilo para a visualização em tela cheia */
     .fullscreen-image {
       position: fixed;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.95);
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0, 0, 0, 0.95); /* Fundo mais escuro */
       display: flex;
       justify-content: center;
       align-items: center;
+      cursor: zoom-out;
       z-index: 9999;
-      touch-action: none;
+      touch-action: none; /* Desabilita o scroll padrão da tela */
     }
 
     .fullscreen-image img {
-      max-width: 100%;
-      max-height: 100%;
+      max-width: 95%; /* Aumenta o max-width para telas maiores */
+      max-height: 95%; /* Aumenta o max-height para telas maiores */
       object-fit: contain;
       transition: transform 0.25s ease;
+      border-radius: 0.75rem; /* Bordas mais arredondadas */
+      box-shadow: 0 0 25px rgba(0,0,0,0.8); /* Sombra mais pronunciada */
       transform-origin: center center;
     }
 
@@ -193,20 +200,20 @@
       left: 50%;
       transform: translateX(-50%);
       display: flex;
-      gap: 15px;
+      gap: 15px; /* Aumentei o espaçamento entre os botões */
       background: rgba(0,0,0,0.7);
-      padding: 12px 20px;
-      border-radius: 8px;
+      padding: 12px 20px; /* Mais padding */
+      border-radius: 8px; /* Bordas arredondadas */
     }
 
     .zoom-btn {
       background: rgba(255,255,255,0.2);
       color: white;
       border: none;
-      width: 50px;
-      height: 50px;
+      width: 50px; /* Maior para facilitar o toque em mobile */
+      height: 50px; /* Maior para facilitar o toque em mobile */
       border-radius: 50%;
-      font-size: 24px;
+      font-size: 24px; /* Ícone maior */
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -219,9 +226,10 @@
     }
 
     .zoom-btn:active {
-      transform: scale(0.95);
+        transform: scale(0.95); /* Efeito de clique */
     }
 
+    /* Loading Spinner */
     .loading-spinner {
       display: none;
       position: fixed;
@@ -232,15 +240,16 @@
       padding: 20px;
       border-radius: 12px;
       z-index: 10000;
-      color: white;
+      color: white; /* Cor do spinner e do fundo */
     }
 
     .loading-spinner.active {
-      display: flex;
+      display: flex; /* Usar flexbox para centralizar o ícone */
       align-items: center;
       justify-content: center;
     }
 
+    /* Mensagem de status */
     #status-message {
       position: fixed;
       bottom: 20px;
@@ -253,7 +262,7 @@
       z-index: 1000;
       opacity: 0;
       transition: opacity 0.3s ease-in-out;
-      pointer-events: none;
+      pointer-events: none; /* Permite cliques através da mensagem */
       text-align: center;
     }
 
@@ -261,94 +270,96 @@
       opacity: 1;
     }
 
-    @media (max-width: 640px) {
+    /* Media Queries para responsividade */
+    @media (max-width: 640px) { /* Pequenas telas (mobile) */
       .header-professional h1 {
-        font-size: 1.5rem;
+        font-size: 1.5rem; /* Ajusta o tamanho do título em mobile */
       }
       .header-professional .space-x-4 {
-        gap: 0.5rem;
+        gap: 0.5rem; /* Ajusta o espaçamento dos botões do cabeçalho */
       }
       .header-professional button {
-        padding: 0.6rem;
+        padding: 0.6rem; /* Ajusta o padding dos botões do cabeçalho */
       }
 
       .tabs {
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 0.35rem;
+        flex-wrap: wrap; /* Garante que as abas quebrem em múltiplas linhas */
+        justify-content: center; /* Centraliza as abas */
+        gap: 0.35rem; /* Espaçamento menor entre as abas */
         padding: 0 0.5rem;
       }
       .tab {
-        padding: 0.5rem 0.8rem;
-        font-size: 0.9rem;
+        padding: 0.5rem 0.8rem; /* Padding menor para as abas */
+        font-size: 0.9rem; /* Fonte menor para as abas */
       }
 
-      .main-content-area {
-        padding: 0.75rem;
+      .main-content-area { /* Nova classe para o main container */
+        padding: 0.75rem; /* Menor padding para o conteúdo principal */
       }
 
+      /* Image container em mobile */
       .image-container {
-        flex-direction: row;
+        flex-direction: row; /* Mantém a imagem e o nome na mesma linha */
         align-items: center;
         gap: 10px;
         padding: 10px;
       }
 
       .image-container img {
-        width: 1.8cm;
+        width: 1.8cm; /* Miniatura um pouco menor em mobile */
         height: 2.7cm;
       }
 
       .image-name {
-        font-size: 0.875rem;
-        max-width: calc(100% - 1.8cm - 10px);
+        font-size: 0.875rem; /* Fonte menor para o nome da imagem */
+        max-width: calc(100% - 1.8cm - 10px - 2rem); /* Ajusta max-width */
       }
 
-      .flex-wrap.gap-2 {
-        flex-direction: column;
-        width: 100%;
+      .flex-wrap.gap-2 { /* Botões "Buscar Local" e "Buscar em Nuvem" */
+        flex-direction: column; /* Empilha os botões verticalmente em telas pequenas */
+        width: 100%; /* Ocupa a largura total */
       }
       .flex-wrap.gap-2 button {
-        width: 100%;
-        justify-content: center;
+        width: 100%; /* Faz com que os botões ocupem a largura total */
+        justify-content: center; /* Centraliza o texto/ícone nos botões */
       }
       .flex-wrap.gap-2 button i {
-        margin-right: 0.5rem;
+        margin-right: 0.5rem; /* Adiciona espaçamento entre o ícone e o texto */
       }
 
       .fullscreen-controls {
-        flex-direction: row;
-        gap: 10px;
-        padding: 10px 15px;
+          flex-direction: row; /* Mantém os botões de zoom na mesma linha */
+          gap: 10px;
+          padding: 10px 15px;
       }
       .zoom-btn {
-        width: 45px;
-        height: 45px;
-        font-size: 22px;
+          width: 45px;
+          height: 45px;
+          font-size: 22px;
       }
     }
 
-    @media (min-width: 641px) and (max-width: 1024px) {
-      .tabs {
-        justify-content: flex-start;
-        padding: 0 1.5rem;
-      }
-      .tab {
-        padding: 0.6rem 1.1rem;
-        font-size: 0.95rem;
-      }
-      .image-container {
-        padding: 10px;
-        gap: 10px;
-      }
-      .image-container img {
-        width: 2cm;
-        height: 3cm;
-      }
-      .image-name {
-        font-size: 0.9rem;
-        max-width: calc(100% - 2cm - 10px);
-      }
+    @media (min-width: 641px) and (max-width: 1024px) { /* Telas médias (tablets) */
+        .tabs {
+            justify-content: flex-start; /* Alinha as abas à esquerda */
+            padding: 0 1.5rem;
+        }
+        .tab {
+            padding: 0.6rem 1.1rem;
+            font-size: 0.95rem;
+        }
+        .image-container {
+            padding: 10px;
+            gap: 10px;
+        }
+        .image-container img {
+            width: 2cm;
+            height: 3cm;
+        }
+        .image-name {
+            font-size: 0.9rem;
+            max-width: calc(100% - 2cm - 10px - 2rem);
+        }
     }
   </style>
 </head>
@@ -383,7 +394,7 @@
       </div>
 
       <nav class="tabs" id="tabs-container" role="tablist" aria-label="Abas das categorias de cifras">
-      </nav>
+        </nav>
 
       <div class="p-4 flex flex-col gap-4 flex-1">
         <div class="flex flex-wrap items-center gap-4 mb-2">
@@ -434,10 +445,10 @@
     const tabs = ["Domingo Manhã", "Domingo Noite", "Segunda", "Quarta", "Culto Jovem", "Santa Ceia", "Outros"];
 
     // URL da pasta do OneDrive
-    const ONE_DRIVE_FOLDER_URL = "https://1drv.ms/f/c/a71268bf66931c02/EpYyUsypAQhGgpWC9YuvE54BD_o9NX9tRar0piSzq4V4Xg";
+    const ONE_DRIVE_FOLDER_URL = "https://1drv.ms/f/c/a71268bf66931c02/EpYyUsypAQhGgpWC9YuvE54BD_o9NX9tRar0piSzq4V4Xg"; // Seu link original
 
     // Estado otimizado com Map/Set
-    let imageGalleryByTab = new Map();
+    let imageGalleryByTab = new Map(); // Armazena APENAS os nomes das imagens por aba
     let selectedImagesByTab = new Map();
     let currentTab = tabs[0];
     let dragStartIndex = null;
@@ -463,6 +474,7 @@
           timer = setTimeout(() => { func.apply(this, args); }, timeout);
         };
       },
+      // Cache para Object URLs criados a partir de Blobs (para revogar depois)
       objectURLCache: new Map(),
       revokeObjectURL: (url) => {
           if (Utils.objectURLCache.has(url)) {
@@ -472,7 +484,7 @@
       },
       createObjectURL: (blob) => {
           const url = URL.createObjectURL(blob);
-          Utils.objectURLCache.set(url, true);
+          Utils.objectURLCache.set(url, true); // Adiciona ao cache para revogação
           return url;
       }
     };
@@ -608,10 +620,11 @@
 
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_SIZE = 800;
+          const MAX_SIZE = 800; // Define um tamanho máximo para a maior dimensão da imagem
           let width = img.width;
           let height = img.height;
 
+          // Redimensiona se a imagem for maior que o MAX_SIZE, mantendo a proporção
           if (width > height) {
             if (width > MAX_SIZE) {
               height *= MAX_SIZE / width;
@@ -629,8 +642,9 @@
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
+          // Converte para WebP com compressão de 75% para melhor performance e qualidade
           canvas.toBlob(blob => {
-            Utils.revokeObjectURL(url);
+            Utils.revokeObjectURL(url); // Libera o Object URL da imagem original
             if (blob) {
                 resolve({
                     name: file.name,
@@ -643,7 +657,7 @@
         };
 
         img.onerror = () => {
-          Utils.revokeObjectURL(url);
+          Utils.revokeObjectURL(url); // Libera o Object URL em caso de erro
           reject(new Error('Erro ao carregar a imagem para processamento.'));
         };
 
@@ -671,6 +685,7 @@
             try {
                 const state = await IndexedDBManager.loadMetadata();
                 if (state) {
+                    // Reconstroi os Maps a partir dos objetos planos
                     imageGalleryByTab = new Map(Object.entries(state.images || {}));
                     selectedImagesByTab = new Map();
                     for (const tab of tabs) {
@@ -711,11 +726,12 @@
           tabBtn.setAttribute('role', 'tab');
           tabBtn.setAttribute('tabindex', index === 0 ? '0' : '-1');
           tabBtn.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
-          tabBtn.id = `tab-${tab.replace(/\s+/g, '-').toLowerCase()}`;
+          tabBtn.id = `tab-${tab.replace(/\s+/g, '-').toLowerCase()}`; // ID único para a aba
           tabBtn.textContent = tab;
 
           tabBtn.addEventListener('click', () => TabManager.switchTab(tab));
           tabBtn.addEventListener('keydown', (e) => {
+            // Navegação por teclado entre as abas
             const currentActiveIndex = tabs.indexOf(currentTab);
             let nextIndex = currentActiveIndex;
 
@@ -751,11 +767,12 @@
           const isActive = btn.textContent === currentTab;
           btn.classList.toggle('active', isActive);
           btn.setAttribute('aria-selected', isActive);
-          btn.setAttribute('tabindex', isActive ? '0' : '-1');
+          btn.setAttribute('tabindex', isActive ? '0' : '-1'); // Apenas a aba ativa é tab-focável
         });
       },
 
       renderImages: async () => {
+        // Revoga Object URLs antigos para liberar memória
         DOM.imageList.querySelectorAll('img[data-object-url]').forEach(img => {
             Utils.revokeObjectURL(img.dataset.objectUrl);
         });
@@ -765,7 +782,7 @@
 
         if (imageNames.length === 0) {
           const p = document.createElement('p');
-          p.className = 'text-center text-gray-500 py-8';
+          p.className = 'text-center text-gray-500 py-8'; // Centralizado, sem col-span-full porque agora é flex-col
           p.textContent = 'Nenhuma imagem encontrada nesta categoria.';
           fragment.appendChild(p);
           DOM.selectAllCheckbox.checked = false;
@@ -773,6 +790,7 @@
         } else {
           DOM.selectAllCheckbox.disabled = false;
 
+          // Processa as imagens em lotes ou de forma assíncrona para não travar a UI
           const imagesToRender = [];
           for (const imageName of imageNames) {
             const blob = await IndexedDBManager.getImageBlob(imageName);
@@ -780,8 +798,9 @@
                 imagesToRender.push({ name: imageName, blob: blob });
             } else {
                 console.warn(`Imagem ${imageName} não encontrada no IndexedDB. Removendo da lista.`);
+                // Remove a imagem do estado se o blob não for encontrado
                 imageGalleryByTab.set(currentTab, imageNames.filter(name => name !== imageName));
-                selectedImagesByTab.get(currentTab).delete(imageName);
+                selectedImagesByTab.get(currentTab).delete(imageName); // Garante que também é removida da seleção
             }
           }
 
@@ -799,21 +818,37 @@
 
       createImageElement: (imageName, imageBlob) => {
         const container = document.createElement('div');
-        container.className = 'image-container';
+        container.className = 'image-container'; // Classe base
         container.setAttribute('draggable', 'true');
-        container.setAttribute('tabindex', '0');
-        container.setAttribute('role', 'checkbox');
-        container.setAttribute('aria-checked', selectedImagesByTab.get(currentTab).has(imageName));
-        container.dataset.name = imageName;
+        container.setAttribute('tabindex', '0'); // Torna o container focável
+        container.dataset.name = imageName; // Armazena o nome da imagem
 
-        if (selectedImagesByTab.get(currentTab).has(imageName)) {
-          container.classList.add('selected');
+        // Checkbox para seleção
+        const checkboxWrapper = document.createElement('label');
+        checkboxWrapper.className = 'flex items-center cursor-pointer';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500';
+        checkbox.setAttribute('aria-label', `Selecionar ${Utils.removeFileExtension(imageName)}`);
+        checkbox.checked = selectedImagesByTab.get(currentTab).has(imageName);
+        checkbox.addEventListener('change', (e) => {
+            e.stopPropagation(); // Previne que o clique no checkbox abra a imagem em fullscreen
+            ImageManager.toggleSelectImage(imageName, checkbox.checked, container);
+        });
+        checkboxWrapper.appendChild(checkbox);
+
+        // Atualiza a classe 'selected' do container com base no estado do checkbox
+        if (checkbox.checked) {
+            container.classList.add('selected');
+        } else {
+            container.classList.remove('selected');
         }
 
         const img = document.createElement('img');
-        const objectURL = Utils.createObjectURL(imageBlob);
+        const objectURL = Utils.createObjectURL(imageBlob); // Cria Object URL
         img.src = objectURL;
-        img.dataset.objectUrl = objectURL;
+        img.dataset.objectUrl = objectURL; // Armazena o URL para revogação posterior
         img.alt = Utils.removeFileExtension(imageName);
         img.title = "Clique para ampliar";
 
@@ -822,102 +857,21 @@
         nameSpan.textContent = Utils.removeFileExtension(imageName);
         nameSpan.title = "Clique para ampliar";
 
+        // Botão de exclusão individual
         const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'ml-auto p-1 text-red-500 hover:text-red-700 rounded-full transition-colors hidden sm:block';
+        deleteBtn.className = 'ml-auto p-1 text-red-500 hover:text-red-700 rounded-full transition-colors hidden sm:block'; // Oculta em mobile pequeno, para focar no toque no container
         deleteBtn.innerHTML = '<i class="fas fa-times" aria-hidden="true"></i>';
         deleteBtn.setAttribute('aria-label', `Excluir cifra ${Utils.removeFileExtension(imageName)}`);
         deleteBtn.title = `Excluir ${Utils.removeFileExtension(imageName)}`;
         deleteBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
+            e.stopPropagation(); // Impede que o clique se propague para o container
             ImageManager.deleteImage(imageName);
         });
 
+        container.appendChild(checkboxWrapper); // Adiciona o checkbox
         container.appendChild(img);
         container.appendChild(nameSpan);
-        container.appendChild(deleteBtn);
-
-        // Variáveis para controle de long press
-        let pressTimer;
-        let isLongPress = false;
-        let touchStartX = 0;
-        let touchStartY = 0;
-
-        // Evento de toque iniciado
-        container.addEventListener('touchstart', (e) => {
-            isLongPress = false;
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-            
-            pressTimer = setTimeout(() => {
-                isLongPress = true;
-                ImageManager.toggleSelectImage(imageName, container);
-            }, 500); // 500ms para considerar como long press
-        }, { passive: true });
-
-        // Evento de toque movido
-        container.addEventListener('touchmove', (e) => {
-            // Se o movimento for significativo, cancela o long press
-            const moveX = Math.abs(e.touches[0].clientX - touchStartX);
-            const moveY = Math.abs(e.touches[0].clientY - touchStartY);
-            
-            if (moveX > 10 || moveY > 10) {
-                clearTimeout(pressTimer);
-            }
-        }, { passive: true });
-
-        // Evento de toque finalizado
-        container.addEventListener('touchend', (e) => {
-            clearTimeout(pressTimer);
-            
-            // Se não foi um long press e o toque foi rápido (tap), abre em fullscreen
-            if (!isLongPress && e.changedTouches.length === 1) {
-                const touchEndX = e.changedTouches[0].clientX;
-                const touchEndY = e.changedTouches[0].clientY;
-                
-                // Verifica se o toque terminou próximo ao início (não foi um arrasto)
-                if (Math.abs(touchEndX - touchStartX) < 10 && Math.abs(touchEndY - touchStartY) < 10) {
-                    const objectURL = Utils.createObjectURL(imageBlob);
-                    UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
-                }
-            }
-        }, { passive: true });
-
-        // Eventos de mouse para desktop
-        container.addEventListener('mousedown', (e) => {
-            if (e.button !== 0) return; // Apenas botão esquerdo
-            pressTimer = setTimeout(() => {
-                isLongPress = true;
-                ImageManager.toggleSelectImage(imageName, container);
-            }, 500);
-        });
-
-        container.addEventListener('mousemove', (e) => {
-            clearTimeout(pressTimer);
-        });
-
-        container.addEventListener('mouseup', (e) => {
-            clearTimeout(pressTimer);
-            if (!isLongPress && e.button === 0) {
-                const objectURL = Utils.createObjectURL(imageBlob);
-                UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
-            }
-            isLongPress = false;
-        });
-
-        container.addEventListener('mouseleave', () => {
-            clearTimeout(pressTimer);
-            isLongPress = false;
-        });
-
-        // Eventos de drag and drop
-        container.addEventListener('dragstart', (e) => {
-            if (!selectedImagesByTab.get(currentTab).has(imageName)) {
-                ImageManager.toggleSelectImage(imageName, container);
-            }
-            container.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', imageName);
-        });
+        container.appendChild(deleteBtn); // Adiciona o botão de exclusão
 
         return container;
       },
@@ -927,11 +881,11 @@
         if (images.length === 0) {
           DOM.selectAllCheckbox.checked = false;
           DOM.selectAllCheckbox.indeterminate = false;
-          DOM.selectAllCheckbox.disabled = true;
+          DOM.selectAllCheckbox.disabled = true; // Desabilita se não houver imagens
           return;
         }
 
-        DOM.selectAllCheckbox.disabled = false;
+        DOM.selectAllCheckbox.disabled = false; // Habilita se houver imagens
         const selectedCount = selectedImagesByTab.get(currentTab).size;
         DOM.selectAllCheckbox.checked = selectedCount === images.length;
         DOM.selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < images.length;
@@ -956,7 +910,7 @@
         const img = document.createElement('img');
         img.src = src;
         img.alt = alt;
-        img.tabIndex = 0;
+        img.tabIndex = 0; // Torna a imagem focável
         img.style.transform = 'scale(1)';
 
         const controls = document.createElement('div');
@@ -980,9 +934,7 @@
         let scale = 1;
         let translateX = 0, translateY = 0;
         let isDragging = false;
-        let startPoint = { x: 0, y: 0 };
-        let initialPinchDistance = null;
-        let lastScale = 1;
+        let startPoint = { x: 0, y: 0 }; // Para mouse e touch
 
         const updateTransform = () => {
           img.style.transform = `scale(${scale}) translate(${translateX}px, ${translateY}px)`;
@@ -990,14 +942,14 @@
 
         zoomInBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          scale = Math.min(scale * 1.2, 5);
+          scale = Math.min(scale * 1.2, 5); // Limita o zoom máximo
           updateTransform();
         });
 
         zoomOutBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          scale = Math.max(scale / 1.2, 1);
-          if (scale === 1) {
+          scale = Math.max(scale / 1.2, 1); // Limita o zoom mínimo a 1
+          if (scale === 1) { // Reseta a posição se o zoom for 1
             translateX = 0;
             translateY = 0;
           }
@@ -1012,7 +964,7 @@
           updateTransform();
         });
 
-        // Eventos de mouse
+        // Eventos de mouse para zoom e arrastar
         img.addEventListener('wheel', (e) => {
           e.preventDefault();
           const delta = -e.deltaY;
@@ -1023,6 +975,7 @@
             scale = Math.max(scale / 1.1, 1);
           }
 
+          // Ajusta o translateX/Y para manter o ponto de zoom no centro da imagem
           const rect = img.getBoundingClientRect();
           const mouseX = e.clientX - rect.left;
           const mouseY = e.clientY - rect.top;
@@ -1030,7 +983,7 @@
           translateX = translateX + mouseX * (1 / oldScale - 1 / scale);
           translateY = translateY + mouseY * (1 / oldScale - 1 / scale);
           
-          if (scale === 1) {
+          if (scale === 1) { // Reseta a posição se o zoom for 1
             translateX = 0;
             translateY = 0;
           }
@@ -1059,7 +1012,10 @@
           overlay.style.cursor = 'zoom-out';
         });
 
-        // Eventos de toque
+        // Eventos de toque para zoom e arrastar (Pan & Pinch-to-zoom)
+        let initialPinchDistance = null;
+        let lastScale = 1;
+
         img.addEventListener('touchstart', (e) => {
             if (e.touches.length === 1) {
                 isDragging = true;
@@ -1069,9 +1025,9 @@
                     e.touches[1].pageX - e.touches[0].pageX,
                     e.touches[1].pageY - e.touches[0].pageY
                 );
-                lastScale = scale;
+                lastScale = scale; // Salva a escala atual antes do pinch
             }
-            e.preventDefault();
+            e.preventDefault(); // Impede o scroll da página
         }, { passive: false });
 
         img.addEventListener('touchmove', (e) => {
@@ -1085,8 +1041,9 @@
                     e.touches[1].pageY - e.touches[0].pageY
                 );
                 scale = lastScale * (currentPinchDistance / initialPinchDistance);
-                scale = Math.max(1, Math.min(scale, 5));
+                scale = Math.max(1, Math.min(scale, 5)); // Limita o zoom
 
+                // Recalcula translateX/Y para "pinçar" no centro
                 const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                 const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
 
@@ -1097,7 +1054,7 @@
                 translateX = translateX + relativeX * (1 / lastScale - 1 / scale);
                 translateY = translateY + relativeY * (1 / lastScale - 1 / scale);
 
-                if (scale === 1) {
+                if (scale === 1) { // Reseta a posição se o zoom for 1
                     translateX = 0;
                     translateY = 0;
                 }
@@ -1111,27 +1068,31 @@
             initialPinchDistance = null;
         });
 
+
         controls.appendChild(zoomInBtn);
         controls.appendChild(zoomOutBtn);
         controls.appendChild(resetZoomBtn);
         overlay.appendChild(img);
         overlay.appendChild(controls);
         document.body.appendChild(overlay);
-        img.focus();
+        img.focus(); // Foca na imagem para permitir navegação por teclado
 
         const closeFullscreen = () => {
           document.body.removeChild(overlay);
           overlay.removeEventListener('click', closeFullscreen);
           document.removeEventListener('keydown', handleKeyDown);
-          Utils.revokeObjectURL(img.src);
+          // Removido para mouseup global: document.removeEventListener('mousemove', handleMouseMove); 
+          // Removido para mouseup global: document.removeEventListener('mouseup', handleMouseUp); 
+          Utils.revokeObjectURL(img.src); // Libera o Object URL
         };
 
         const handleKeyDown = (e) => {
           if (e.key === 'Escape') closeFullscreen();
         };
 
-        overlay.addEventListener('click', closeFullscreen);
-        img.addEventListener('click', (e) => e.stopPropagation());
+        overlay.addEventListener('click', closeFullscreen); // Clique no overlay fecha
+        // O preventDefault no touchstart/touchmove é importante para não disparar o click
+        img.addEventListener('click', (e) => e.stopPropagation()); // Impede que o clique na imagem feche o fullscreen
         document.addEventListener('keydown', handleKeyDown);
       }
     };
@@ -1150,17 +1111,15 @@
 
     // Gerenciamento de imagens
     const ImageManager = {
-      toggleSelectImage: (imageName, container) => {
+      toggleSelectImage: (imageName, isChecked, container) => {
         const selectedSet = selectedImagesByTab.get(currentTab);
 
-        if (selectedSet.has(imageName)) {
-          selectedSet.delete(imageName);
-          container.classList.remove('selected');
-          container.setAttribute('aria-checked', 'false');
-        } else {
+        if (isChecked) {
           selectedSet.add(imageName);
           container.classList.add('selected');
-          container.setAttribute('aria-checked', 'true');
+        } else {
+          selectedSet.delete(imageName);
+          container.classList.remove('selected');
         }
 
         UI.updateSelectAllCheckbox();
@@ -1174,11 +1133,12 @@
         UI.showLoading();
         try {
             await IndexedDBManager.deleteImageBlob(imageName);
+            // Remove o nome da imagem do array da aba
             const images = imageGalleryByTab.get(currentTab).filter(name => name !== imageName);
             imageGalleryByTab.set(currentTab, images);
-            selectedImagesByTab.get(currentTab).delete(imageName);
+            selectedImagesByTab.get(currentTab).delete(imageName); // Garante que a imagem seja desmarcada se estiver selecionada
 
-            await UI.renderImages();
+            await UI.renderImages(); // Re-renderiza a lista de imagens
             StateManager.saveState();
             Utils.showStatus('Imagem excluída com sucesso!');
         } catch (error) {
@@ -1195,7 +1155,7 @@
         images.splice(toIndex, 0, movedImageName);
         imageGalleryByTab.set(currentTab, images);
 
-        await UI.renderImages();
+        await UI.renderImages(); // Re-renderiza para refletir a nova ordem
         StateManager.saveState();
       },
 
@@ -1215,7 +1175,7 @@
             );
 
             imageGalleryByTab.set(currentTab, images);
-            selectedImagesByTab.get(currentTab).clear();
+            selectedImagesByTab.get(currentTab).clear(); // Limpa a seleção após a exclusão
 
             await UI.renderImages();
             UI.updateButtonsState();
@@ -1232,14 +1192,14 @@
 
       clearSelection: () => {
         selectedImagesByTab.get(currentTab).clear();
-        UI.renderImages();
+        UI.renderImages(); // Re-renderiza para remover a classe 'selected'
         UI.updateButtonsState();
         StateManager.saveState();
         Utils.showStatus('Seleção limpa.');
       },
 
       handleFileSelection: async (e) => {
-        const files = Array.from(e.target.files);
+        const files = Array.from(e.target.files); // Converte FileList para Array
         if (!files.length) return;
 
         UI.showLoading();
@@ -1251,6 +1211,8 @@
         let loadedCount = 0;
 
         try {
+          // Usar Promise.all para processar arquivos em paralelo (com cuidado para não sobrecarregar)
+          // Ou processar um por um para feedback mais rápido
           for (const file of files) {
             if (!file.type.startsWith('image/')) {
               console.warn(`Arquivo ignorado (não é imagem): ${file.name}`);
@@ -1291,11 +1253,65 @@
     // Configuração de eventos
     const EventManager = {
       setup: () => {
-        // Eventos de drag and drop para reordenar
-        DOM.imageList.addEventListener('dragover', (e) => {
-          e.preventDefault();
+        // Evento de clique na lista de imagens (agora para abrir fullscreen)
+        DOM.imageList.addEventListener('click', async (e) => {
           const container = e.target.closest('.image-container');
-          if (container && container.dataset.name !== e.dataTransfer.getData('text/plain')) {
+          if (!container) return;
+
+          // Se o clique foi no checkbox, não faça nada (já é tratado pelo listener do checkbox)
+          if (e.target.type === 'checkbox') {
+            return;
+          }
+
+          const imageName = container.dataset.name;
+          // Abre em fullscreen ao clicar no container, img ou nome
+          const blob = await IndexedDBManager.getImageBlob(imageName);
+          if (blob) {
+              const objectURL = Utils.createObjectURL(blob);
+              UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
+          } else {
+              Utils.showStatus('Erro: Imagem não encontrada para ampliar.');
+          }
+        });
+
+        // Eventos de teclado para acessibilidade na lista de imagens
+        DOM.imageList.addEventListener('keydown', (e) => {
+          const container = e.target.closest('.image-container');
+          if (!container) return;
+
+          const imageName = container.dataset.name;
+
+          if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault(); // Impede o scroll da página ao pressionar espaço
+            const checkbox = container.querySelector('input[type="checkbox"]');
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+                ImageManager.toggleSelectImage(imageName, checkbox.checked, container);
+            }
+          }
+          if (e.key === 'Delete' || e.key === 'Backspace') {
+            e.preventDefault();
+            ImageManager.deleteImage(imageName);
+          }
+        });
+
+        // Eventos de Drag and Drop
+        DOM.imageList.addEventListener('dragstart', (e) => {
+          const container = e.target.closest('.image-container');
+          if (!container) return;
+
+          const currentImageNames = imageGalleryByTab.get(currentTab);
+          dragStartIndex = currentImageNames.indexOf(container.dataset.name);
+
+          container.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', container.dataset.name); // Dados para dragover
+        });
+
+        DOM.imageList.addEventListener('dragover', (e) => {
+          e.preventDefault(); // Necessário para permitir o drop
+          const container = e.target.closest('.image-container');
+          if (container && container.dataset.name !== e.dataTransfer.getData('text/plain')) { // Evita highlight no próprio elemento
             container.classList.add('drag-over');
           }
           e.dataTransfer.dropEffect = 'move';
@@ -1318,29 +1334,38 @@
               ImageManager.reorderImages(dragStartIndex, dragEndIndex);
             }
           }
-          dragStartIndex = null;
+          dragStartIndex = null; // Reseta o índice de início
         });
 
         DOM.imageList.addEventListener('dragend', (e) => {
           const allImageContainers = DOM.imageList.querySelectorAll('.image-container');
           allImageContainers.forEach(container => {
-            container.classList.remove('dragging', 'drag-over');
+            container.classList.remove('dragging', 'drag-over'); // Remove todas as classes de drag
           });
-          dragStartIndex = null;
+          dragStartIndex = null; // Garante que o índice é resetado, mesmo se o drop não ocorrer em um alvo válido
         });
+
 
         // Eventos dos botões de seleção
         DOM.selectAllCheckbox.addEventListener('change', () => {
           const images = imageGalleryByTab.get(currentTab) || [];
           const selectedSet = selectedImagesByTab.get(currentTab);
+          const imageContainers = DOM.imageList.querySelectorAll('.image-container');
 
           if (DOM.selectAllCheckbox.checked) {
             images.forEach(name => selectedSet.add(name));
+            imageContainers.forEach(container => {
+                container.classList.add('selected');
+                container.querySelector('input[type="checkbox"]').checked = true;
+            });
           } else {
             selectedSet.clear();
+            imageContainers.forEach(container => {
+                container.classList.remove('selected');
+                container.querySelector('input[type="checkbox"]').checked = false;
+            });
           }
 
-          UI.renderImages();
           UI.updateButtonsState();
           StateManager.saveState();
         });
@@ -1350,7 +1375,7 @@
 
         // Eventos dos botões de arquivo/nuvem
         DOM.openFileDialogButton.addEventListener('click', () => {
-          DOM.fileInput.value = '';
+          DOM.fileInput.value = ''; // Limpa o valor do input para permitir selecionar o mesmo arquivo novamente
           DOM.fileInput.click();
         });
         DOM.fileInput.addEventListener('change', ImageManager.handleFileSelection);
@@ -1360,7 +1385,7 @@
           Utils.showStatus('Abrindo pasta do OneDrive em uma nova aba.');
         });
 
-        // Eventos dos botões do cabeçalho
+        // Eventos dos botões do cabeçalho (apenas mensagens de status)
         DOM.syncBtn.addEventListener('click', () => {
           Utils.showStatus('Funcionalidade de Sincronização em desenvolvimento...');
         });
@@ -1375,22 +1400,22 @@
     async function init() {
       UI.showLoading();
       try {
-        await IndexedDBManager.open();
-        await StateManager.loadState();
-        UI.createTabs();
-        UI.updateTabsUI();
-        await UI.renderImages();
-        UI.updateButtonsState();
-        EventManager.setup();
+        await IndexedDBManager.open(); // Abre a conexão com o IndexedDB
+        await StateManager.loadState(); // Carrega o estado salvo
+        UI.createTabs(); // Cria as abas dinamicamente
+        UI.updateTabsUI(); // Atualiza o estado visual das abas
+        await UI.renderImages(); // Renderiza as imagens da aba atual
+        UI.updateButtonsState(); // Atualiza o estado dos botões (selecionar, excluir)
+        EventManager.setup(); // Configura todos os ouvintes de eventos
       } catch (e) {
         console.error("Erro na inicialização:", e);
         Utils.showStatus("Erro ao iniciar o aplicativo. Tente recarregar a página.");
       } finally {
-        UI.hideLoading();
+        UI.hideLoading(); // Esconde o spinner de carregamento
       }
     }
 
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', init); // Inicia quando o DOM estiver pronto
   </script>
 </body>
 </html>
