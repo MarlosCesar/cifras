@@ -121,7 +121,7 @@
       border: 1px solid var(--gray-medium); /* Borda sutil */
       border-radius: 0.75rem; /* Bordas mais arredondadas */
       overflow: hidden;
-      cursor: pointer; /* Cursor padrão de clique para seleção */
+      cursor: pointer; /* Cursor padrão de clique */
       transition: all 0.2s ease;
       background-color: white;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05); /* Sombra mais sutil por padrão */
@@ -136,18 +136,6 @@
       border-color: var(--primary-dark);
       box-shadow: var(--shadow-primary); /* Sombra primária quando selecionado */
       background-color: var(--primary-hover); /* Fundo levemente azulado quando selecionado */
-    }
-
-    /* Esconde o checkbox por padrão */
-    .image-container .checkbox-wrapper {
-        display: none;
-        margin-right: 1rem; /* Espaçamento entre o checkbox e a imagem/nome */
-    }
-
-    /* Mostra o checkbox quando a seleção está ativa */
-    .selection-active .image-container .checkbox-wrapper {
-        display: flex; /* Usa flexbox para centralizar o checkbox */
-        align-items: center;
     }
 
     /* Estilos para drag-and-drop */
@@ -176,7 +164,7 @@
       flex-grow: 1; /* Permite que o nome ocupe o espaço restante */
       overflow-wrap: break-word; /* Garante que nomes longos quebrem a linha */
       word-break: break-word; /* Para compatibilidade */
-      max-width: calc(100% - 2.2cm - 12px - 2rem); /* Ajusta a largura máxima para o nome, considerando a imagem, o gap e o checkbox (se visível) */
+      max-width: calc(100% - 2.2cm - 12px - 2rem); /* Ajusta a largura máxima para o nome, considerando a imagem, o gap e o checkbox */
       line-height: 1.4; /* Melhor espaçamento entre linhas */
     }
 
@@ -280,16 +268,6 @@
 
     #status-message.show {
       opacity: 1;
-    }
-
-    /* Esconde a seção de seleção por padrão */
-    .selection-controls {
-        display: none;
-    }
-
-    /* Mostra a seção de seleção quando a seleção está ativa */
-    .selection-active .selection-controls {
-        display: flex;
     }
 
     /* Media Queries para responsividade */
@@ -419,7 +397,7 @@
         </nav>
 
       <div class="p-4 flex flex-col gap-4 flex-1">
-        <div class="flex flex-wrap items-center gap-4 mb-2 selection-controls">
+        <div class="flex flex-wrap items-center gap-4 mb-2">
           <label class="inline-flex items-center gap-2 cursor-pointer text-gray-700 font-medium" for="select-all">
             <input type="checkbox" id="select-all" class="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500" aria-label="Selecionar todas as imagens" />
             <span>Selecionar todas</span>
@@ -460,8 +438,7 @@
       syncBtn: document.getElementById('sync-btn'),
       settingsBtn: document.getElementById('settings-btn'),
       loadingSpinner: document.getElementById('loading-spinner'),
-      statusMessage: document.getElementById('status-message'),
-      selectionControls: document.querySelector('.selection-controls')
+      statusMessage: document.getElementById('status-message')
     };
 
     // Abas desejadas
@@ -475,8 +452,6 @@
     let selectedImagesByTab = new Map();
     let currentTab = tabs[0];
     let dragStartIndex = null;
-    let longPressTimer = null; // Para detectar o "pressionar e segurar"
-    let isSelectingMode = false; // Novo estado para controlar o modo de seleção
 
     // Inicializar estado
     tabs.forEach(tab => {
@@ -598,7 +573,7 @@
           try {
               const db = await IndexedDBManager.open();
               const transaction = db.transaction([STORE_IMAGES], 'readonly');
-              const store = db.transaction(STORE_IMAGES, 'readonly').objectStore(STORE_IMAGES);
+              const store = transaction.objectStore(STORE_IMAGES);
               const request = store.getAllKeys();
 
               request.onsuccess = (event) => resolve(event.target.result);
@@ -810,9 +785,10 @@
           p.className = 'text-center text-gray-500 py-8'; // Centralizado, sem col-span-full porque agora é flex-col
           p.textContent = 'Nenhuma imagem encontrada nesta categoria.';
           fragment.appendChild(p);
+          DOM.selectAllCheckbox.checked = false;
+          DOM.selectAllCheckbox.disabled = true;
         } else {
-          // Garante que o checkbox de "Selecionar todas" está sempre habilitado se houver imagens
-          DOM.selectAllCheckbox.disabled = false; 
+          DOM.selectAllCheckbox.disabled = false;
 
           // Processa as imagens em lotes ou de forma assíncrona para não travar a UI
           const imagesToRender = [];
@@ -837,7 +813,6 @@
         DOM.imageList.innerHTML = '';
         DOM.imageList.appendChild(fragment);
         UI.updateSelectAllCheckbox();
-        UI.updateSelectionControlsVisibility(); // Atualiza a visibilidade dos controles de seleção
         UI.updateButtonsState();
       },
 
@@ -848,9 +823,9 @@
         container.setAttribute('tabindex', '0'); // Torna o container focável
         container.dataset.name = imageName; // Armazena o nome da imagem
 
-        // Checkbox para seleção (inicialmente escondido)
+        // Checkbox para seleção
         const checkboxWrapper = document.createElement('label');
-        checkboxWrapper.className = 'flex items-center cursor-pointer checkbox-wrapper'; // Adicionado 'checkbox-wrapper'
+        checkboxWrapper.className = 'flex items-center cursor-pointer';
         
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
@@ -858,7 +833,7 @@
         checkbox.setAttribute('aria-label', `Selecionar ${Utils.removeFileExtension(imageName)}`);
         checkbox.checked = selectedImagesByTab.get(currentTab).has(imageName);
         checkbox.addEventListener('change', (e) => {
-            e.stopPropagation(); // Previne que o clique no checkbox acione o handler do container
+            e.stopPropagation(); // Previne que o clique no checkbox abra a imagem em fullscreen
             ImageManager.toggleSelectImage(imageName, checkbox.checked, container);
         });
         checkboxWrapper.appendChild(checkbox);
@@ -903,16 +878,14 @@
 
       updateSelectAllCheckbox: () => {
         const images = imageGalleryByTab.get(currentTab) || [];
-        // Se não houver imagens, o "Selecionar todas" fica desabilitado
         if (images.length === 0) {
-            DOM.selectAllCheckbox.checked = false;
-            DOM.selectAllCheckbox.indeterminate = false;
-            DOM.selectAllCheckbox.disabled = true;
-            return;
+          DOM.selectAllCheckbox.checked = false;
+          DOM.selectAllCheckbox.indeterminate = false;
+          DOM.selectAllCheckbox.disabled = true; // Desabilita se não houver imagens
+          return;
         }
 
         DOM.selectAllCheckbox.disabled = false; // Habilita se houver imagens
-
         const selectedCount = selectedImagesByTab.get(currentTab).size;
         DOM.selectAllCheckbox.checked = selectedCount === images.length;
         DOM.selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < images.length;
@@ -927,36 +900,7 @@
         DOM.clearSelectionBtn.setAttribute('aria-disabled', !anySelected);
       },
 
-      setSelectionMode: (active) => {
-          isSelectingMode = active;
-          if (active) {
-              document.body.classList.add('selection-active');
-          } else {
-              document.body.classList.remove('selection-active');
-              // Limpa todas as seleções se sair do modo de seleção sem nada selecionado
-              if (selectedImagesByTab.get(currentTab).size === 0) {
-                  ImageManager.clearSelection(); // Isso também vai esconder os checkboxes
-              }
-          }
-          UI.updateSelectionControlsVisibility();
-          UI.updateSelectAllCheckbox(); // Atualiza o estado do checkbox "Selecionar todas"
-          UI.updateButtonsState(); // Atualiza o estado dos botões (habilitar/desabilitar)
-      },
-
-      updateSelectionControlsVisibility: () => {
-        const anySelected = selectedImagesByTab.get(currentTab).size > 0;
-        // Mostra os controles de seleção se estiver no modo de seleção OU se houver algo selecionado
-        if (isSelectingMode || anySelected) {
-            DOM.selectionControls.style.display = 'flex';
-        } else {
-            DOM.selectionControls.style.display = 'none';
-        }
-      },
-
       openFullscreen: (src, alt) => {
-        // Se estiver no modo de seleção, não abre fullscreen
-        if (isSelectingMode) return;
-
         const overlay = document.createElement('div');
         overlay.className = 'fullscreen-image';
         overlay.setAttribute('role', 'dialog');
@@ -1137,6 +1081,8 @@
           document.body.removeChild(overlay);
           overlay.removeEventListener('click', closeFullscreen);
           document.removeEventListener('keydown', handleKeyDown);
+          // Removido para mouseup global: document.removeEventListener('mousemove', handleMouseMove); 
+          // Removido para mouseup global: document.removeEventListener('mouseup', handleMouseUp); 
           Utils.revokeObjectURL(img.src); // Libera o Object URL
         };
 
@@ -1145,6 +1091,7 @@
         };
 
         overlay.addEventListener('click', closeFullscreen); // Clique no overlay fecha
+        // O preventDefault no touchstart/touchmove é importante para não disparar o click
         img.addEventListener('click', (e) => e.stopPropagation()); // Impede que o clique na imagem feche o fullscreen
         document.addEventListener('keydown', handleKeyDown);
       }
@@ -1156,7 +1103,6 @@
         if (currentTab === tabName) return;
         currentTab = tabName;
         UI.updateTabsUI();
-        UI.setSelectionMode(false); // Sai do modo de seleção ao trocar de aba
         await UI.renderImages();
         UI.updateButtonsState();
         StateManager.saveState();
@@ -1178,7 +1124,6 @@
 
         UI.updateSelectAllCheckbox();
         UI.updateButtonsState();
-        UI.updateSelectionControlsVisibility(); // Reavalia a visibilidade dos controles de seleção
         StateManager.saveState();
       },
 
@@ -1194,10 +1139,6 @@
             selectedImagesByTab.get(currentTab).delete(imageName); // Garante que a imagem seja desmarcada se estiver selecionada
 
             await UI.renderImages(); // Re-renderiza a lista de imagens
-            // Se nenhuma imagem estiver selecionada, pode sair do modo de seleção
-            if (selectedImagesByTab.get(currentTab).size === 0) {
-                UI.setSelectionMode(false); 
-            }
             StateManager.saveState();
             Utils.showStatus('Imagem excluída com sucesso!');
         } catch (error) {
@@ -1237,7 +1178,7 @@
             selectedImagesByTab.get(currentTab).clear(); // Limpa a seleção após a exclusão
 
             await UI.renderImages();
-            UI.setSelectionMode(false); // Sai do modo de seleção após excluir
+            UI.updateButtonsState();
             StateManager.saveState();
             Utils.showStatus(`${count} imagens excluídas.`);
         }
@@ -1251,8 +1192,8 @@
 
       clearSelection: () => {
         selectedImagesByTab.get(currentTab).clear();
-        UI.renderImages(); // Re-renderiza para remover a classe 'selected' e desmarcar checkboxes
-        UI.setSelectionMode(false); // Sai do modo de seleção ao limpar tudo
+        UI.renderImages(); // Re-renderiza para remover a classe 'selected'
+        UI.updateButtonsState();
         StateManager.saveState();
         Utils.showStatus('Seleção limpa.');
       },
@@ -1270,6 +1211,8 @@
         let loadedCount = 0;
 
         try {
+          // Usar Promise.all para processar arquivos em paralelo (com cuidado para não sobrecarregar)
+          // Ou processar um por um para feedback mais rápido
           for (const file of files) {
             if (!file.type.startsWith('image/')) {
               console.warn(`Arquivo ignorado (não é imagem): ${file.name}`);
@@ -1310,81 +1253,24 @@
     // Configuração de eventos
     const EventManager = {
       setup: () => {
-        // Eventos para "pressionar e segurar"
-        DOM.imageList.addEventListener('mousedown', (e) => {
-            const container = e.target.closest('.image-container');
-            if (!container) return;
-
-            // Inicia o timer para o "pressionar e segurar"
-            longPressTimer = setTimeout(() => {
-                UI.setSelectionMode(true); // Ativa o modo de seleção
-                // Seleciona a imagem que foi "pressionada e segurada"
-                const checkbox = container.querySelector('input[type="checkbox"]');
-                if (checkbox && !checkbox.checked) {
-                    checkbox.checked = true;
-                    ImageManager.toggleSelectImage(container.dataset.name, true, container);
-                }
-            }, 500); // 500ms para considerar "pressionar e segurar"
-        });
-
-        DOM.imageList.addEventListener('mouseup', () => {
-            clearTimeout(longPressTimer); // Cancela o timer se o botão for solto antes
-        });
-
-        DOM.imageList.addEventListener('mouseleave', () => {
-            clearTimeout(longPressTimer); // Cancela o timer se o mouse sair do elemento
-        });
-
-        // Eventos de toque para "pressionar e segurar" (mobile)
-        DOM.imageList.addEventListener('touchstart', (e) => {
-            const container = e.target.closest('.image-container');
-            if (!container) return;
-
-            // Evita o zoom padrão ao tocar e segurar
-            e.preventDefault(); 
-
-            longPressTimer = setTimeout(() => {
-                UI.setSelectionMode(true);
-                const checkbox = container.querySelector('input[type="checkbox"]');
-                if (checkbox && !checkbox.checked) {
-                    checkbox.checked = true;
-                    ImageManager.toggleSelectImage(container.dataset.name, true, container);
-                }
-            }, 500);
-        }, { passive: false }); // Use passive: false para permitir preventDefault
-
-        DOM.imageList.addEventListener('touchend', () => {
-            clearTimeout(longPressTimer);
-        });
-
-        DOM.imageList.addEventListener('touchcancel', () => {
-            clearTimeout(longPressTimer);
-        });
-
-        // Evento de clique no container (agora só abre fullscreen se não estiver em modo de seleção e for clicado na imagem/nome)
+        // Evento de clique na lista de imagens (agora para abrir fullscreen)
         DOM.imageList.addEventListener('click', async (e) => {
           const container = e.target.closest('.image-container');
           if (!container) return;
 
-          // Se estiver no modo de seleção, um clique no container alterna a seleção
-          if (isSelectingMode) {
-            const checkbox = container.querySelector('input[type="checkbox"]');
-            if (checkbox) {
-                checkbox.checked = !checkbox.checked;
-                ImageManager.toggleSelectImage(container.dataset.name, checkbox.checked, container);
-            }
+          // Se o clique foi no checkbox, não faça nada (já é tratado pelo listener do checkbox)
+          if (e.target.type === 'checkbox') {
+            return;
+          }
+
+          const imageName = container.dataset.name;
+          // Abre em fullscreen ao clicar no container, img ou nome
+          const blob = await IndexedDBManager.getImageBlob(imageName);
+          if (blob) {
+              const objectURL = Utils.createObjectURL(blob);
+              UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
           } else {
-            // Se não estiver no modo de seleção, verifica se o clique foi na imagem ou nome para abrir fullscreen
-            if (e.target.tagName === 'IMG' || e.target.classList.contains('image-name')) {
-                const imageName = container.dataset.name;
-                const blob = await IndexedDBManager.getImageBlob(imageName);
-                if (blob) {
-                    const objectURL = Utils.createObjectURL(blob);
-                    UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
-                } else {
-                    Utils.showStatus('Erro: Imagem não encontrada para ampliar.');
-                }
-            }
+              Utils.showStatus('Erro: Imagem não encontrada para ampliar.');
           }
         });
 
@@ -1397,36 +1283,15 @@
 
           if (e.key === ' ' || e.key === 'Enter') {
             e.preventDefault(); // Impede o scroll da página ao pressionar espaço
-            if (isSelectingMode) {
-                const checkbox = container.querySelector('input[type="checkbox"]');
-                if (checkbox) {
-                    checkbox.checked = !checkbox.checked;
-                    ImageManager.toggleSelectImage(imageName, checkbox.checked, container);
-                }
-            } else {
-                // Ativa o modo de seleção e seleciona a imagem se pressionar espaço/enter
-                UI.setSelectionMode(true);
-                const checkbox = container.querySelector('input[type="checkbox"]');
-                if (checkbox && !checkbox.checked) {
-                    checkbox.checked = true;
-                    ImageManager.toggleSelectImage(imageName, true, container);
-                }
+            const checkbox = container.querySelector('input[type="checkbox"]');
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+                ImageManager.toggleSelectImage(imageName, checkbox.checked, container);
             }
           }
           if (e.key === 'Delete' || e.key === 'Backspace') {
             e.preventDefault();
-            if (isSelectingMode) {
-                ImageManager.deleteImage(imageName);
-            } else {
-                // Se não estiver no modo de seleção, seleciona a imagem para exclusão
-                UI.setSelectionMode(true);
-                const checkbox = container.querySelector('input[type="checkbox"]');
-                if (checkbox && !checkbox.checked) {
-                    checkbox.checked = true;
-                    ImageManager.toggleSelectImage(imageName, true, container);
-                }
-                Utils.showStatus('Pressione Excluir novamente para confirmar a exclusão da(s) imagem(ns) selecionada(s).');
-            }
+            ImageManager.deleteImage(imageName);
           }
         });
 
@@ -1434,12 +1299,6 @@
         DOM.imageList.addEventListener('dragstart', (e) => {
           const container = e.target.closest('.image-container');
           if (!container) return;
-
-          // Se estiver no modo de seleção, o drag é desativado para evitar conflito
-          if (isSelectingMode) {
-              e.preventDefault();
-              return;
-          }
 
           const currentImageNames = imageGalleryByTab.get(currentTab);
           dragStartIndex = currentImageNames.indexOf(container.dataset.name);
@@ -1451,8 +1310,6 @@
 
         DOM.imageList.addEventListener('dragover', (e) => {
           e.preventDefault(); // Necessário para permitir o drop
-          if (isSelectingMode) return; // Desativa dragover no modo de seleção
-
           const container = e.target.closest('.image-container');
           if (container && container.dataset.name !== e.dataTransfer.getData('text/plain')) { // Evita highlight no próprio elemento
             container.classList.add('drag-over');
@@ -1461,15 +1318,12 @@
         });
 
         DOM.imageList.addEventListener('dragleave', (e) => {
-          if (isSelectingMode) return;
           const container = e.target.closest('.image-container');
           if (container) container.classList.remove('drag-over');
         });
 
         DOM.imageList.addEventListener('drop', (e) => {
           e.preventDefault();
-          if (isSelectingMode) return; // Desativa drop no modo de seleção
-
           const container = e.target.closest('.image-container');
           if (container) {
             container.classList.remove('drag-over');
@@ -1551,7 +1405,7 @@
         UI.createTabs(); // Cria as abas dinamicamente
         UI.updateTabsUI(); // Atualiza o estado visual das abas
         await UI.renderImages(); // Renderiza as imagens da aba atual
-        UI.setSelectionMode(false); // Inicia com o modo de seleção desativado
+        UI.updateButtonsState(); // Atualiza o estado dos botões (selecionar, excluir)
         EventManager.setup(); // Configura todos os ouvintes de eventos
       } catch (e) {
         console.error("Erro na inicialização:", e);
