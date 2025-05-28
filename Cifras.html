@@ -121,7 +121,7 @@
       border: 1px solid var(--gray-medium); /* Borda sutil */
       border-radius: 0.75rem; /* Bordas mais arredondadas */
       overflow: hidden;
-      cursor: pointer; /* Cursor padrão de clique */
+      cursor: default; /* Cursor padrão para o container */
       transition: all 0.2s ease;
       background-color: white;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05); /* Sombra mais sutil por padrão */
@@ -156,6 +156,7 @@
       border-radius: 0.35rem; /* Bordas um pouco mais arredondadas */
       flex-shrink: 0;
       box-shadow: 0 1px 4px rgba(0,0,0,0.1); /* Sombra sutil na imagem miniatura */
+      cursor: zoom-in; /* Cursor de zoom para a imagem */
     }
 
     .image-name {
@@ -164,8 +165,9 @@
       flex-grow: 1; /* Permite que o nome ocupe o espaço restante */
       overflow-wrap: break-word; /* Garante que nomes longos quebrem a linha */
       word-break: break-word; /* Para compatibilidade */
-      max-width: calc(100% - 2.2cm - 12px - 2rem); /* Ajusta a largura máxima para o nome, considerando a imagem, o gap e o checkbox */
+      max-width: calc(100% - 2.2cm - 12px); /* Ajusta a largura máxima para o nome, considerando a imagem e o gap */
       line-height: 1.4; /* Melhor espaçamento entre linhas */
+      cursor: zoom-in; /* Cursor de zoom para o nome */
     }
 
     /* Estilo para a visualização em tela cheia */
@@ -312,7 +314,7 @@
 
       .image-name {
         font-size: 0.875rem; /* Fonte menor para o nome da imagem */
-        max-width: calc(100% - 1.8cm - 10px - 2rem); /* Ajusta max-width */
+        max-width: calc(100% - 1.8cm - 10px); /* Ajusta max-width */
       }
 
       .flex-wrap.gap-2 { /* Botões "Buscar Local" e "Buscar em Nuvem" */
@@ -358,7 +360,7 @@
         }
         .image-name {
             font-size: 0.9rem;
-            max-width: calc(100% - 2cm - 10px - 2rem);
+            max-width: calc(100% - 2cm - 10px);
         }
     }
   </style>
@@ -438,7 +440,7 @@
       syncBtn: document.getElementById('sync-btn'),
       settingsBtn: document.getElementById('settings-btn'),
       loadingSpinner: document.getElementById('loading-spinner'),
-      statusMessage: document.getElementById('status-message')
+      statusMessage: document.getElementById('status-message'),
     };
 
     // Abas desejadas
@@ -573,7 +575,7 @@
           try {
               const db = await IndexedDBManager.open();
               const transaction = db.transaction([STORE_IMAGES], 'readonly');
-              const store = transaction.objectStore(STORE_IMAGES);
+              const store = db.transaction(STORE_IMAGES, 'readonly').objectStore(STORE_IMAGES);
               const request = store.getAllKeys();
 
               request.onsuccess = (event) => resolve(event.target.result);
@@ -785,10 +787,9 @@
           p.className = 'text-center text-gray-500 py-8'; // Centralizado, sem col-span-full porque agora é flex-col
           p.textContent = 'Nenhuma imagem encontrada nesta categoria.';
           fragment.appendChild(p);
-          DOM.selectAllCheckbox.checked = false;
-          DOM.selectAllCheckbox.disabled = true;
         } else {
-          DOM.selectAllCheckbox.disabled = false;
+          // Garante que o checkbox de "Selecionar todas" está sempre habilitado se houver imagens
+          DOM.selectAllCheckbox.disabled = false; 
 
           // Processa as imagens em lotes ou de forma assíncrona para não travar a UI
           const imagesToRender = [];
@@ -823,20 +824,15 @@
         container.setAttribute('tabindex', '0'); // Torna o container focável
         container.dataset.name = imageName; // Armazena o nome da imagem
 
-        // Checkbox para seleção
-        const checkboxWrapper = document.createElement('label');
-        checkboxWrapper.className = 'flex items-center cursor-pointer';
-        
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.className = 'form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500';
         checkbox.setAttribute('aria-label', `Selecionar ${Utils.removeFileExtension(imageName)}`);
         checkbox.checked = selectedImagesByTab.get(currentTab).has(imageName);
         checkbox.addEventListener('change', (e) => {
-            e.stopPropagation(); // Previne que o clique no checkbox abra a imagem em fullscreen
+            e.stopPropagation(); // Previne que o clique no checkbox acione o handler do container
             ImageManager.toggleSelectImage(imageName, checkbox.checked, container);
         });
-        checkboxWrapper.appendChild(checkbox);
 
         // Atualiza a classe 'selected' do container com base no estado do checkbox
         if (checkbox.checked) {
@@ -868,7 +864,7 @@
             ImageManager.deleteImage(imageName);
         });
 
-        container.appendChild(checkboxWrapper); // Adiciona o checkbox
+        container.appendChild(checkbox);
         container.appendChild(img);
         container.appendChild(nameSpan);
         container.appendChild(deleteBtn); // Adiciona o botão de exclusão
@@ -878,14 +874,16 @@
 
       updateSelectAllCheckbox: () => {
         const images = imageGalleryByTab.get(currentTab) || [];
+        // Se não houver imagens, o "Selecionar todas" fica desabilitado
         if (images.length === 0) {
-          DOM.selectAllCheckbox.checked = false;
-          DOM.selectAllCheckbox.indeterminate = false;
-          DOM.selectAllCheckbox.disabled = true; // Desabilita se não houver imagens
-          return;
+            DOM.selectAllCheckbox.checked = false;
+            DOM.selectAllCheckbox.indeterminate = false;
+            DOM.selectAllCheckbox.disabled = true;
+            return;
         }
 
         DOM.selectAllCheckbox.disabled = false; // Habilita se houver imagens
+
         const selectedCount = selectedImagesByTab.get(currentTab).size;
         DOM.selectAllCheckbox.checked = selectedCount === images.length;
         DOM.selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < images.length;
@@ -1081,8 +1079,6 @@
           document.body.removeChild(overlay);
           overlay.removeEventListener('click', closeFullscreen);
           document.removeEventListener('keydown', handleKeyDown);
-          // Removido para mouseup global: document.removeEventListener('mousemove', handleMouseMove); 
-          // Removido para mouseup global: document.removeEventListener('mouseup', handleMouseUp); 
           Utils.revokeObjectURL(img.src); // Libera o Object URL
         };
 
@@ -1091,7 +1087,6 @@
         };
 
         overlay.addEventListener('click', closeFullscreen); // Clique no overlay fecha
-        // O preventDefault no touchstart/touchmove é importante para não disparar o click
         img.addEventListener('click', (e) => e.stopPropagation()); // Impede que o clique na imagem feche o fullscreen
         document.addEventListener('keydown', handleKeyDown);
       }
@@ -1178,7 +1173,6 @@
             selectedImagesByTab.get(currentTab).clear(); // Limpa a seleção após a exclusão
 
             await UI.renderImages();
-            UI.updateButtonsState();
             StateManager.saveState();
             Utils.showStatus(`${count} imagens excluídas.`);
         }
@@ -1192,8 +1186,7 @@
 
       clearSelection: () => {
         selectedImagesByTab.get(currentTab).clear();
-        UI.renderImages(); // Re-renderiza para remover a classe 'selected'
-        UI.updateButtonsState();
+        UI.renderImages(); // Re-renderiza para remover a classe 'selected' e desmarcar checkboxes
         StateManager.saveState();
         Utils.showStatus('Seleção limpa.');
       },
@@ -1211,8 +1204,6 @@
         let loadedCount = 0;
 
         try {
-          // Usar Promise.all para processar arquivos em paralelo (com cuidado para não sobrecarregar)
-          // Ou processar um por um para feedback mais rápido
           for (const file of files) {
             if (!file.type.startsWith('image/')) {
               console.warn(`Arquivo ignorado (não é imagem): ${file.name}`);
@@ -1253,24 +1244,32 @@
     // Configuração de eventos
     const EventManager = {
       setup: () => {
-        // Evento de clique na lista de imagens (agora para abrir fullscreen)
+        // Evento de clique no container: Agora só abre fullscreen se o clique for na imagem ou nome
         DOM.imageList.addEventListener('click', async (e) => {
           const container = e.target.closest('.image-container');
           if (!container) return;
 
-          // Se o clique foi no checkbox, não faça nada (já é tratado pelo listener do checkbox)
-          if (e.target.type === 'checkbox') {
-            return;
-          }
-
-          const imageName = container.dataset.name;
-          // Abre em fullscreen ao clicar no container, img ou nome
-          const blob = await IndexedDBManager.getImageBlob(imageName);
-          if (blob) {
-              const objectURL = Utils.createObjectURL(blob);
-              UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
+          // Verifica se o clique foi diretamente na imagem ou no span do nome
+          if (e.target.tagName === 'IMG' || e.target.classList.contains('image-name')) {
+            const imageName = container.dataset.name;
+            const blob = await IndexedDBManager.getImageBlob(imageName);
+            if (blob) {
+                const objectURL = Utils.createObjectURL(blob);
+                UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
+            } else {
+                Utils.showStatus('Erro: Imagem não encontrada para ampliar.');
+            }
+          } else if (e.target.type === 'checkbox') {
+            // Se o clique foi no checkbox, a lógica de seleção já é tratada pelo listener do checkbox
+            return; 
           } else {
-              Utils.showStatus('Erro: Imagem não encontrada para ampliar.');
+            // Clique em outra parte do container (não na imagem, nome ou checkbox)
+            // Alterna a seleção do item (o comportamento original antes da última alteração)
+            const checkbox = container.querySelector('input[type="checkbox"]');
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+                ImageManager.toggleSelectImage(container.dataset.name, checkbox.checked, container);
+            }
           }
         });
 
@@ -1405,7 +1404,6 @@
         UI.createTabs(); // Cria as abas dinamicamente
         UI.updateTabsUI(); // Atualiza o estado visual das abas
         await UI.renderImages(); // Renderiza as imagens da aba atual
-        UI.updateButtonsState(); // Atualiza o estado dos botões (selecionar, excluir)
         EventManager.setup(); // Configura todos os ouvintes de eventos
       } catch (e) {
         console.error("Erro na inicialização:", e);
