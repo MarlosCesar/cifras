@@ -192,52 +192,56 @@
       cursor: zoom-in; /* Cursor de zoom para o nome */
     }
 
-    /* Estilo para a visualização em tela cheia */
+    /* Estilo para a visualização em tela cheia - MODIFICADO PARA OCUPAR TODA A TELA */
     .fullscreen-image {
       position: fixed;
       top: 0;
       left: 0;
-      width: 100vw;
-      height: 100vh;
-      background-color: rgba(0, 0, 0, 0.95); /* Fundo mais escuro */
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.95);
       display: flex;
       justify-content: center;
       align-items: center;
       cursor: zoom-out;
       z-index: 9999;
-      touch-action: none; /* Desabilita o scroll padrão da tela */
+      touch-action: none;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
     }
 
     .fullscreen-image img {
-      max-width: 95%; /* Aumenta o max-width para telas maiores */
-      max-height: 95%; /* Aumenta o max-height para telas maiores */
+      max-width: 100%;
+      max-height: 100%;
       object-fit: contain;
       transition: transform 0.25s ease;
-      border-radius: 0.75rem; /* Bordas mais arredondadas */
-      box-shadow: 0 0 25px rgba(0,0,0,0.8); /* Sombra mais pronunciada */
       transform-origin: center center;
+      margin: 0;
+      padding: 0;
     }
 
     .fullscreen-controls {
-      position: absolute;
+      position: fixed;
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
       display: flex;
-      gap: 15px; /* Aumentei o espaçamento entre os botões */
+      gap: 15px;
       background: rgba(0,0,0,0.7);
-      padding: 12px 20px; /* Mais padding */
-      border-radius: 8px; /* Bordas arredondadas */
+      padding: 12px 20px;
+      border-radius: 8px;
+      z-index: 10000;
     }
 
     .zoom-btn {
       background: rgba(255,255,255,0.2);
       color: white;
       border: none;
-      width: 50px; /* Maior para facilitar o toque em mobile */
-      height: 50px; /* Maior para facilitar o toque em mobile */
+      width: 50px;
+      height: 50px;
       border-radius: 50%;
-      font-size: 24px; /* Ícone maior */
+      font-size: 24px;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -250,7 +254,7 @@
     }
 
     .zoom-btn:active {
-        transform: scale(0.95); /* Efeito de clique */
+        transform: scale(0.95);
     }
 
     /* Loading Spinner */
@@ -264,11 +268,11 @@
       padding: 20px;
       border-radius: 12px;
       z-index: 10000;
-      color: white; /* Cor do spinner e do fundo */
+      color: white;
     }
 
     .loading-spinner.active {
-      display: flex; /* Usar flexbox para centralizar o ícone */
+      display: flex;
       align-items: center;
       justify-content: center;
     }
@@ -286,7 +290,7 @@
       z-index: 1000;
       opacity: 0;
       transition: opacity 0.3s ease-in-out;
-      pointer-events: none; /* Permite cliques através da mensagem */
+      pointer-events: none;
       text-align: center;
     }
 
@@ -295,64 +299,63 @@
     }
 
     /* Media Queries para responsividade */
-    @media (max-width: 640px) { /* Pequenas telas (mobile) */
+    @media (max-width: 640px) {
       .header-professional h1 {
-        font-size: 1.5rem; /* Ajusta o tamanho do título em mobile */
+        font-size: 1.5rem;
       }
       .header-professional .space-x-4 {
-        gap: 0.5rem; /* Ajusta o espaçamento dos botões do cabeçalho */
+        gap: 0.5rem;
       }
       .header-professional button {
-        padding: 0.6rem; /* Ajusta o padding dos botões do cabeçalho */
+        padding: 0.6rem;
       }
 
       .tabs {
-        flex-wrap: wrap; /* Garante que as abas quebrem em múltiplas linhas */
-        justify-content: center; /* Centraliza as abas */
-        gap: 0.35rem; /* Espaçamento menor entre as abas */
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.35rem;
         padding: 0 0.5rem;
       }
       .tab {
-        padding: 0.5rem 0.8rem; /* Padding menor para as abas */
-        font-size: 0.9rem; /* Fonte menor para as abas */
+        padding: 0.5rem 0.8rem;
+        font-size: 0.9rem;
       }
 
-      .main-content-area { /* Nova classe para o main container */
-        padding: 0.75rem; /* Menor padding para o conteúdo principal */
+      .main-content-area {
+        padding: 0.75rem;
       }
 
-      /* Image container em mobile */
       .image-container {
-        flex-direction: row; /* Mantém a imagem e o nome na mesma linha */
+        flex-direction: row;
         align-items: center;
         gap: 10px;
         padding: 10px;
       }
 
       .image-container img {
-        width: 1.8cm; /* Miniatura um pouco menor em mobile */
+        width: 1.8cm;
         height: 2.7cm;
       }
 
       .image-name {
-        font-size: 0.875rem; /* Fonte menor para o nome da imagem */
-        max-width: calc(100% - 1.8cm - 10px); /* Ajusta max-width */
+        font-size: 0.875rem;
+        max-width: calc(100% - 1.8cm - 10px);
       }
 
-      .flex-wrap.gap-2 { /* Botões "Buscar Local" e "Buscar em Nuvem" */
-        flex-direction: column; /* Empilha os botões verticalmente em telas pequenas */
-        width: 100%; /* Ocupa a largura total */
+      .flex-wrap.gap-2 {
+        flex-direction: column;
+        width: 100%;
       }
       .flex-wrap.gap-2 button {
-        width: 100%; /* Faz com que os botões ocupem a largura total */
-        justify-content: center; /* Centraliza o texto/ícone nos botões */
+        width: 100%;
+        justify-content: center;
       }
       .flex-wrap.gap-2 button i {
-        margin-right: 0.5rem; /* Adiciona espaçamento entre o ícone e o texto */
+        margin-right: 0.5rem;
       }
 
       .fullscreen-controls {
-          flex-direction: row; /* Mantém os botões de zoom na mesma linha */
+          flex-direction: row;
           gap: 10px;
           padding: 10px 15px;
       }
@@ -361,11 +364,19 @@
           height: 45px;
           font-size: 22px;
       }
+      
+      /* Ajustes específicos para tela cheia em mobile */
+      .fullscreen-image img {
+        width: auto;
+        height: auto;
+        max-width: 100vw;
+        max-height: 100vh;
+      }
     }
 
-    @media (min-width: 641px) and (max-width: 1024px) { /* Telas médias (tablets) */
+    @media (min-width: 641px) and (max-width: 1024px) {
         .tabs {
-            justify-content: flex-start; /* Alinha as abas à esquerda */
+            justify-content: flex-start;
             padding: 0 1.5rem;
         }
         .tab {
@@ -388,6 +399,7 @@
   </style>
 </head>
 <body class="bg-gray-100 font-sans antialiased">
+  <!-- O restante do código HTML permanece exatamente o mesmo -->
   <header class="header-professional p-4">
     <div class="container mx-auto flex justify-between items-center">
       <h1 class="text-2xl font-semibold tracking-wide">Seletor de Cifras</h1>
@@ -456,7 +468,7 @@
       fileInput: document.getElementById('file-input'),
       openFileDialogButton: document.getElementById('open-file-dialog'),
       openCloudFolderButton: document.getElementById('open-cloud-folder'),
-      selectAllContainer: document.getElementById('select-all-container'), // Novo elemento
+      selectAllContainer: document.getElementById('select-all-container'),
       selectAllCheckbox: document.getElementById('select-all'),
       deleteSelectedBtn: document.getElementById('delete-selected-btn'),
       clearSelectionBtn: document.getElementById('clear-selection-btn'),
@@ -464,22 +476,22 @@
       settingsBtn: document.getElementById('settings-btn'),
       loadingSpinner: document.getElementById('loading-spinner'),
       statusMessage: document.getElementById('status-message'),
-      body: document.body, // Referência ao body para adicionar/remover classes
+      body: document.body,
     };
 
     // Abas desejadas
     const tabs = ["Domingo Manhã", "Domingo Noite", "Segunda", "Quarta", "Culto Jovem", "Santa Ceia", "Outros"];
 
     // URL da pasta do OneDrive
-    const ONE_DRIVE_FOLDER_URL = "https://1drv.ms/f/c/a71268bf66931c02/EpYyUsypAQhGgpWC9YuvE54BD_o9NX9tRar0piSzq4V4Xg"; // Seu link original
+    const ONE_DRIVE_FOLDER_URL = "https://1drv.ms/f/c/a71268bf66931c02/EpYyUsypAQhGgpWC9YuvE54BD_o9NX9tRar0piSzq4V4Xg";
 
     // Estado otimizado com Map/Set
-    let imageGalleryByTab = new Map(); // Armazena APENAS os nomes das imagens por aba
+    let imageGalleryByTab = new Map();
     let selectedImagesByTab = new Map();
     let currentTab = tabs[0];
     let dragStartIndex = null;
-    let longPressTimer; // Para detectar o clique longo/segurar
-    let isLongPress = false; // Flag para diferenciar clique curto de longo
+    let longPressTimer;
+    let isLongPress = false;
 
     // Inicializar estado
     tabs.forEach(tab => {
@@ -502,7 +514,6 @@
           timer = setTimeout(() => { func.apply(this, args); }, timeout);
         };
       },
-      // Cache para Object URLs criados a partir de Blobs (para revogar depois)
       objectURLCache: new Map(),
       revokeObjectURL: (url) => {
           if (Utils.objectURLCache.has(url)) {
@@ -512,7 +523,7 @@
       },
       createObjectURL: (blob) => {
           const url = URL.createObjectURL(blob);
-          Utils.objectURLCache.set(url, true); // Adiciona ao cache para revogação
+          Utils.objectURLCache.set(url, true);
           return url;
       }
     };
@@ -648,11 +659,10 @@
 
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_SIZE = 800; // Define um tamanho máximo para a maior dimensão da imagem
+          const MAX_SIZE = 800;
           let width = img.width;
           let height = img.height;
 
-          // Redimensiona se a imagem for maior que o MAX_SIZE, mantendo a proporção
           if (width > height) {
             if (width > MAX_SIZE) {
               height *= MAX_SIZE / width;
@@ -670,9 +680,8 @@
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
-          // Converte para WebP com compressão de 75% para melhor performance e qualidade
           canvas.toBlob(blob => {
-            Utils.revokeObjectURL(url); // Libera o Object URL da imagem original
+            Utils.revokeObjectURL(url);
             if (blob) {
                 resolve({
                     name: file.name,
@@ -685,7 +694,7 @@
         };
 
         img.onerror = () => {
-          Utils.revokeObjectURL(url); // Libera o Object URL em caso de erro
+          Utils.revokeObjectURL(url);
           reject(new Error('Erro ao carregar a imagem para processamento.'));
         };
 
@@ -713,7 +722,6 @@
             try {
                 const state = await IndexedDBManager.loadMetadata();
                 if (state) {
-                    // Reconstroi os Maps a partir dos objetos planos
                     imageGalleryByTab = new Map(Object.entries(state.images || {}));
                     selectedImagesByTab = new Map();
                     for (const tab of tabs) {
@@ -754,12 +762,11 @@
           tabBtn.setAttribute('role', 'tab');
           tabBtn.setAttribute('tabindex', index === 0 ? '0' : '-1');
           tabBtn.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
-          tabBtn.id = `tab-${tab.replace(/\s+/g, '-').toLowerCase()}`; // ID único para a aba
+          tabBtn.id = `tab-${tab.replace(/\s+/g, '-').toLowerCase()}`;
           tabBtn.textContent = tab;
 
           tabBtn.addEventListener('click', () => TabManager.switchTab(tab));
           tabBtn.addEventListener('keydown', (e) => {
-            // Navegação por teclado entre as abas
             const currentActiveIndex = tabs.indexOf(currentTab);
             let nextIndex = currentActiveIndex;
 
@@ -795,12 +802,11 @@
           const isActive = btn.textContent === currentTab;
           btn.classList.toggle('active', isActive);
           btn.setAttribute('aria-selected', isActive);
-          btn.setAttribute('tabindex', isActive ? '0' : '-1'); // Apenas a aba ativa é tab-focável
+          btn.setAttribute('tabindex', isActive ? '0' : '-1');
         });
       },
 
       renderImages: async () => {
-        // Revoga Object URLs antigos para liberar memória
         DOM.imageList.querySelectorAll('img[data-object-url]').forEach(img => {
             Utils.revokeObjectURL(img.dataset.objectUrl);
         });
@@ -810,14 +816,12 @@
 
         if (imageNames.length === 0) {
           const p = document.createElement('p');
-          p.className = 'text-center text-gray-500 py-8'; // Centralizado, sem col-span-full porque agora é flex-col
+          p.className = 'text-center text-gray-500 py-8';
           p.textContent = 'Nenhuma imagem encontrada nesta categoria.';
           fragment.appendChild(p);
         } else {
-          // Garante que o checkbox de "Selecionar todas" está sempre habilitado se houver imagens
           DOM.selectAllCheckbox.disabled = false; 
 
-          // Processa as imagens em lotes ou de forma assíncrona para não travar a UI
           const imagesToRender = [];
           for (const imageName of imageNames) {
             const blob = await IndexedDBManager.getImageBlob(imageName);
@@ -825,9 +829,8 @@
                 imagesToRender.push({ name: imageName, blob: blob });
             } else {
                 console.warn(`Imagem ${imageName} não encontrada no IndexedDB. Removendo da lista.`);
-                // Remove a imagem do estado se o blob não for encontrado
                 imageGalleryByTab.set(currentTab, imageNames.filter(name => name !== imageName));
-                selectedImagesByTab.get(currentTab).delete(imageName); // Garante que também é removida da seleção
+                selectedImagesByTab.get(currentTab).delete(imageName);
             }
           }
 
@@ -841,27 +844,26 @@
         DOM.imageList.appendChild(fragment);
         UI.updateSelectAllCheckbox();
         UI.updateButtonsState();
-        UI.updateCheckboxesVisibility(); // Chamada adicionada aqui para garantir o estado inicial
+        UI.updateCheckboxesVisibility();
       },
 
       createImageElement: (imageName, imageBlob) => {
         const container = document.createElement('div');
-        container.className = 'image-container'; // Classe base
+        container.className = 'image-container';
         container.setAttribute('draggable', 'true');
-        container.setAttribute('tabindex', '0'); // Torna o container focável
-        container.dataset.name = imageName; // Armazena o nome da imagem
+        container.setAttribute('tabindex', '0');
+        container.dataset.name = imageName;
 
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
-        checkbox.className = 'form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 image-checkbox'; // Adiciona classe específica
+        checkbox.className = 'form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 image-checkbox';
         checkbox.setAttribute('aria-label', `Selecionar ${Utils.removeFileExtension(imageName)}`);
         checkbox.checked = selectedImagesByTab.get(currentTab).has(imageName);
         checkbox.addEventListener('change', (e) => {
-            e.stopPropagation(); // Previne que o clique no checkbox acione o handler do container
+            e.stopPropagation();
             ImageManager.toggleSelectImage(imageName, checkbox.checked, container);
         });
 
-        // Atualiza a classe 'selected' do container com base no estado do checkbox
         if (checkbox.checked) {
             container.classList.add('selected');
         } else {
@@ -869,9 +871,9 @@
         }
 
         const img = document.createElement('img');
-        const objectURL = Utils.createObjectURL(imageBlob); // Cria Object URL
+        const objectURL = Utils.createObjectURL(imageBlob);
         img.src = objectURL;
-        img.dataset.objectUrl = objectURL; // Armazena o URL para revogação posterior
+        img.dataset.objectUrl = objectURL;
         img.alt = Utils.removeFileExtension(imageName);
         img.title = "Clique para ampliar";
 
@@ -880,28 +882,26 @@
         nameSpan.textContent = Utils.removeFileExtension(imageName);
         nameSpan.title = "Clique para ampliar";
 
-        // Botão de exclusão individual
         const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'ml-auto p-1 text-red-500 hover:text-red-700 rounded-full transition-colors hidden sm:block'; // Oculta em mobile pequeno, para focar no toque no container
+        deleteBtn.className = 'ml-auto p-1 text-red-500 hover:text-red-700 rounded-full transition-colors hidden sm:block';
         deleteBtn.innerHTML = '<i class="fas fa-times" aria-hidden="true"></i>';
         deleteBtn.setAttribute('aria-label', `Excluir cifra ${Utils.removeFileExtension(imageName)}`);
         deleteBtn.title = `Excluir ${Utils.removeFileExtension(imageName)}`;
         deleteBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // Impede que o clique se propague para o container
+            e.stopPropagation();
             ImageManager.deleteImage(imageName);
         });
 
         container.appendChild(checkbox);
         container.appendChild(img);
         container.appendChild(nameSpan);
-        container.appendChild(deleteBtn); // Adiciona o botão de exclusão
+        container.appendChild(deleteBtn);
 
         return container;
       },
 
       updateSelectAllCheckbox: () => {
         const images = imageGalleryByTab.get(currentTab) || [];
-        // Se não houver imagens, o "Selecionar todas" fica desabilitado
         if (images.length === 0) {
             DOM.selectAllCheckbox.checked = false;
             DOM.selectAllCheckbox.indeterminate = false;
@@ -909,7 +909,7 @@
             return;
         }
 
-        DOM.selectAllCheckbox.disabled = false; // Habilita se houver imagens
+        DOM.selectAllCheckbox.disabled = false;
 
         const selectedCount = selectedImagesByTab.get(currentTab).size;
         DOM.selectAllCheckbox.checked = selectedCount === images.length;
@@ -925,7 +925,6 @@
         DOM.clearSelectionBtn.setAttribute('aria-disabled', !anySelected);
       },
 
-      // Nova função para controlar a visibilidade dos checkboxes
       updateCheckboxesVisibility: () => {
         const anySelected = selectedImagesByTab.get(currentTab).size > 0;
         if (anySelected) {
@@ -945,7 +944,7 @@
         const img = document.createElement('img');
         img.src = src;
         img.alt = alt;
-        img.tabIndex = 0; // Torna a imagem focável
+        img.tabIndex = 0;
         img.style.transform = 'scale(1)';
 
         const controls = document.createElement('div');
@@ -969,7 +968,7 @@
         let scale = 1;
         let translateX = 0, translateY = 0;
         let isDragging = false;
-        let startPoint = { x: 0, y: 0 }; // Para mouse e touch
+        let startPoint = { x: 0, y: 0 };
 
         const updateTransform = () => {
           img.style.transform = `scale(${scale}) translate(${translateX}px, ${translateY}px)`;
@@ -977,14 +976,14 @@
 
         zoomInBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          scale = Math.min(scale * 1.2, 5); // Limita o zoom máximo
+          scale = Math.min(scale * 1.2, 5);
           updateTransform();
         });
 
         zoomOutBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          scale = Math.max(scale / 1.2, 1); // Limita o zoom mínimo a 1
-          if (scale === 1) { // Reseta a posição se o zoom for 1
+          scale = Math.max(scale / 1.2, 1);
+          if (scale === 1) {
             translateX = 0;
             translateY = 0;
           }
@@ -999,7 +998,6 @@
           updateTransform();
         });
 
-        // Eventos de mouse para zoom e arrastar
         img.addEventListener('wheel', (e) => {
           e.preventDefault();
           const delta = -e.deltaY;
@@ -1010,7 +1008,6 @@
             scale = Math.max(scale / 1.1, 1);
           }
 
-          // Ajusta o translateX/Y para manter o ponto de zoom no centro da imagem
           const rect = img.getBoundingClientRect();
           const mouseX = e.clientX - rect.left;
           const mouseY = e.clientY - rect.top;
@@ -1018,7 +1015,7 @@
           translateX = translateX + mouseX * (1 / oldScale - 1 / scale);
           translateY = translateY + mouseY * (1 / oldScale - 1 / scale);
           
-          if (scale === 1) { // Reseta a posição se o zoom for 1
+          if (scale === 1) {
             translateX = 0;
             translateY = 0;
           }
@@ -1047,7 +1044,6 @@
           overlay.style.cursor = 'zoom-out';
         });
 
-        // Eventos de toque para zoom e arrastar (Pan & Pinch-to-zoom)
         let initialPinchDistance = null;
         let lastScale = 1;
 
@@ -1060,9 +1056,9 @@
                     e.touches[1].pageX - e.touches[0].pageX,
                     e.touches[1].pageY - e.touches[0].pageY
                 );
-                lastScale = scale; // Salva a escala atual antes do pinch
+                lastScale = scale;
             }
-            e.preventDefault(); // Impede o scroll da página
+            e.preventDefault();
         }, { passive: false });
 
         img.addEventListener('touchmove', (e) => {
@@ -1076,9 +1072,8 @@
                     e.touches[1].pageY - e.touches[0].pageY
                 );
                 scale = lastScale * (currentPinchDistance / initialPinchDistance);
-                scale = Math.max(1, Math.min(scale, 5)); // Limita o zoom
+                scale = Math.max(1, Math.min(scale, 5));
 
-                // Recalcula translateX/Y para "pinçar" no centro
                 const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                 const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
 
@@ -1089,7 +1084,7 @@
                 translateX = translateX + relativeX * (1 / lastScale - 1 / scale);
                 translateY = translateY + relativeY * (1 / lastScale - 1 / scale);
 
-                if (scale === 1) { // Reseta a posição se o zoom for 1
+                if (scale === 1) {
                     translateX = 0;
                     translateY = 0;
                 }
@@ -1103,28 +1098,27 @@
             initialPinchDistance = null;
         });
 
-
         controls.appendChild(zoomInBtn);
         controls.appendChild(zoomOutBtn);
         controls.appendChild(resetZoomBtn);
         overlay.appendChild(img);
         overlay.appendChild(controls);
         document.body.appendChild(overlay);
-        img.focus(); // Foca na imagem para permitir navegação por teclado
+        img.focus();
 
         const closeFullscreen = () => {
           document.body.removeChild(overlay);
           overlay.removeEventListener('click', closeFullscreen);
           document.removeEventListener('keydown', handleKeyDown);
-          Utils.revokeObjectURL(img.src); // Libera o Object URL
+          Utils.revokeObjectURL(img.src);
         };
 
         const handleKeyDown = (e) => {
           if (e.key === 'Escape') closeFullscreen();
         };
 
-        overlay.addEventListener('click', closeFullscreen); // Clique no overlay fecha
-        img.addEventListener('click', (e) => e.stopPropagation()); // Impede que o clique na imagem feche o fullscreen
+        overlay.addEventListener('click', closeFullscreen);
+        img.addEventListener('click', (e) => e.stopPropagation());
         document.addEventListener('keydown', handleKeyDown);
       }
     };
@@ -1137,7 +1131,7 @@
         UI.updateTabsUI();
         await UI.renderImages();
         UI.updateButtonsState();
-        UI.updateCheckboxesVisibility(); // Garante visibilidade correta ao trocar de aba
+        UI.updateCheckboxesVisibility();
         StateManager.saveState();
       }
     };
@@ -1157,7 +1151,7 @@
 
         UI.updateSelectAllCheckbox();
         UI.updateButtonsState();
-        UI.updateCheckboxesVisibility(); // Atualiza a visibilidade dos checkboxes
+        UI.updateCheckboxesVisibility();
         StateManager.saveState();
       },
 
@@ -1167,12 +1161,11 @@
         UI.showLoading();
         try {
             await IndexedDBManager.deleteImageBlob(imageName);
-            // Remove o nome da imagem do array da aba
             const images = imageGalleryByTab.get(currentTab).filter(name => name !== imageName);
             imageGalleryByTab.set(currentTab, images);
-            selectedImagesByTab.get(currentTab).delete(imageName); // Garante que a imagem seja desmarcada se estiver selecionada
+            selectedImagesByTab.get(currentTab).delete(imageName);
 
-            await UI.renderImages(); // Re-renderiza a lista de imagens
+            await UI.renderImages();
             StateManager.saveState();
             Utils.showStatus('Imagem excluída com sucesso!');
         } catch (error) {
@@ -1183,16 +1176,15 @@
         }
       },
 
-      reorderImages: async (fromIndex, toIndex, draggedImageName) => { // Adicionado draggedImageName como parâmetro
+      reorderImages: async (fromIndex, toIndex, draggedImageName) => {
         const images = imageGalleryByTab.get(currentTab) || [];
         const movedImageName = images.splice(fromIndex, 1)[0];
         images.splice(toIndex, 0, movedImageName);
         imageGalleryByTab.set(currentTab, images);
 
-        // Desmarca o checkbox do arquivo arrastado
         selectedImagesByTab.get(currentTab).delete(draggedImageName);
 
-        await UI.renderImages(); // Re-renderiza para refletir a nova ordem e o estado do checkbox
+        await UI.renderImages();
         StateManager.saveState();
       },
 
@@ -1212,7 +1204,7 @@
             );
 
             imageGalleryByTab.set(currentTab, images);
-            selectedImagesByTab.get(currentTab).clear(); // Limpa a seleção após a exclusão
+            selectedImagesByTab.get(currentTab).clear();
 
             await UI.renderImages();
             StateManager.saveState();
@@ -1228,13 +1220,13 @@
 
       clearSelection: () => {
         selectedImagesByTab.get(currentTab).clear();
-        UI.renderImages(); // Re-renderiza para remover a classe 'selected' e desmarcar checkboxes
+        UI.renderImages();
         StateManager.saveState();
         Utils.showStatus('Seleção limpa.');
       },
 
       handleFileSelection: async (e) => {
-        const files = Array.from(e.target.files); // Converte FileList para Array
+        const files = Array.from(e.target.files);
         if (!files.length) return;
 
         UI.showLoading();
@@ -1286,12 +1278,10 @@
     // Configuração de eventos
     const EventManager = {
       setup: () => {
-        // Eventos de clique longo (long-press) para mostrar os checkboxes
         DOM.imageList.addEventListener('mousedown', (e) => {
             const container = e.target.closest('.image-container');
             if (!container) return;
 
-            // Inicia o timer para detectar clique longo
             longPressTimer = setTimeout(() => {
                 isLongPress = true;
                 const checkbox = container.querySelector('.image-checkbox');
@@ -1299,15 +1289,14 @@
                     checkbox.checked = !checkbox.checked;
                     ImageManager.toggleSelectImage(container.dataset.name, checkbox.checked, container);
                 }
-            }, 500); // 500ms para ser considerado um clique longo
+            }, 500);
         });
 
         DOM.imageList.addEventListener('mouseup', () => {
-            clearTimeout(longPressTimer); // Limpa o timer ao soltar o botão do mouse
-            isLongPress = false; // Reseta a flag
+            clearTimeout(longPressTimer);
+            isLongPress = false;
         });
 
-        // Para touch devices
         DOM.imageList.addEventListener('touchstart', (e) => {
             const container = e.target.closest('.image-container');
             if (!container) return;
@@ -1320,19 +1309,17 @@
                     ImageManager.toggleSelectImage(container.dataset.name, checkbox.checked, container);
                 }
             }, 500);
-        }, { passive: true }); // Usar passive: true para não bloquear o scroll
+        }, { passive: true });
 
         DOM.imageList.addEventListener('touchend', () => {
             clearTimeout(longPressTimer);
             isLongPress = false;
         });
 
-        // Evento de clique no container: Agora só abre fullscreen se o clique for na imagem ou nome E NÃO for um clique longo
         DOM.imageList.addEventListener('click', async (e) => {
           const container = e.target.closest('.image-container');
-          if (!container || isLongPress) return; // Se for um clique longo, a lógica já foi tratada
+          if (!container || isLongPress) return;
 
-          // Verifica se o clique foi diretamente na imagem ou no span do nome
           if (e.target.tagName === 'IMG' || e.target.classList.contains('image-name')) {
             const imageName = container.dataset.name;
             const blob = await IndexedDBManager.getImageBlob(imageName);
@@ -1343,11 +1330,8 @@
                 Utils.showStatus('Erro: Imagem não encontrada para ampliar.');
             }
           } else if (e.target.type === 'checkbox') {
-            // Se o clique foi no checkbox, a lógica de seleção já é tratada pelo listener do checkbox
             return; 
           } else {
-            // Se os checkboxes estiverem visíveis, um clique em qualquer parte do container
-            // deve alternar a seleção (comportamento de edição)
             if (DOM.body.classList.contains('show-checkboxes')) {
                 const checkbox = container.querySelector('.image-checkbox');
                 if (checkbox) {
@@ -1358,7 +1342,6 @@
           }
         });
 
-        // Eventos de teclado para acessibilidade na lista de imagens
         DOM.imageList.addEventListener('keydown', (e) => {
           const container = e.target.closest('.image-container');
           if (!container) return;
@@ -1366,10 +1349,9 @@
           const imageName = container.dataset.name;
 
           if (e.key === ' ' || e.key === 'Enter') {
-            e.preventDefault(); // Impede o scroll da página ao pressionar espaço
+            e.preventDefault();
             const checkbox = container.querySelector('.image-checkbox');
             if (checkbox) {
-                // Sempre que o checkbox for interagido por teclado, mostre-o
                 DOM.body.classList.add('show-checkboxes');
                 checkbox.checked = !checkbox.checked;
                 ImageManager.toggleSelectImage(imageName, checkbox.checked, container);
@@ -1381,7 +1363,6 @@
           }
         });
 
-        // Eventos de Drag and Drop
         DOM.imageList.addEventListener('dragstart', (e) => {
           const container = e.target.closest('.image-container');
           if (!container) return;
@@ -1391,13 +1372,13 @@
 
           container.classList.add('dragging');
           e.dataTransfer.effectAllowed = 'move';
-          e.dataTransfer.setData('text/plain', container.dataset.name); // Dados para dragover
+          e.dataTransfer.setData('text/plain', container.dataset.name);
         });
 
         DOM.imageList.addEventListener('dragover', (e) => {
-          e.preventDefault(); // Necessário para permitir o drop
+          e.preventDefault();
           const container = e.target.closest('.image-container');
-          if (container && container.dataset.name !== e.dataTransfer.getData('text/plain')) { // Evita highlight no próprio elemento
+          if (container && container.dataset.name !== e.dataTransfer.getData('text/plain')) {
             container.classList.add('drag-over');
           }
           e.dataTransfer.dropEffect = 'move';
@@ -1413,26 +1394,24 @@
           const container = e.target.closest('.image-container');
           if (container) {
             container.classList.remove('drag-over');
-            const draggedImageName = e.dataTransfer.getData('text/plain'); // Pega o nome da imagem arrastada
+            const draggedImageName = e.dataTransfer.getData('text/plain');
             const dragEndIndex = imageGalleryByTab.get(currentTab).indexOf(container.dataset.name);
             
             if (dragStartIndex !== null && dragEndIndex !== -1 && dragStartIndex !== dragEndIndex) {
-              ImageManager.reorderImages(dragStartIndex, dragEndIndex, draggedImageName); // Passa o nome da imagem arrastada
+              ImageManager.reorderImages(dragStartIndex, dragEndIndex, draggedImageName);
             }
           }
-          dragStartIndex = null; // Reseta o índice de início
+          dragStartIndex = null;
         });
 
         DOM.imageList.addEventListener('dragend', (e) => {
           const allImageContainers = DOM.imageList.querySelectorAll('.image-container');
           allImageContainers.forEach(container => {
-            container.classList.remove('dragging', 'drag-over'); // Remove todas as classes de drag
+            container.classList.remove('dragging', 'drag-over');
           });
-          dragStartIndex = null; // Garante que o índice é resetado, mesmo se o drop não ocorrer em um alvo válido
+          dragStartIndex = null;
         });
 
-
-        // Eventos dos botões de seleção
         DOM.selectAllCheckbox.addEventListener('change', () => {
           const images = imageGalleryByTab.get(currentTab) || [];
           const selectedSet = selectedImagesByTab.get(currentTab);
@@ -1453,16 +1432,15 @@
           }
 
           UI.updateButtonsState();
-          UI.updateCheckboxesVisibility(); // Atualiza a visibilidade dos checkboxes
+          UI.updateCheckboxesVisibility();
           StateManager.saveState();
         });
 
         DOM.clearSelectionBtn.addEventListener('click', ImageManager.clearSelection);
         DOM.deleteSelectedBtn.addEventListener('click', ImageManager.deleteSelected);
 
-        // Eventos dos botões de arquivo/nuvem
         DOM.openFileDialogButton.addEventListener('click', () => {
-          DOM.fileInput.value = ''; // Limpa o valor do input para permitir selecionar o mesmo arquivo novamente
+          DOM.fileInput.value = '';
           DOM.fileInput.click();
         });
         DOM.fileInput.addEventListener('change', ImageManager.handleFileSelection);
@@ -1472,7 +1450,6 @@
           Utils.showStatus('Abrindo pasta do OneDrive em uma nova aba.');
         });
 
-        // Eventos dos botões do cabeçalho (apenas mensagens de status)
         DOM.syncBtn.addEventListener('click', () => {
           Utils.showStatus('Funcionalidade de Sincronização em desenvolvimento...');
         });
@@ -1487,22 +1464,22 @@
     async function init() {
       UI.showLoading();
       try {
-        await IndexedDBManager.open(); // Abre a conexão com o IndexedDB
-        await StateManager.loadState(); // Carrega o estado salvo
-        UI.createTabs(); // Cria as abas dinamicamente
-        UI.updateTabsUI(); // Atualiza o estado visual das abas
-        await UI.renderImages(); // Renderiza as imagens da aba atual
-        EventManager.setup(); // Configura todos os ouvintes de eventos
-        UI.updateCheckboxesVisibility(); // Garante que a visibilidade inicial está correta
+        await IndexedDBManager.open();
+        await StateManager.loadState();
+        UI.createTabs();
+        UI.updateTabsUI();
+        await UI.renderImages();
+        EventManager.setup();
+        UI.updateCheckboxesVisibility();
       } catch (e) {
         console.error("Erro na inicialização:", e);
         Utils.showStatus("Erro ao iniciar o aplicativo. Tente recarregar a página.");
       } finally {
-        UI.hideLoading(); // Esconde o spinner de carregamento
+        UI.hideLoading();
       }
     }
 
-    document.addEventListener('DOMContentLoaded', init); // Inicia quando o DOM estiver pronto
+    document.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
 </html>
