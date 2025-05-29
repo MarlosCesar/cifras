@@ -362,13 +362,153 @@
       });
     }
     function createImageElement(imageName, imageBlob) {
-      // ... (veja a função createImageElement da resposta anterior; ela está completa e pronta para uso) ...
-      // Cole aqui a função createImageElement conforme a última resposta!
-      // (Não repito por limitação de espaço)
-      // Ela já está 100% pronta para drag, seleção, long press, etc.
-      // Lembre-se de copiar toda a função da resposta anterior!
-      // Se quiser a função completa aqui novamente, só pedir.
+  const container = document.createElement('div');
+  container.className = 'image-container';
+  container.setAttribute('draggable', 'true');
+  container.setAttribute('tabindex', '0');
+  container.setAttribute('role', 'checkbox');
+  container.setAttribute('aria-checked', selectedImagesByTab.get(currentTab).has(imageName));
+  container.dataset.name = imageName;
+  if (selectedImagesByTab.get(currentTab).has(imageName)) container.classList.add('selected');
+
+  // Checkbox visual
+  const checkbox = document.createElement('div');
+  checkbox.className = 'image-checkbox';
+  if (selectedImagesByTab.get(currentTab).has(imageName)) checkbox.classList.add('checked');
+  checkbox.onclick = e => { e.stopPropagation(); toggleSelect(imageName, container); };
+  container.appendChild(checkbox);
+
+  // Imagem
+  const img = document.createElement('img');
+  const objectURL = URL.createObjectURL(imageBlob);
+  img.src = objectURL;
+  img.alt = imageName;
+  container.appendChild(img);
+
+  // Nome
+  const span = document.createElement('span');
+  span.className = 'image-name';
+  span.textContent = imageName.replace(/\.[^/.]+$/, "");
+  container.appendChild(span);
+
+  // --- Eventos para seleção e drag ---
+  let longPressTimeout = null;
+  let dragActivated = false;
+  let isDragging = false;
+
+  // Mobile: long-press para seleção ou drag
+  container.addEventListener('touchstart', function(e) {
+    if (e.touches.length > 1) return;
+    dragActivated = false;
+    isDragging = false;
+    longPressTimeout = setTimeout(() => {
+      if (!longPressUsed) {
+        // Primeira seleção via long press
+        isSelectionMode = true;
+        longPressUsed = true;
+        toggleSelect(imageName, container);
+      } else {
+        // Já está em seleção: ativa drag
+        dragActivated = true;
+        isDragging = true;
+        container.classList.add('dragging');
+        dragStartIndex = Array.from(document.getElementById('image-list').children).indexOf(container);
+      }
+    }, 400);
+  }, {passive: true});
+
+  container.addEventListener('touchmove', function(e) {
+    if (dragActivated && isDragging && e.touches.length === 1) {
+      // efeito visual opcional
+    } else {
+      clearTimeout(longPressTimeout);
     }
+  }, {passive: true});
+
+  container.addEventListener('touchend', function(e) {
+    clearTimeout(longPressTimeout);
+    if (dragActivated && isDragging) {
+      container.classList.remove('dragging');
+      // Encontrar destino
+      const containers = Array.from(document.getElementById('image-list').children);
+      let toIndex = containers.indexOf(document.elementFromPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY));
+      if (toIndex === -1) toIndex = containers.length - 1;
+      reorderImages(dragStartIndex, toIndex);
+      // Limpa seleção após drag
+      selectedImagesByTab.get(currentTab).clear();
+      isSelectionMode = false;
+      longPressUsed = false;
+      renderImages();
+    } else if (!isSelectionMode && !longPressUsed) {
+      // Tap curto fora da seleção: abre fullscreen
+      openFullscreen(objectURL, imageName);
+    } else if (isSelectionMode && longPressUsed) {
+      // Se já está em seleção, tap curto seleciona
+      toggleSelect(imageName, container);
+    }
+  }, {passive: true});
+
+  // Desktop: long-press com mouse para seleção ou drag
+  container.addEventListener('mousedown', function(e) {
+    if (e.button !== 0) return;
+    dragActivated = false;
+    isDragging = false;
+    longPressTimeout = setTimeout(() => {
+      if (!longPressUsed) {
+        isSelectionMode = true;
+        longPressUsed = true;
+        toggleSelect(imageName, container);
+      } else {
+        dragActivated = true;
+        isDragging = true;
+        container.classList.add('dragging');
+        dragStartIndex = Array.from(document.getElementById('image-list').children).indexOf(container);
+      }
+    }, 400);
+  });
+  container.addEventListener('mousemove', function() {
+    clearTimeout(longPressTimeout);
+  });
+  container.addEventListener('mouseup', function(e) {
+    clearTimeout(longPressTimeout);
+    if (dragActivated && isDragging) {
+      container.classList.remove('dragging');
+      // Encontrar destino
+      const containers = Array.from(document.getElementById('image-list').children);
+      let toIndex = containers.indexOf(document.elementFromPoint(e.clientX, e.clientY));
+      if (toIndex === -1) toIndex = containers.length - 1;
+      reorderImages(dragStartIndex, toIndex);
+      // Limpa seleção após drag
+      selectedImagesByTab.get(currentTab).clear();
+      isSelectionMode = false;
+      longPressUsed = false;
+      renderImages();
+    } else if (!isSelectionMode && !longPressUsed) {
+      openFullscreen(objectURL, imageName);
+    } else if (isSelectionMode && longPressUsed) {
+      toggleSelect(imageName, container);
+    }
+  });
+  container.addEventListener('mouseleave', function() {
+    clearTimeout(longPressTimeout);
+  });
+
+  // Drag & drop HTML5 para desktop (fallback para mouse users)
+  container.addEventListener('dragstart', function(e) {
+    // Ativa seleção para arrastar
+    if (!isSelectionMode) {
+      isSelectionMode = true;
+      longPressUsed = true;
+      toggleSelect(imageName, container);
+    }
+    container.classList.add('dragging');
+    dragStartIndex = Array.from(document.getElementById('image-list').children).indexOf(container);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', imageName);
+  });
+
+  return container;
+}
     async function renderImages() {
       const list = document.getElementById('image-list');
       list.innerHTML = "";
