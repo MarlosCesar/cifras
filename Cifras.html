@@ -3,77 +3,65 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Seletor de Cifras - Google Drive</title>
+  <title>Seletor de Cifras</title>
   <link rel="preload" href="https://cdn.tailwindcss.com" as="script">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://apis.google.com/js/api.js"></script>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
-    /* Variáveis CSS para um tema mais profissional e fácil manutenção */
     :root {
-      --primary-color: #3b82f6; /* Azul primário */
-      --primary-dark: #2563eb; /* Azul mais escuro para hover/ativo */
-      --primary-hover: #e0e7ff; /* Azul muito claro para fundo de hover */
-      --danger-color: #ef4444; /* Vermelho para ações perigosas */
-      --danger-dark: #dc2626; /* Vermelho mais escuro */
-      --gray-light: #f3f4f6; /* Cinza claro para o background geral */
-      --gray-medium: #e5e7eb; /* Cinza médio para bordas/divisores */
-      --text-color-dark: #333333; /* Texto escuro quase preto */
-      --text-color-light: #4b5563; /* Texto cinza escuro */
+      --primary-color: #3b82f6;
+      --primary-dark: #2563eb;
+      --primary-hover: #e0e7ff;
+      --danger-color: #ef4444;
+      --danger-dark: #dc2626;
+      --gray-light: #f3f4f6;
+      --gray-medium: #e5e7eb;
+      --text-color-dark: #333333;
+      --text-color-light: #4b5563;
       --shadow-base: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
       --shadow-primary: 0 0 10px rgba(37, 99, 235, 0.3);
-
-      /* Cores do cabeçalho */
-      --header-bg: #1A202C; /* Cinza bem escuro para o cabeçalho */
-      --header-text: #E2E8F0; /* Cinza claro para o texto do cabeçalho */
-      --header-hover: #2D3748; /* Tom um pouco mais claro para hover dos botões do cabeçalho */
+      --header-bg: #1A202C;
+      --header-text: #E2E8F0;
+      --header-hover: #2D3748;
     }
-
     html, body {
-      /* Garante que o overflow-x seja escondido para evitar barras de rolagem horizontais em mobile */
-      overflow-x: hidden; 
+      overflow-x: hidden;
       overflow-y: auto;
       background-color: var(--gray-light);
-      font-family: 'Inter', sans-serif; /* Usando a fonte Inter */
-      color: var(--text-color-dark); /* Cor de texto padrão */
+      font-family: 'Inter', sans-serif;
+      color: var(--text-color-dark);
     }
-
-    /* Estilo do cabeçalho profissional */
     .header-professional {
       background-color: var(--header-bg);
       color: var(--header-text);
-      box-shadow: var(--shadow-base); /* Sombra suave para o cabeçalho */
+      box-shadow: var(--shadow-base);
     }
-
     .header-professional button {
-      transition: background-color 0.3s ease, transform 0.1s ease; /* Transição suave e pequena escala no clique */
-      display: flex; /* Para alinhar ícone e texto se houver */
+      transition: background-color 0.3s ease, transform 0.1s ease;
+      display: flex;
       align-items: center;
       justify-content: center;
     }
-
     .header-professional button:hover {
       background-color: var(--header-hover);
     }
-
     .header-professional button:active {
-        transform: scale(0.98); /* Pequeno efeito de clique */
+      transform: scale(0.98);
     }
-
-    /* Estilos para as abas */
     .tabs {
       display: flex;
       gap: 0.5rem;
-      border-bottom: 2px solid var(--gray-medium); /* Borda inferior para separar as abas do conteúdo */
+      border-bottom: 2px solid var(--gray-medium);
       margin-bottom: 1rem;
-      flex-wrap: wrap; /* Permite que as abas quebrem a linha em telas menores */
-      padding: 0 1rem; /* Padding horizontal para não colar nas bordas em mobile */
+      flex-wrap: wrap;
+      padding: 0 1rem;
     }
-
     .tab {
-      padding: 0.65rem 1.2rem; /* Um pouco mais de padding */
+      padding: 0.65rem 1.2rem;
       cursor: pointer;
       border-radius: 0.5rem 0.5rem 0 0;
       background-color: #f9fafb;
@@ -81,14 +69,10 @@
       border-bottom: 2px solid transparent;
       transition: all 0.2s ease;
       outline-offset: 2px;
-      color: var(--text-color-light); /* Cor do texto das abas não selecionadas */
-      font-weight: 500; /* Um pouco mais de peso */
-    }
-
-    [role="tab"] {
+      color: var(--text-color-light);
+      font-weight: 500;
       user-select: none;
     }
-
     .tab:hover,
     .tab:focus-visible {
       background-color: var(--primary-hover);
@@ -96,96 +80,79 @@
       outline: none;
       color: var(--primary-dark);
     }
-
     .tab.active {
       background-color: white;
       border-color: var(--primary-color) var(--primary-color) white;
       font-weight: 600;
       color: var(--primary-dark);
-      box-shadow: 0 -2px 5px rgba(0,0,0,0.05); /* Sombra sutil na aba ativa */
+      box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
     }
-
-    /* Estilo para o contêiner de imagem individual */
     .image-container {
       display: flex;
       align-items: center;
-      gap: 12px; /* Aumentei o espaçamento entre imagem e nome */
-      padding: 12px; /* Mais padding interno */
-      border: 1px solid var(--gray-medium); /* Borda sutil */
-      border-radius: 0.75rem; /* Bordas mais arredondadas */
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid var(--gray-medium);
+      border-radius: 0.75rem;
       overflow: hidden;
-      cursor: pointer; /* Cursor de ponteiro para indicar que é clicável */
+      cursor: pointer;
       transition: all 0.2s ease;
       background-color: white;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05); /* Sombra mais sutil por padrão */
-      position: relative; /* Para posicionar o checkbox */
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      position: relative;
     }
-
     .image-container:focus-visible {
       outline: 2px solid var(--primary-color);
-      outline-offset: 3px; /* Aumentei o offset para melhor visibilidade */
+      outline-offset: 3px;
     }
-
     .image-container.selected {
       border-color: var(--primary-dark);
-      box-shadow: var(--shadow-primary); /* Sombra primária quando selecionado */
-      background-color: var(--primary-hover); /* Fundo levemente azulado quando selecionado */
+      box-shadow: var(--shadow-primary);
+      background-color: var(--primary-hover);
     }
-
-    /* Estilos para o checkbox */
     .image-container .image-checkbox {
-        position: absolute; /* Posiciona o checkbox dentro do container */
-        top: 8px; /* Ajuste a posição conforme necessário */
-        left: 8px; /* Ajuste a posição conforme necessário */
-        z-index: 10; /* Garante que o checkbox esteja acima da imagem */
-        opacity: 0; /* Oculto por padrão */
-        pointer-events: none; /* Não interage com o mouse por padrão */
-        transition: opacity 0.2s ease;
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      z-index: 10;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
     }
-
-    /* Regra para mostrar checkboxes quando a classe 'show-checkboxes' estiver ativa */
     .show-checkboxes .image-container .image-checkbox {
-        opacity: 1;
-        pointer-events: all; /* Permite interação quando visível */
+      opacity: 1;
+      pointer-events: all;
     }
-    /* Também mostra o "Selecionar todas" quando checkboxes são visíveis */
     .show-checkboxes #select-all-container {
-      display: flex !important; /* Força a exibição do container "Selecionar todas" */
+      display: flex !important;
     }
-
-    /* Estilos para drag-and-drop */
     .drag-over {
-      border: 2px dashed var(--primary-dark) !important; /* Borda mais visível para drag-over */
-      background-color: rgba(59, 130, 246, 0.1) !important; /* Fundo levemente azulado */
+      border: 2px dashed var(--primary-dark) !important;
+      background-color: rgba(59, 130, 246, 0.1) !important;
     }
-
     .image-container.dragging {
-      opacity: 0.4; /* Reduz a opacidade para indicar que está sendo arrastado */
-      transform: scale(0.98); /* Pequeno encolhimento visual */
+      opacity: 0.4;
+      transform: scale(0.98);
     }
-
     .image-container img {
-      width: 2.2cm; /* Ligeiramente maior */
-      height: 3.3cm; /* Ligeiramente maior */
+      width: 2.2cm;
+      height: 3.3cm;
       object-fit: cover;
-      border-radius: 0.35rem; /* Bordas um pouco mais arredondadas */
+      border-radius: 0.35rem;
       flex-shrink: 0;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1); /* Sombra sutil na imagem miniatura */
-      cursor: zoom-in; /* Cursor de zoom para a imagem */
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      cursor: zoom-in;
     }
-
     .image-name {
-      font-size: 0.95rem; /* Aumentei ligeiramente o tamanho da fonte */
+      font-size: 0.95rem;
       color: var(--text-color-dark);
-      flex-grow: 1; /* Permite que o nome ocupe o espaço restante */
-      overflow-wrap: break-word; /* Garante que nomes longos quebrem a linha */
-      word-break: break-word; /* Para compatibilidade */
-      max-width: calc(100% - 2.2cm - 12px); /* Ajusta a largura máxima para o nome, considerando a imagem e o gap */
-      line-height: 1.4; /* Melhor espaçamento entre linhas */
-      cursor: zoom-in; /* Cursor de zoom para o nome */
+      flex-grow: 1;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      max-width: calc(100% - 2.2cm - 12px);
+      line-height: 1.4;
+      cursor: zoom-in;
     }
-
-    /* Estilo para a visualização em tela cheia - MODIFICADO PARA OCUPAR TODA A TELA */
     .fullscreen-image {
       position: fixed;
       top: 0;
@@ -203,7 +170,6 @@
       padding: 0;
       overflow: hidden;
     }
-
     .fullscreen-image img {
       max-width: 100%;
       max-height: 100%;
@@ -213,7 +179,6 @@
       margin: 0;
       padding: 0;
     }
-
     .fullscreen-controls {
       position: fixed;
       bottom: 20px;
@@ -226,7 +191,6 @@
       border-radius: 8px;
       z-index: 10000;
     }
-
     .zoom-btn {
       background: rgba(255,255,255,0.2);
       color: white;
@@ -241,16 +205,12 @@
       justify-content: center;
       transition: background-color 0.3s ease, transform 0.1s ease;
     }
-
     .zoom-btn:hover {
       background: rgba(255,255,255,0.3);
     }
-
     .zoom-btn:active {
-        transform: scale(0.95);
+      transform: scale(0.95);
     }
-
-    /* Loading Spinner */
     .loading-spinner {
       display: none;
       position: fixed;
@@ -263,14 +223,11 @@
       z-index: 10000;
       color: white;
     }
-
     .loading-spinner.active {
       display: flex;
       align-items: center;
       justify-content: center;
     }
-
-    /* Mensagem de status */
     #status-message {
       position: fixed;
       bottom: 20px;
@@ -286,12 +243,9 @@
       pointer-events: none;
       text-align: center;
     }
-
     #status-message.show {
       opacity: 1;
     }
-
-    /* Media Queries para responsividade */
     @media (max-width: 640px) {
       .header-professional h1 {
         font-size: 1.5rem;
@@ -302,7 +256,6 @@
       .header-professional button {
         padding: 0.6rem;
       }
-
       .tabs {
         flex-wrap: wrap;
         justify-content: center;
@@ -313,28 +266,23 @@
         padding: 0.5rem 0.8rem;
         font-size: 0.9rem;
       }
-
       .main-content-area {
         padding: 0.75rem;
       }
-
       .image-container {
         flex-direction: row;
         align-items: center;
         gap: 10px;
         padding: 10px;
       }
-
       .image-container img {
         width: 1.8cm;
         height: 2.7cm;
       }
-
       .image-name {
         font-size: 0.875rem;
         max-width: calc(100% - 1.8cm - 10px);
       }
-
       .flex-wrap.gap-2 {
         flex-direction: column;
         width: 100%;
@@ -346,19 +294,16 @@
       .flex-wrap.gap-2 button i {
         margin-right: 0.5rem;
       }
-
       .fullscreen-controls {
-          flex-direction: row;
-          gap: 10px;
-          padding: 10px 15px;
+        flex-direction: row;
+        gap: 10px;
+        padding: 10px 15px;
       }
       .zoom-btn {
-          width: 45px;
-          height: 45px;
-          font-size: 22px;
+        width: 45px;
+        height: 45px;
+        font-size: 22px;
       }
-      
-      /* Ajustes específicos para tela cheia em mobile */
       .fullscreen-image img {
         width: auto;
         height: auto;
@@ -366,28 +311,27 @@
         max-height: 100vh;
       }
     }
-
     @media (min-width: 641px) and (max-width: 1024px) {
-        .tabs {
-            justify-content: flex-start;
-            padding: 0 1.5rem;
-        }
-        .tab {
-            padding: 0.6rem 1.1rem;
-            font-size: 0.95rem;
-        }
-        .image-container {
-            padding: 10px;
-            gap: 10px;
-        }
-        .image-container img {
-            width: 2cm;
-            height: 3cm;
-        }
-        .image-name {
-            font-size: 0.9rem;
-            max-width: calc(100% - 2cm - 10px);
-        }
+      .tabs {
+        justify-content: flex-start;
+        padding: 0 1.5rem;
+      }
+      .tab {
+        padding: 0.6rem 1.1rem;
+        font-size: 0.95rem;
+      }
+      .image-container {
+        padding: 10px;
+        gap: 10px;
+      }
+      .image-container img {
+        width: 2cm;
+        height: 3cm;
+      }
+      .image-name {
+        font-size: 0.9rem;
+        max-width: calc(100% - 2cm - 10px);
+      }
     }
   </style>
 </head>
@@ -410,8 +354,8 @@
       <div class="p-4 bg-gray-50 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <h2 class="font-semibold text-xl text-gray-700">Minhas Cifras</h2>
         <div class="flex flex-wrap gap-2 justify-end">
-          <button id="open-cloud-folder" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition flex items-center" aria-label="Buscar cifras no Google Drive" title="Buscar cifras no Google Drive">
-            <i class="fas fa-cloud mr-2" aria-hidden="true"></i> Buscar no Google Drive
+          <button id="open-cloud-folder" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition flex items-center" aria-label="Buscar cifras na nuvem (OneDrive)" title="Buscar cifras na nuvem (OneDrive)">
+            <i class="fas fa-cloud mr-2" aria-hidden="true"></i> Buscar em Nuvem
           </button>
           <button id="open-file-dialog" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center" aria-label="Buscar cifras localmente" title="Buscar cifras localmente">
             <i class="fas fa-folder-open mr-2" aria-hidden="true"></i> Buscar Local
@@ -444,47 +388,14 @@
     <span class="sr-only">Carregando...</span>
   </div>
   <div id="status-message" aria-live="polite"></div>
-
-  <!-- Modal para seleção de arquivos do Google Drive -->
-  <div id="gdrive-modal" class="modal-overlay hidden">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 class="modal-title">Selecionar Cifras do Google Drive</h3>
-        <button id="modal-close" class="modal-close">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div id="gdrive-file-list" class="file-list">
-          <p class="text-center text-gray-500 py-4">Carregando arquivos do Google Drive...</p>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button id="modal-cancel" class="modal-button modal-button-secondary">Cancelar</button>
-        <button id="modal-import" class="modal-button modal-button-primary" disabled>Importar Selecionados</button>
-      </div>
-    </div>
-  </div>
   <script>
-    // ====== CONFIGURAÇÕES DO GOOGLE DRIVE ======
-    const GDRIVE_CONFIG = {
-      apiKey: 'SUA_API_KEY_AQUI',
-      clientId: 'SEU_CLIENT_ID.apps.googleusercontent.com',
-      scope: 'https://www.googleapis.com/auth/drive.readonly',
-      discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
-      folderId: '1OzrvB4NCBRTDgMsE_AhQy0b11bdn3v82'
-    };
-
-    // ====== ABAS ======
-    const tabs = ["Domingo Manhã", "Domingo Noite", "Segunda", "Quarta", "Culto Jovem", "Santa Ceia", "Outros"];
-    let currentTab = tabs[0];
-    let filesByTab = new Map();
-    tabs.forEach(tab => filesByTab.set(tab, []));
-    // ====== DOM ======
+    // Cache de elementos DOM
     const DOM = {
       tabsContainer: document.getElementById('tabs-container'),
       imageList: document.getElementById('image-list'),
+      fileInput: document.getElementById('file-input'),
       openFileDialogButton: document.getElementById('open-file-dialog'),
       openCloudFolderButton: document.getElementById('open-cloud-folder'),
-      fileInput: document.getElementById('file-input'),
       selectAllContainer: document.getElementById('select-all-container'),
       selectAllCheckbox: document.getElementById('select-all'),
       deleteSelectedBtn: document.getElementById('delete-selected-btn'),
@@ -494,266 +405,1009 @@
       loadingSpinner: document.getElementById('loading-spinner'),
       statusMessage: document.getElementById('status-message'),
       body: document.body,
-      gdriveModal: document.getElementById('gdrive-modal'),
-      gdriveFileList: document.getElementById('gdrive-file-list'),
-      modalClose: document.getElementById('modal-close'),
-      modalCancel: document.getElementById('modal-cancel'),
-      modalImport: document.getElementById('modal-import')
     };
 
-    // ====== GOOGLE DRIVE API ======
-    let gapiInited = false;
-    let gisInited = false;
-    let tokenClient = null;
-    let gdriveFiles = [];
-    let selectedDriveFiles = new Set();
+    // Abas desejadas
+    const tabs = ["Domingo Manhã", "Domingo Noite", "Segunda", "Quarta", "Culto Jovem", "Santa Ceia", "Outros"];
 
-    function showLoading(msg) {
-      DOM.loadingSpinner.classList.add('active');
-      if (msg) showStatus(msg);
-    }
-    function hideLoading() { DOM.loadingSpinner.classList.remove('active'); }
-    function showStatus(msg) {
-      DOM.statusMessage.textContent = msg;
-      DOM.statusMessage.classList.add('show');
-      setTimeout(() => DOM.statusMessage.classList.remove('show'), 3000);
-    }
+    // URL da pasta do OneDrive
+    const ONE_DRIVE_FOLDER_URL = "https://1drv.ms/f/c/a71268bf66931c02/EpYyUsypAQhGgpWC9YuvE54BD_o9NX9tRar0piSzq4V4Xg";
 
-    function createTabs() {
-      DOM.tabsContainer.innerHTML = '';
-      tabs.forEach(tab => {
-        const btn = document.createElement('button');
-        btn.className = 'tab';
-        btn.textContent = tab;
-        btn.onclick = () => { currentTab = tab; updateTabsUI(); renderImages(); };
-        DOM.tabsContainer.appendChild(btn);
-      });
-      updateTabsUI();
-    }
-    function updateTabsUI() {
-      DOM.tabsContainer.querySelectorAll('.tab').forEach(btn => {
-        btn.classList.toggle('active', btn.textContent === currentTab);
-      });
-    }
-    function renderImages() {
-      const files = filesByTab.get(currentTab) || [];
-      DOM.imageList.innerHTML = '';
-      if (files.length === 0) {
-        const p = document.createElement('p');
-        p.className = 'text-center text-gray-500 py-8';
-        p.textContent = 'Nenhuma imagem encontrada nesta categoria.';
-        DOM.imageList.appendChild(p);
-      } else {
-        files.forEach(file => {
-          const d = document.createElement('div');
-          d.className = 'image-container';
-          const img = document.createElement('img');
-          img.src = `https://drive.google.com/uc?id=${file.id}`;
-          img.alt = file.name;
-          img.title = "Clique para ampliar";
-          img.onclick = () => openFullscreen(img.src, file.name);
-          const name = document.createElement('span');
-          name.className = 'image-name';
-          name.textContent = file.name;
-          name.title = "Clique para ampliar";
-          name.onclick = () => openFullscreen(img.src, file.name);
-          d.appendChild(img);
-          d.appendChild(name);
-          DOM.imageList.appendChild(d);
-        });
+    // Estado otimizado com Map/Set
+    let imageGalleryByTab = new Map();
+    let selectedImagesByTab = new Map();
+    let currentTab = tabs[0];
+    let dragStartIndex = null;
+    let longPressTimer;
+    let isLongPress = false;
+
+    // Inicializar estado
+    tabs.forEach(tab => {
+      imageGalleryByTab.set(tab, []);
+      selectedImagesByTab.set(tab, new Set());
+    });
+
+    // Funções utilitárias
+    const Utils = {
+      removeFileExtension: filename => filename.replace(/\.[^/.]+$/, ""),
+      showStatus: message => {
+        DOM.statusMessage.textContent = message;
+        DOM.statusMessage.classList.add('show');
+        setTimeout(() => DOM.statusMessage.classList.remove('show'), 3000);
+      },
+      debounce: (func, timeout = 100) => {
+        let timer;
+        return (...args) => {
+          clearTimeout(timer);
+          timer = setTimeout(() => { func.apply(this, args); }, timeout);
+        };
+      },
+      objectURLCache: new Map(),
+      revokeObjectURL: (url) => {
+          if (Utils.objectURLCache.has(url)) {
+              URL.revokeObjectURL(url);
+              Utils.objectURLCache.delete(url);
+          }
+      },
+      createObjectURL: (blob) => {
+          const url = URL.createObjectURL(blob);
+          Utils.objectURLCache.set(url, true);
+          return url;
       }
-    }
+    };
 
-    // ========== FULLSCREEN ==========
-    function openFullscreen(src, alt) {
-      const overlay = document.createElement('div');
-      overlay.className = 'fullscreen-image';
-      overlay.style.position = 'fixed';
-      overlay.style.top = '0';
-      overlay.style.left = '0';
-      overlay.style.width = '100vw';
-      overlay.style.height = '100vh';
-      overlay.style.background = 'rgba(0,0,0,0.95)';
-      overlay.style.display = 'flex';
-      overlay.style.alignItems = 'center';
-      overlay.style.justifyContent = 'center';
-      overlay.style.zIndex = '9999';
-      overlay.style.cursor = 'zoom-out';
-      overlay.onclick = () => document.body.removeChild(overlay);
+    // --- IndexedDB Manager ---
+    const DB_NAME = 'ImageSelectorDB';
+    const DB_VERSION = 2;
+    const STORE_IMAGES = 'images';
+    const STORE_METADATA = 'metadata';
 
-      const img = document.createElement('img');
-      img.src = src;
-      img.alt = alt;
-      img.style.maxWidth = '90vw';
-      img.style.maxHeight = '90vh';
-      overlay.appendChild(img);
-      document.body.appendChild(overlay);
-    }
+    const IndexedDBManager = {
+      db: null,
 
-    // ========== Google Auth and Drive ==========
-    function gapiLoaded() {
-      gapi.load('client', initializeGapiClient);
-    }
-    async function initializeGapiClient() {
-      await gapi.client.init({
-        apiKey: GDRIVE_CONFIG.apiKey,
-        discoveryDocs: GDRIVE_CONFIG.discoveryDocs,
-      });
-      gapiInited = true;
-    }
-    function gisLoaded() {
-      tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: GDRIVE_CONFIG.clientId,
-        scope: GDRIVE_CONFIG.scope,
-        callback: '', // Set later
-      });
-      gisInited = true;
-    }
-
-    function ensureGoogleAuth(callback) {
-      if (!gapiInited || !gisInited) {
-        showStatus('Google API não inicializada...');
-        return;
-      }
-      tokenClient.callback = async (resp) => {
-        if (resp.error) {
-          alert('Erro na autenticação Google: ' + resp.error);
-          return;
+      open: () => new Promise((resolve, reject) => {
+        if (IndexedDBManager.db) {
+            resolve(IndexedDBManager.db);
+            return;
         }
-        callback();
-      };
-      if (gapi.client.getToken() === null) {
-        tokenClient.requestAccessToken({prompt: 'consent'});
-      } else {
-        callback();
-      }
-    }
 
-    async function listFilesInDriveFolder(folderId) {
-      showLoading('Buscando arquivos no Google Drive...');
-      try {
-        let files = [];
-        let pageToken = null;
-        do {
-          const res = await gapi.client.drive.files.list({
-            q: `'${folderId}' in parents and trashed = false and (mimeType contains 'image/')`,
-            fields: "nextPageToken, files(id, name, mimeType)",
-            pageToken: pageToken || undefined
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains(STORE_IMAGES)) {
+            db.createObjectStore(STORE_IMAGES, { keyPath: 'name' });
+          }
+          if (!db.objectStoreNames.contains(STORE_METADATA)) {
+            db.createObjectStore(STORE_METADATA, { keyPath: 'id' });
+          }
+        };
+
+        request.onsuccess = (event) => {
+          IndexedDBManager.db = event.target.result;
+          resolve(IndexedDBManager.db);
+        };
+
+        request.onerror = (event) => {
+          console.error('IndexedDB error:', event.target.errorCode);
+          reject(event.target.errorCode);
+        };
+      }),
+
+      addImageBlob: (imageName, blob) => new Promise(async (resolve, reject) => {
+        try {
+          const db = await IndexedDBManager.open();
+          const transaction = db.transaction([STORE_IMAGES], 'readwrite');
+          const store = transaction.objectStore(STORE_IMAGES);
+          const request = store.put({ name: imageName, blob: blob });
+
+          request.onsuccess = () => resolve();
+          request.onerror = (event) => reject(event.target.error);
+        } catch (e) {
+          reject(e);
+        }
+      }),
+
+      getImageBlob: (imageName) => new Promise(async (resolve, reject) => {
+        try {
+          const db = await IndexedDBManager.open();
+          const transaction = db.transaction([STORE_IMAGES], 'readonly');
+          const store = transaction.objectStore(STORE_IMAGES);
+          const request = store.get(imageName);
+
+          request.onsuccess = (event) => resolve(event.target.result ? event.target.result.blob : null);
+          request.onerror = (event) => reject(event.target.error);
+        } catch (e) {
+          reject(e);
+        }
+      }),
+
+      deleteImageBlob: (imageName) => new Promise(async (resolve, reject) => {
+        try {
+          const db = await IndexedDBManager.open();
+          const transaction = db.transaction([STORE_IMAGES], 'readwrite');
+          const store = transaction.objectStore(STORE_IMAGES);
+          const request = store.delete(imageName);
+
+          request.onsuccess = () => resolve();
+          request.onerror = (event) => reject(event.target.error);
+        } catch (e) {
+          reject(e);
+        }
+      }),
+
+      getAllImageNames: () => new Promise(async (resolve, reject) => {
+          try {
+              const db = await IndexedDBManager.open();
+              const transaction = db.transaction([STORE_IMAGES], 'readonly');
+              const store = db.transaction(STORE_IMAGES, 'readonly').objectStore(STORE_IMAGES);
+              const request = store.getAllKeys();
+
+              request.onsuccess = (event) => resolve(event.target.result);
+              request.onerror = (event) => reject(event.target.error);
+          } catch (e) {
+              reject(e);
+          }
+      }),
+
+      saveMetadata: (state) => new Promise(async (resolve, reject) => {
+        try {
+          const db = await IndexedDBManager.open();
+          const transaction = db.transaction([STORE_METADATA], 'readwrite');
+          const store = transaction.objectStore(STORE_METADATA);
+          const request = store.put({ id: 'appState', state: state });
+
+          request.onsuccess = () => resolve();
+          request.onerror = (event) => reject(event.target.error);
+        } catch (e) {
+          reject(e);
+        }
+      }),
+
+      loadMetadata: () => new Promise(async (resolve, reject) => {
+        try {
+          const db = await IndexedDBManager.open();
+          const transaction = db.transaction([STORE_METADATA], 'readonly');
+          const store = transaction.objectStore(STORE_METADATA);
+          const request = store.get('appState');
+
+          request.onsuccess = (event) => resolve(event.target.result ? event.target.result.state : null);
+          request.onerror = (event) => reject(event.target.error);
+        } catch (e) {
+          reject(e);
+        }
+      })
+    };
+
+    // Processamento de imagens
+    const ImageProcessor = {
+      processImageFile: file => new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = Utils.createObjectURL(file);
+
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_SIZE = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height *= MAX_SIZE / width;
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width *= MAX_SIZE / height;
+              height = MAX_SIZE;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(blob => {
+            Utils.revokeObjectURL(url);
+            if (blob) {
+                resolve({
+                    name: file.name,
+                    blob: blob
+                });
+            } else {
+                reject(new Error('Falha ao criar Blob da imagem.'));
+            }
+          }, 'image/webp', 0.75);
+        };
+
+        img.onerror = () => {
+          Utils.revokeObjectURL(url);
+          reject(new Error('Erro ao carregar a imagem para processamento.'));
+        };
+
+        img.src = url;
+      })
+    };
+
+    // Gerenciamento de estado
+    const StateManager = {
+        saveState: Utils.debounce(async () => {
+            const state = {
+                images: Object.fromEntries(Array.from(imageGalleryByTab.entries()).map(([tab, names]) => [tab, Array.from(names)])),
+                selected: Object.fromEntries(Array.from(selectedImagesByTab.entries()).map(([tab, set]) => [tab, Array.from(set)])),
+                currentTab,
+            };
+            try {
+                await IndexedDBManager.saveMetadata(state);
+            } catch (e) {
+                console.error('Erro ao salvar estado no IndexedDB:', e);
+                Utils.showStatus('Erro ao salvar dados.');
+            }
+        }, 500),
+
+        loadState: async () => {
+            try {
+                const state = await IndexedDBManager.loadMetadata();
+                if (state) {
+                    imageGalleryByTab = new Map(Object.entries(state.images || {}));
+                    selectedImagesByTab = new Map();
+                    for (const tab of tabs) {
+                        selectedImagesByTab.set(tab, new Set(state.selected?.[tab] || []));
+                    }
+                    currentTab = state.currentTab || tabs[0];
+                } else {
+                    StateManager.initEmptyState();
+                }
+            } catch (e) {
+                console.error('Erro ao carregar estado do IndexedDB:', e);
+                StateManager.initEmptyState();
+            }
+        },
+
+        initEmptyState: () => {
+            imageGalleryByTab = new Map();
+            selectedImagesByTab = new Map();
+            tabs.forEach(tab => {
+                imageGalleryByTab.set(tab, []);
+                selectedImagesByTab.set(tab, new Set());
+            });
+        }
+    };
+
+    // Interface do usuário
+    const UI = {
+      showLoading: () => DOM.loadingSpinner.classList.add('active'),
+      hideLoading: () => DOM.loadingSpinner.classList.remove('active'),
+
+      createTabs: () => {
+        DOM.tabsContainer.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+
+        tabs.forEach((tab, index) => {
+          const tabBtn = document.createElement('button');
+          tabBtn.className = 'tab';
+          tabBtn.setAttribute('role', 'tab');
+          tabBtn.setAttribute('tabindex', index === 0 ? '0' : '-1');
+          tabBtn.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
+          tabBtn.id = tab-${tab.replace(/\s+/g, '-').toLowerCase()};
+          tabBtn.textContent = tab;
+
+          tabBtn.addEventListener('click', () => TabManager.switchTab(tab));
+          tabBtn.addEventListener('keydown', (e) => {
+            const currentActiveIndex = tabs.indexOf(currentTab);
+            let nextIndex = currentActiveIndex;
+
+            if (e.key === 'ArrowRight') {
+              nextIndex = (currentActiveIndex + 1) % tabs.length;
+            } else if (e.key === 'ArrowLeft') {
+              nextIndex = (currentActiveIndex - 1 + tabs.length) % tabs.length;
+            } else if (e.key === 'Home') {
+              nextIndex = 0;
+            } else if (e.key === 'End') {
+              nextIndex = tabs.length - 1;
+            }
+
+            if (nextIndex !== currentActiveIndex) {
+              e.preventDefault();
+              TabManager.switchTab(tabs[nextIndex]);
+              DOM.tabsContainer.querySelector(#tab-${tabs[nextIndex].replace(/\s+/g, '-').toLowerCase()}).focus();
+            } else if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              TabManager.switchTab(tab);
+            }
           });
-          files = files.concat(res.result.files);
-          pageToken = res.result.nextPageToken;
-        } while (pageToken);
-        gdriveFiles = files;
-        return files;
-      } catch (e) {
-        showStatus('Erro ao buscar arquivos: ' + e.message);
-        return [];
-      } finally {
-        hideLoading();
-      }
-    }
 
-    function showDriveModal() {
-      DOM.gdriveModal.classList.remove('hidden');
-      DOM.gdriveFileList.innerHTML = '<p class="text-center text-gray-500 py-4">Carregando arquivos do Google Drive...</p>';
-      selectedDriveFiles.clear();
-      DOM.modalImport.disabled = true;
-    }
-    function hideDriveModal() {
-      DOM.gdriveModal.classList.add('hidden');
-      DOM.gdriveFileList.innerHTML = '';
-      selectedDriveFiles.clear();
-    }
+          fragment.appendChild(tabBtn);
+        });
 
-    function updateDriveFileList() {
-      DOM.gdriveFileList.innerHTML = '';
-      if (gdriveFiles.length === 0) {
-        DOM.gdriveFileList.innerHTML = '<p class="text-center text-gray-500 py-4">Nenhum arquivo de imagem encontrado.</p>';
-        return;
-      }
-      gdriveFiles.forEach((file, idx) => {
-        const item = document.createElement('div');
-        item.className = 'file-item';
-        item.tabIndex = 0;
-        const icon = document.createElement('i');
-        icon.className = 'fas fa-file-image file-icon';
-        const name = document.createElement('span');
-        name.className = 'file-name';
-        name.textContent = file.name;
+        DOM.tabsContainer.appendChild(fragment);
+      },
+
+      updateTabsUI: () => {
+        const buttons = DOM.tabsContainer.querySelectorAll('.tab');
+        buttons.forEach(btn => {
+          const isActive = btn.textContent === currentTab;
+          btn.classList.toggle('active', isActive);
+          btn.setAttribute('aria-selected', isActive);
+          btn.setAttribute('tabindex', isActive ? '0' : '-1');
+        });
+      },
+
+      renderImages: async () => {
+        DOM.imageList.querySelectorAll('img[data-object-url]').forEach(img => {
+            Utils.revokeObjectURL(img.dataset.objectUrl);
+        });
+
+        const imageNames = imageGalleryByTab.get(currentTab) || [];
+        const fragment = document.createDocumentFragment();
+
+        if (imageNames.length === 0) {
+          const p = document.createElement('p');
+          p.className = 'text-center text-gray-500 py-8';
+          p.textContent = 'Nenhuma imagem encontrada nesta categoria.';
+          fragment.appendChild(p);
+        } else {
+          DOM.selectAllCheckbox.disabled = false; 
+
+          const imagesToRender = [];
+          for (const imageName of imageNames) {
+            const blob = await IndexedDBManager.getImageBlob(imageName);
+            if (blob) {
+                imagesToRender.push({ name: imageName, blob: blob });
+            } else {
+                console.warn(Imagem ${imageName} não encontrada no IndexedDB. Removendo da lista.);
+                imageGalleryByTab.set(currentTab, imageNames.filter(name => name !== imageName));
+                selectedImagesByTab.get(currentTab).delete(imageName);
+            }
+          }
+
+          imagesToRender.forEach(({ name, blob }) => {
+            const container = UI.createImageElement(name, blob);
+            fragment.appendChild(container);
+          });
+        }
+
+        DOM.imageList.innerHTML = '';
+        DOM.imageList.appendChild(fragment);
+        UI.updateSelectAllCheckbox();
+        UI.updateButtonsState();
+        UI.updateCheckboxesVisibility();
+      },
+
+      createImageElement: (imageName, imageBlob) => {
+        const container = document.createElement('div');
+        container.className = 'image-container';
+        container.setAttribute('draggable', 'true');
+        container.setAttribute('tabindex', '0');
+        container.dataset.name = imageName;
+
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
-        checkbox.className = 'file-checkbox';
-        checkbox.onchange = () => {
-          if (checkbox.checked) {
-            selectedDriveFiles.add(file.id);
-          } else {
-            selectedDriveFiles.delete(file.id);
+        checkbox.className = 'form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 image-checkbox';
+        checkbox.setAttribute('aria-label', Selecionar ${Utils.removeFileExtension(imageName)});
+        checkbox.checked = selectedImagesByTab.get(currentTab).has(imageName);
+        checkbox.addEventListener('change', (e) => {
+            e.stopPropagation();
+            ImageManager.toggleSelectImage(imageName, checkbox.checked, container);
+        });
+
+        if (checkbox.checked) {
+            container.classList.add('selected');
+        } else {
+            container.classList.remove('selected');
+        }
+
+        const img = document.createElement('img');
+        const objectURL = Utils.createObjectURL(imageBlob);
+        img.src = objectURL;
+        img.dataset.objectUrl = objectURL;
+        img.alt = Utils.removeFileExtension(imageName);
+        img.title = "Clique para ampliar";
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'image-name';
+        nameSpan.textContent = Utils.removeFileExtension(imageName);
+        nameSpan.title = "Clique para ampliar";
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'ml-auto p-1 text-red-500 hover:text-red-700 rounded-full transition-colors hidden sm:block';
+        deleteBtn.innerHTML = '<i class="fas fa-times" aria-hidden="true"></i>';
+        deleteBtn.setAttribute('aria-label', Excluir cifra ${Utils.removeFileExtension(imageName)});
+        deleteBtn.title = Excluir ${Utils.removeFileExtension(imageName)};
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            ImageManager.deleteImage(imageName);
+        });
+
+        container.appendChild(checkbox);
+        container.appendChild(img);
+        container.appendChild(nameSpan);
+        container.appendChild(deleteBtn);
+
+        return container;
+      },
+
+      updateSelectAllCheckbox: () => {
+        const images = imageGalleryByTab.get(currentTab) || [];
+        if (images.length === 0) {
+            DOM.selectAllCheckbox.checked = false;
+            DOM.selectAllCheckbox.indeterminate = false;
+            DOM.selectAllCheckbox.disabled = true;
+            return;
+        }
+
+        DOM.selectAllCheckbox.disabled = false;
+
+        const selectedCount = selectedImagesByTab.get(currentTab).size;
+        DOM.selectAllCheckbox.checked = selectedCount === images.length;
+        DOM.selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < images.length;
+      },
+
+      updateButtonsState: () => {
+        const anySelected = selectedImagesByTab.get(currentTab).size > 0;
+        DOM.deleteSelectedBtn.disabled = !anySelected;
+        DOM.clearSelectionBtn.disabled = !anySelected;
+
+        DOM.deleteSelectedBtn.setAttribute('aria-disabled', !anySelected);
+        DOM.clearSelectionBtn.setAttribute('aria-disabled', !anySelected);
+      },
+
+      updateCheckboxesVisibility: () => {
+        const anySelected = selectedImagesByTab.get(currentTab).size > 0;
+        if (anySelected) {
+            DOM.body.classList.add('show-checkboxes');
+        } else {
+            DOM.body.classList.remove('show-checkboxes');
+        }
+      },
+
+      openFullscreen: (src, alt) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'fullscreen-image';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-label', Visualização da imagem ${alt});
+
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = alt;
+        img.tabIndex = 0;
+        img.style.transform = 'scale(1)';
+
+        const controls = document.createElement('div');
+        controls.className = 'fullscreen-controls';
+
+        const zoomInBtn = document.createElement('button');
+        zoomInBtn.className = 'zoom-btn';
+        zoomInBtn.innerHTML = '<i class="fas fa-search-plus"></i>';
+        zoomInBtn.setAttribute('aria-label', 'Zoom in');
+
+        const zoomOutBtn = document.createElement('button');
+        zoomOutBtn.className = 'zoom-btn';
+        zoomOutBtn.innerHTML = '<i class="fas fa-search-minus"></i>';
+        zoomOutBtn.setAttribute('aria-label', 'Zoom out');
+
+        const resetZoomBtn = document.createElement('button');
+        resetZoomBtn.className = 'zoom-btn';
+        resetZoomBtn.innerHTML = '<i class="fas fa-expand"></i>';
+        resetZoomBtn.setAttribute('aria-label', 'Reset zoom');
+
+        let scale = 1;
+        let translateX = 0, translateY = 0;
+        let isDragging = false;
+        let startPoint = { x: 0, y: 0 };
+
+        const updateTransform = () => {
+          img.style.transform = scale(${scale}) translate(${translateX}px, ${translateY}px);
+        };
+
+        zoomInBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          scale = Math.min(scale * 1.2, 5);
+          updateTransform();
+        });
+
+        zoomOutBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          scale = Math.max(scale / 1.2, 1);
+          if (scale === 1) {
+            translateX = 0;
+            translateY = 0;
           }
-          DOM.modalImport.disabled = selectedDriveFiles.size === 0;
+          updateTransform();
+        });
+
+        resetZoomBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          scale = 1;
+          translateX = 0;
+          translateY = 0;
+          updateTransform();
+        });
+
+        img.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          const delta = -e.deltaY;
+          const oldScale = scale;
+          if (delta > 0) {
+            scale = Math.min(scale * 1.1, 5);
+          } else {
+            scale = Math.max(scale / 1.1, 1);
+          }
+
+          const rect = img.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          translateX = translateX + mouseX * (1 / oldScale - 1 / scale);
+          translateY = translateY + mouseY * (1 / oldScale - 1 / scale);
+          
+          if (scale === 1) {
+            translateX = 0;
+            translateY = 0;
+          }
+          updateTransform();
+        });
+
+        img.addEventListener('mousedown', (e) => {
+          if (scale > 1) {
+            isDragging = true;
+            startPoint = { x: e.clientX - translateX, y: e.clientY - translateY };
+            img.style.cursor = 'grabbing';
+            overlay.style.cursor = 'grabbing';
+          }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+          if (!isDragging) return;
+          translateX = e.clientX - startPoint.x;
+          translateY = e.clientY - startPoint.y;
+          updateTransform();
+        });
+
+        document.addEventListener('mouseup', () => {
+          isDragging = false;
+          img.style.cursor = 'zoom-out';
+          overlay.style.cursor = 'zoom-out';
+        });
+
+        let initialPinchDistance = null;
+        let lastScale = 1;
+
+        img.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                isDragging = true;
+                startPoint = { x: e.touches[0].clientX - translateX, y: e.touches[0].clientY - translateY };
+            } else if (e.touches.length === 2) {
+                initialPinchDistance = Math.hypot(
+                    e.touches[1].pageX - e.touches[0].pageX,
+                    e.touches[1].pageY - e.touches[0].pageY
+                );
+                lastScale = scale;
+            }
+            e.preventDefault();
+        }, { passive: false });
+
+        img.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 1 && isDragging) {
+                translateX = e.touches[0].clientX - startPoint.x;
+                translateY = e.touches[0].clientY - startPoint.y;
+                updateTransform();
+            } else if (e.touches.length === 2 && initialPinchDistance) {
+                const currentPinchDistance = Math.hypot(
+                    e.touches[1].pageX - e.touches[0].pageX,
+                    e.touches[1].pageY - e.touches[0].pageY
+                );
+                scale = lastScale * (currentPinchDistance / initialPinchDistance);
+                scale = Math.max(1, Math.min(scale, 5));
+
+                const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+
+                const rect = img.getBoundingClientRect();
+                const relativeX = centerX - rect.left;
+                const relativeY = centerY - rect.top;
+
+                translateX = translateX + relativeX * (1 / lastScale - 1 / scale);
+                translateY = translateY + relativeY * (1 / lastScale - 1 / scale);
+
+                if (scale === 1) {
+                    translateX = 0;
+                    translateY = 0;
+                }
+                updateTransform();
+            }
+            e.preventDefault();
+        }, { passive: false });
+
+        img.addEventListener('touchend', () => {
+            isDragging = false;
+            initialPinchDistance = null;
+        });
+
+        controls.appendChild(zoomInBtn);
+        controls.appendChild(zoomOutBtn);
+        controls.appendChild(resetZoomBtn);
+        overlay.appendChild(img);
+        overlay.appendChild(controls);
+        document.body.appendChild(overlay);
+        img.focus();
+
+        const closeFullscreen = () => {
+          document.body.removeChild(overlay);
+          overlay.removeEventListener('click', closeFullscreen);
+          document.removeEventListener('keydown', handleKeyDown);
+          Utils.revokeObjectURL(img.src);
         };
-        item.appendChild(icon);
-        item.appendChild(name);
-        item.appendChild(checkbox);
-        DOM.gdriveFileList.appendChild(item);
-      });
-    }
 
-    async function importSelectedFromDrive() {
-      showLoading('Importando imagens...');
-      const selected = gdriveFiles.filter(f => selectedDriveFiles.has(f.id));
-      const tabFiles = filesByTab.get(currentTab) || [];
-      selected.forEach(f => {
-        if (!tabFiles.find(x => x.id === f.id)) tabFiles.push(f);
-      });
-      filesByTab.set(currentTab, tabFiles);
-      hideDriveModal();
-      renderImages();
-      hideLoading();
-      showStatus(`Importadas ${selected.length} imagens do Google Drive para "${currentTab}".`);
-    }
-
-    // ====== EVENTOS ======
-    DOM.openCloudFolderButton.onclick = () => {
-      ensureGoogleAuth(async () => {
-        showDriveModal();
-        await listFilesInDriveFolder(GDRIVE_CONFIG.folderId);
-        updateDriveFileList();
-      });
-    };
-    DOM.modalClose.onclick = DOM.modalCancel.onclick = hideDriveModal;
-    DOM.modalImport.onclick = importSelectedFromDrive;
-
-    // Local file import
-    DOM.openFileDialogButton.onclick = () => DOM.fileInput.click();
-    DOM.fileInput.onchange = async (e) => {
-      const files = Array.from(e.target.files);
-      const tabFiles = filesByTab.get(currentTab) || [];
-      let count = 0;
-      for (const file of files) {
-        if (!/^image\//.test(file.type)) continue;
-        const reader = new FileReader();
-        reader.onload = function(event) {
-          tabFiles.push({
-            id: `local-${Date.now()}-${Math.random()}`,
-            name: file.name,
-            url: event.target.result
-          });
-          filesByTab.set(currentTab, tabFiles);
-          renderImages();
+        const handleKeyDown = (e) => {
+          if (e.key === 'Escape') closeFullscreen();
         };
-        reader.readAsDataURL(file);
-        count++;
+
+        overlay.addEventListener('click', closeFullscreen);
+        img.addEventListener('click', (e) => e.stopPropagation());
+        document.addEventListener('keydown', handleKeyDown);
       }
-      showStatus(`${count} imagem(ns) importada(s) localmente.`);
     };
 
-    // ====== INICIALIZAÇÃO ======
-    window.onload = () => {
-      createTabs();
-      renderImages();
-      window.gapiLoaded = gapiLoaded;
-      window.gisLoaded = gisLoaded;
+    // Gerenciamento de abas
+    const TabManager = {
+      switchTab: async tabName => {
+        if (currentTab === tabName) return;
+        currentTab = tabName;
+        UI.updateTabsUI();
+        await UI.renderImages();
+        UI.updateButtonsState();
+        UI.updateCheckboxesVisibility();
+        StateManager.saveState();
+      }
     };
+
+    // Gerenciamento de imagens
+    const ImageManager = {
+      toggleSelectImage: (imageName, isChecked, container) => {
+        const selectedSet = selectedImagesByTab.get(currentTab);
+
+        if (isChecked) {
+          selectedSet.add(imageName);
+          container.classList.add('selected');
+        } else {
+          selectedSet.delete(imageName);
+          container.classList.remove('selected');
+        }
+
+        UI.updateSelectAllCheckbox();
+        UI.updateButtonsState();
+        UI.updateCheckboxesVisibility();
+        StateManager.saveState();
+      },
+
+      deleteImage: async imageName => {
+        if (!confirm(Tem certeza que deseja excluir "${Utils.removeFileExtension(imageName)}"?)) return;
+
+        UI.showLoading();
+        try {
+            await IndexedDBManager.deleteImageBlob(imageName);
+            const images = imageGalleryByTab.get(currentTab).filter(name => name !== imageName);
+            imageGalleryByTab.set(currentTab, images);
+            selectedImagesByTab.get(currentTab).delete(imageName);
+
+            await UI.renderImages();
+            StateManager.saveState();
+            Utils.showStatus('Imagem excluída com sucesso!');
+        } catch (error) {
+            console.error('Erro ao excluir imagem:', error);
+            Utils.showStatus('Erro ao excluir imagem.');
+        } finally {
+            UI.hideLoading();
+        }
+      },
+
+      reorderImages: async (fromIndex, toIndex, draggedImageName) => {
+        const images = imageGalleryByTab.get(currentTab) || [];
+        const movedImageName = images.splice(fromIndex, 1)[0];
+        images.splice(toIndex, 0, movedImageName);
+        imageGalleryByTab.set(currentTab, images);
+
+        selectedImagesByTab.get(currentTab).delete(draggedImageName);
+
+        await UI.renderImages();
+        StateManager.saveState();
+      },
+
+      deleteSelected: async () => {
+        const selectedNames = Array.from(selectedImagesByTab.get(currentTab));
+        const count = selectedNames.length;
+        if (!count || !confirm(Excluir ${count} imagem(ns) selecionada(s)?)) return;
+
+        UI.showLoading();
+        try {
+            for (const name of selectedNames) {
+                await IndexedDBManager.deleteImageBlob(name);
+            }
+
+            const images = imageGalleryByTab.get(currentTab).filter(name =>
+              !selectedImagesByTab.get(currentTab).has(name)
+            );
+
+            imageGalleryByTab.set(currentTab, images);
+            selectedImagesByTab.get(currentTab).clear();
+
+            await UI.renderImages();
+            StateManager.saveState();
+            Utils.showStatus(${count} imagens excluídas.);
+        }
+        catch (error) {
+            console.error('Erro ao excluir imagens selecionadas:', error);
+            Utils.showStatus('Erro ao excluir imagens.');
+        } finally {
+            UI.hideLoading();
+        }
+      },
+
+      clearSelection: () => {
+        selectedImagesByTab.get(currentTab).clear();
+        UI.renderImages();
+        StateManager.saveState();
+        Utils.showStatus('Seleção limpa.');
+      },
+
+      handleFileSelection: async (e) => {
+        const files = Array.from(e.target.files);
+        if (!files.length) return;
+
+        UI.showLoading();
+
+        if (!imageGalleryByTab.get(currentTab)) imageGalleryByTab.set(currentTab, []);
+        if (!selectedImagesByTab.get(currentTab)) selectedImagesByTab.set(currentTab, new Set());
+
+        const currentImageNamesInTab = new Set(imageGalleryByTab.get(currentTab));
+        let loadedCount = 0;
+
+        try {
+          for (const file of files) {
+            if (!file.type.startsWith('image/')) {
+              console.warn(Arquivo ignorado (não é imagem): ${file.name});
+              continue;
+            }
+
+            try {
+              const processed = await ImageProcessor.processImageFile(file);
+              if (!processed) continue;
+
+              await IndexedDBManager.addImageBlob(processed.name, processed.blob);
+
+              if (!currentImageNamesInTab.has(processed.name)) {
+                imageGalleryByTab.get(currentTab).push(processed.name);
+                currentImageNamesInTab.add(processed.name);
+              } else {
+                console.warn(Imagem "${processed.name}" já existe na aba atual. Conteúdo será atualizado.);
+              }
+              loadedCount++;
+            } catch (error) {
+              console.error(Erro ao processar ${file.name}:, error);
+              Utils.showStatus(Erro ao carregar ${file.name});
+            }
+          }
+
+          await UI.renderImages();
+          StateManager.saveState();
+          Utils.showStatus(${loadedCount} imagem(ns) carregada(s) com sucesso!);
+        } catch (error) {
+          console.error('Erro geral no carregamento:', error);
+          Utils.showStatus('Erro ao carregar imagens.');
+        } finally {
+          UI.hideLoading();
+        }
+      }
+    };
+
+    // Configuração de eventos
+    const EventManager = {
+      setup: () => {
+        DOM.imageList.addEventListener('mousedown', (e) => {
+            const container = e.target.closest('.image-container');
+            if (!container) return;
+
+            longPressTimer = setTimeout(() => {
+                isLongPress = true;
+                const checkbox = container.querySelector('.image-checkbox');
+                if (checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    ImageManager.toggleSelectImage(container.dataset.name, checkbox.checked, container);
+                }
+            }, 500);
+        });
+
+        DOM.imageList.addEventListener('mouseup', () => {
+            clearTimeout(longPressTimer);
+            isLongPress = false;
+        });
+
+        DOM.imageList.addEventListener('touchstart', (e) => {
+            const container = e.target.closest('.image-container');
+            if (!container) return;
+
+            longPressTimer = setTimeout(() => {
+                isLongPress = true;
+                const checkbox = container.querySelector('.image-checkbox');
+                if (checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    ImageManager.toggleSelectImage(container.dataset.name, checkbox.checked, container);
+                }
+            }, 500);
+        }, { passive: true });
+
+        DOM.imageList.addEventListener('touchend', () => {
+            clearTimeout(longPressTimer);
+            isLongPress = false;
+        });
+
+        DOM.imageList.addEventListener('click', async (e) => {
+          const container = e.target.closest('.image-container');
+          if (!container || isLongPress) return;
+
+          if (e.target.tagName === 'IMG' || e.target.classList.contains('image-name')) {
+            const imageName = container.dataset.name;
+            const blob = await IndexedDBManager.getImageBlob(imageName);
+            if (blob) {
+                const objectURL = Utils.createObjectURL(blob);
+                UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
+            } else {
+                Utils.showStatus('Erro: Imagem não encontrada para ampliar.');
+            }
+          } else if (e.target.type === 'checkbox') {
+            return; 
+          } else {
+            if (DOM.body.classList.contains('show-checkboxes')) {
+                const checkbox = container.querySelector('.image-checkbox');
+                if (checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    ImageManager.toggleSelectImage(container.dataset.name, checkbox.checked, container);
+                }
+            }
+          }
+        });
+
+        DOM.imageList.addEventListener('keydown', (e) => {
+          const container = e.target.closest('.image-container');
+          if (!container) return;
+
+          const imageName = container.dataset.name;
+
+          if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault();
+            const checkbox = container.querySelector('.image-checkbox');
+            if (checkbox) {
+                DOM.body.classList.add('show-checkboxes');
+                checkbox.checked = !checkbox.checked;
+                ImageManager.toggleSelectImage(imageName, checkbox.checked, container);
+            }
+          }
+          if (e.key === 'Delete' || e.key === 'Backspace') {
+            e.preventDefault();
+            ImageManager.deleteImage(imageName);
+          }
+        });
+
+        DOM.imageList.addEventListener('dragstart', (e) => {
+          const container = e.target.closest('.image-container');
+          if (!container) return;
+
+          const currentImageNames = imageGalleryByTab.get(currentTab);
+          dragStartIndex = currentImageNames.indexOf(container.dataset.name);
+
+          container.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', container.dataset.name);
+        });
+
+        DOM.imageList.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          const container = e.target.closest('.image-container');
+          if (container && container.dataset.name !== e.dataTransfer.getData('text/plain')) {
+            container.classList.add('drag-over');
+          }
+          e.dataTransfer.dropEffect = 'move';
+        });
+
+        DOM.imageList.addEventListener('dragleave', (e) => {
+          const container = e.target.closest('.image-container');
+          if (container) container.classList.remove('drag-over');
+        });
+
+        DOM.imageList.addEventListener('drop', (e) => {
+          e.preventDefault();
+          const container = e.target.closest('.image-container');
+          if (container) {
+            container.classList.remove('drag-over');
+            const draggedImageName = e.dataTransfer.getData('text/plain');
+            const dragEndIndex = imageGalleryByTab.get(currentTab).indexOf(container.dataset.name);
+            
+            if (dragStartIndex !== null && dragEndIndex !== -1 && dragStartIndex !== dragEndIndex) {
+              ImageManager.reorderImages(dragStartIndex, dragEndIndex, draggedImageName);
+            }
+          }
+          dragStartIndex = null;
+        });
+
+        DOM.imageList.addEventListener('dragend', (e) => {
+          const allImageContainers = DOM.imageList.querySelectorAll('.image-container');
+          allImageContainers.forEach(container => {
+            container.classList.remove('dragging', 'drag-over');
+          });
+          dragStartIndex = null;
+        });
+
+        DOM.selectAllCheckbox.addEventListener('change', () => {
+          const images = imageGalleryByTab.get(currentTab) || [];
+          const selectedSet = selectedImagesByTab.get(currentTab);
+          const imageContainers = DOM.imageList.querySelectorAll('.image-container');
+
+          if (DOM.selectAllCheckbox.checked) {
+            images.forEach(name => selectedSet.add(name));
+            imageContainers.forEach(container => {
+                container.classList.add('selected');
+                container.querySelector('.image-checkbox').checked = true;
+            });
+          } else {
+            selectedSet.clear();
+            imageContainers.forEach(container => {
+                container.classList.remove('selected');
+                container.querySelector('.image-checkbox').checked = false;
+            });
+          }
+
+          UI.updateButtonsState();
+          UI.updateCheckboxesVisibility();
+          StateManager.saveState();
+        });
+
+        DOM.clearSelectionBtn.addEventListener('click', ImageManager.clearSelection);
+        DOM.deleteSelectedBtn.addEventListener('click', ImageManager.deleteSelected);
+
+        DOM.openFileDialogButton.addEventListener('click', () => {
+          DOM.fileInput.value = '';
+          DOM.fileInput.click();
+        });
+        DOM.fileInput.addEventListener('change', ImageManager.handleFileSelection);
+
+        DOM.openCloudFolderButton.addEventListener('click', () => {
+          window.open(ONE_DRIVE_FOLDER_URL, '_blank');
+          Utils.showStatus('Abrindo pasta do OneDrive em uma nova aba.');
+        });
+
+        DOM.syncBtn.addEventListener('click', () => {
+          Utils.showStatus('Funcionalidade de Sincronização em desenvolvimento...');
+        });
+
+        DOM.settingsBtn.addEventListener('click', () => {
+          Utils.showStatus('Funcionalidade de Configurações em desenvolvimento...');
+        });
+      }
+    };
+
+    // Função de inicialização
+    async function init() {
+      UI.showLoading();
+      try {
+        await IndexedDBManager.open();
+        await StateManager.loadState();
+        UI.createTabs();
+        UI.updateTabsUI();
+        await UI.renderImages();
+        EventManager.setup();
+        UI.updateCheckboxesVisibility();
+      } catch (e) {
+        console.error("Erro na inicialização:", e);
+        Utils.showStatus("Erro ao iniciar o aplicativo. Tente recarregar a página.");
+      } finally {
+        UI.hideLoading();
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
 </html>
