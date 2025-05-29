@@ -1290,86 +1290,114 @@
 
     // Configuração de eventos
     const EventManager = {
-      setup: () => {
-        // Eventos de drag and drop para reordenar
-        DOM.imageList.addEventListener('dragover', (e) => {
-          e.preventDefault();
-          const container = e.target.closest('.image-container');
-          if (container && container.dataset.name !== e.dataTransfer.getData('text/plain')) {
-            container.classList.add('drag-over');
-          }
-          e.dataTransfer.dropEffect = 'move';
-        });
+    setup: () => {
+      // Drag & Drop REORDENAR
+      let draggedElement = null;
 
-        DOM.imageList.addEventListener('dragleave', (e) => {
-          const container = e.target.closest('.image-container');
-          if (container) container.classList.remove('drag-over');
-        });
+      DOM.imageList.addEventListener('dragstart', (e) => {
+        const container = e.target.closest('.image-container');
+        if (!container) return;
+        draggedElement = container;
+        dragStartIndex = Array.from(DOM.imageList.children).indexOf(container);
+        container.classList.add('dragging');
+      });
 
-        DOM.imageList.addEventListener('drop', (e) => {
-          e.preventDefault();
-          const container = e.target.closest('.image-container');
-          if (container) {
-            container.classList.remove('drag-over');
-            const draggedImageName = e.dataTransfer.getData('text/plain');
-            const dragEndIndex = imageGalleryByTab.get(currentTab).indexOf(container.dataset.name);
-            
-            if (dragStartIndex !== null && dragEndIndex !== -1 && dragStartIndex !== dragEndIndex) {
-              ImageManager.reorderImages(dragStartIndex, dragEndIndex);
-            }
-          }
-          dragStartIndex = null;
-        });
+      DOM.imageList.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const afterElement = getDragAfterElement(DOM.imageList, e.clientY);
+        DOM.imageList.querySelectorAll('.image-container').forEach(el => el.classList.remove('drag-over'));
+        if (afterElement) {
+          afterElement.classList.add('drag-over');
+        }
+      });
 
-        DOM.imageList.addEventListener('dragend', (e) => {
-          const allImageContainers = DOM.imageList.querySelectorAll('.image-container');
-          allImageContainers.forEach(container => {
-            container.classList.remove('dragging', 'drag-over');
-          });
-          dragStartIndex = null;
-        });
+      DOM.imageList.addEventListener('dragleave', (e) => {
+        const container = e.target.closest('.image-container');
+        if (container) container.classList.remove('drag-over');
+      });
 
-        // Eventos dos botões de seleção
-        DOM.selectAllCheckbox.addEventListener('change', () => {
-          const images = imageGalleryByTab.get(currentTab) || [];
-          const selectedSet = selectedImagesByTab.get(currentTab);
+      DOM.imageList.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const containers = Array.from(DOM.imageList.querySelectorAll('.image-container'));
+        const dragging = DOM.imageList.querySelector('.dragging');
+        DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
 
-          if (DOM.selectAllCheckbox.checked) {
-            images.forEach(name => selectedSet.add(name));
+        if (!dragging) return;
+        const fromIndex = containers.indexOf(dragging);
+
+        const afterElement = getDragAfterElement(DOM.imageList, e.clientY);
+        let toIndex = afterElement ? containers.indexOf(afterElement) : containers.length - 1;
+
+        if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
+          ImageManager.reorderImages(fromIndex, toIndex);
+        }
+        dragging.classList.remove('dragging');
+        draggedElement = null;
+        dragStartIndex = null;
+      });
+
+      DOM.imageList.addEventListener('dragend', () => {
+        DOM.imageList.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
+        DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+        draggedElement = null;
+        dragStartIndex = null;
+      });
+
+      // Utilitário para encontrar o elemento após o mouse
+      function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.image-container:not(.dragging)')];
+        return draggableElements.reduce((closest, child) => {
+          const box = child.getBoundingClientRect();
+          const offset = y - (box.top + box.height / 2);
+          if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
           } else {
-            selectedSet.clear();
+            return closest;
           }
-
-          UI.renderImages();
-          UI.updateButtonsState();
-          StateManager.saveState();
-        });
-
-        DOM.clearSelectionBtn.addEventListener('click', ImageManager.clearSelection);
-        DOM.deleteSelectedBtn.addEventListener('click', ImageManager.deleteSelected);
-
-        // Eventos dos botões de arquivo/nuvem
-        DOM.openFileDialogButton.addEventListener('click', () => {
-          DOM.fileInput.value = '';
-          DOM.fileInput.click();
-        });
-        DOM.fileInput.addEventListener('change', ImageManager.handleFileSelection);
-
-        DOM.openCloudFolderButton.addEventListener('click', () => {
-          window.open(ONE_DRIVE_FOLDER_URL, '_blank');
-          Utils.showStatus('Abrindo pasta do OneDrive em uma nova aba.');
-        });
-
-        // Eventos dos botões do cabeçalho
-        DOM.syncBtn.addEventListener('click', () => {
-          Utils.showStatus('Funcionalidade de Sincronização em desenvolvimento...');
-        });
-
-        DOM.settingsBtn.addEventListener('click', () => {
-          Utils.showStatus('Funcionalidade de Configurações em desenvolvimento...');
-        });
+        }, { offset: -Infinity, element: null }).element;
       }
-    };
+
+      // Eventos dos botões de seleção
+      DOM.selectAllCheckbox.addEventListener('change', () => {
+        const images = imageGalleryByTab.get(currentTab) || [];
+        const selectedSet = selectedImagesByTab.get(currentTab);
+
+        if (DOM.selectAllCheckbox.checked) {
+          images.forEach(name => selectedSet.add(name));
+        } else {
+          selectedSet.clear();
+        }
+
+        UI.renderImages();
+        UI.updateButtonsState();
+        StateManager.saveState();
+      });
+
+      DOM.clearSelectionBtn.addEventListener('click', ImageManager.clearSelection);
+      DOM.deleteSelectedBtn.addEventListener('click', ImageManager.deleteSelected);
+
+      // Eventos dos botões de arquivo/nuvem
+      DOM.openFileDialogButton.addEventListener('click', () => {
+        DOM.fileInput.value = '';
+        DOM.fileInput.click();
+      });
+      DOM.fileInput.addEventListener('change', ImageManager.handleFileSelection);
+
+      DOM.openCloudFolderButton.addEventListener('click', () => {
+        window.open(ONE_DRIVE_FOLDER_URL, '_blank');
+        Utils.showStatus('Abrindo pasta do OneDrive em uma nova aba.');
+      });
+
+      // Eventos dos botões do cabeçalho
+      DOM.syncBtn.addEventListener('click', () => {
+        Utils.showStatus('Funcionalidade de Sincronização em desenvolvimento...');
+      });
+
+      DOM.settingsBtn.addEventListener('click', () => {
+        Utils.showStatus('Funcionalidade de Configurações em desenvolvimento...');
+      });
+    }
+  };
 
     // Função de inicialização
     async function init() {
