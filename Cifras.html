@@ -4,13 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Seletor de Cifras</title>
+  
   <link rel="preload" href="https://cdn.tailwindcss.com" as="script">
   <link rel="preconnect" href="https://cdnjs.cloudflare.com">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
     :root {
       --primary-color: #3b82f6;
@@ -28,30 +31,36 @@
       --header-text: #E2E8F0;
       --header-hover: #2D3748;
     }
+
     html, body {
-      overflow-x: hidden;
+      overflow-x: hidden; 
       overflow-y: auto;
       background-color: var(--gray-light);
       font-family: 'Inter', sans-serif;
       color: var(--text-color-dark);
     }
+
     .header-professional {
       background-color: var(--header-bg);
       color: var(--header-text);
       box-shadow: var(--shadow-base);
     }
+
     .header-professional button {
       transition: background-color 0.3s ease, transform 0.1s ease;
       display: flex;
       align-items: center;
       justify-content: center;
     }
+
     .header-professional button:hover {
       background-color: var(--header-hover);
     }
+
     .header-professional button:active {
       transform: scale(0.98);
     }
+
     .tabs {
       display: flex;
       gap: 0.5rem;
@@ -60,6 +69,7 @@
       flex-wrap: wrap;
       padding: 0 1rem;
     }
+
     .tab {
       padding: 0.65rem 1.2rem;
       cursor: pointer;
@@ -71,8 +81,12 @@
       outline-offset: 2px;
       color: var(--text-color-light);
       font-weight: 500;
+    }
+
+    [role="tab"] {
       user-select: none;
     }
+
     .tab:hover,
     .tab:focus-visible {
       background-color: var(--primary-hover);
@@ -80,6 +94,7 @@
       outline: none;
       color: var(--primary-dark);
     }
+
     .tab.active {
       background-color: white;
       border-color: var(--primary-color) var(--primary-color) white;
@@ -87,6 +102,7 @@
       color: var(--primary-dark);
       box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
     }
+
     .image-container {
       display: flex;
       align-items: center;
@@ -99,41 +115,37 @@
       transition: all 0.2s ease;
       background-color: white;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-      position: relative;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
     }
+
     .image-container:focus-visible {
       outline: 2px solid var(--primary-color);
       outline-offset: 3px;
     }
+
+    .image-container:hover {
+      border-color: var(--primary-color);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
     .image-container.selected {
       border-color: var(--primary-dark);
       box-shadow: var(--shadow-primary);
       background-color: var(--primary-hover);
     }
-    .image-container .image-checkbox {
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      z-index: 10;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s ease;
-    }
-    .show-checkboxes .image-container .image-checkbox {
-      opacity: 1;
-      pointer-events: all;
-    }
-    .show-checkboxes #select-all-container {
-      display: flex !important;
-    }
+
     .drag-over {
       border: 2px dashed var(--primary-dark) !important;
       background-color: rgba(59, 130, 246, 0.1) !important;
     }
+
     .image-container.dragging {
       opacity: 0.4;
       transform: scale(0.98);
     }
+
     .image-container img {
       width: 2.2cm;
       height: 3.3cm;
@@ -141,8 +153,8 @@
       border-radius: 0.35rem;
       flex-shrink: 0;
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-      cursor: zoom-in;
     }
+
     .image-name {
       font-size: 0.95rem;
       color: var(--text-color-dark);
@@ -151,8 +163,8 @@
       word-break: break-word;
       max-width: calc(100% - 2.2cm - 12px);
       line-height: 1.4;
-      cursor: zoom-in;
     }
+
     .fullscreen-image {
       position: fixed;
       top: 0;
@@ -163,24 +175,20 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      cursor: zoom-out;
       z-index: 9999;
       touch-action: none;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
     }
+
     .fullscreen-image img {
       max-width: 100%;
       max-height: 100%;
       object-fit: contain;
       transition: transform 0.25s ease;
       transform-origin: center center;
-      margin: 0;
-      padding: 0;
     }
+
     .fullscreen-controls {
-      position: fixed;
+      position: absolute;
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
@@ -189,8 +197,8 @@
       background: rgba(0,0,0,0.7);
       padding: 12px 20px;
       border-radius: 8px;
-      z-index: 10000;
     }
+
     .zoom-btn {
       background: rgba(255,255,255,0.2);
       color: white;
@@ -205,12 +213,15 @@
       justify-content: center;
       transition: background-color 0.3s ease, transform 0.1s ease;
     }
+
     .zoom-btn:hover {
       background: rgba(255,255,255,0.3);
     }
+
     .zoom-btn:active {
       transform: scale(0.95);
     }
+
     .loading-spinner {
       display: none;
       position: fixed;
@@ -223,11 +234,13 @@
       z-index: 10000;
       color: white;
     }
+
     .loading-spinner.active {
       display: flex;
       align-items: center;
       justify-content: center;
     }
+
     #status-message {
       position: fixed;
       bottom: 20px;
@@ -243,9 +256,11 @@
       pointer-events: none;
       text-align: center;
     }
+
     #status-message.show {
       opacity: 1;
     }
+
     @media (max-width: 640px) {
       .header-professional h1 {
         font-size: 1.5rem;
@@ -256,6 +271,7 @@
       .header-professional button {
         padding: 0.6rem;
       }
+
       .tabs {
         flex-wrap: wrap;
         justify-content: center;
@@ -266,23 +282,28 @@
         padding: 0.5rem 0.8rem;
         font-size: 0.9rem;
       }
+
       .main-content-area {
         padding: 0.75rem;
       }
+
       .image-container {
         flex-direction: row;
         align-items: center;
         gap: 10px;
         padding: 10px;
       }
+
       .image-container img {
         width: 1.8cm;
         height: 2.7cm;
       }
+
       .image-name {
         font-size: 0.875rem;
         max-width: calc(100% - 1.8cm - 10px);
       }
+
       .flex-wrap.gap-2 {
         flex-direction: column;
         width: 100%;
@@ -294,6 +315,7 @@
       .flex-wrap.gap-2 button i {
         margin-right: 0.5rem;
       }
+
       .fullscreen-controls {
         flex-direction: row;
         gap: 10px;
@@ -304,13 +326,8 @@
         height: 45px;
         font-size: 22px;
       }
-      .fullscreen-image img {
-        width: auto;
-        height: auto;
-        max-width: 100vw;
-        max-height: 100vh;
-      }
     }
+
     @media (min-width: 641px) and (max-width: 1024px) {
       .tabs {
         justify-content: flex-start;
@@ -349,6 +366,7 @@
       </div>
     </div>
   </header>
+
   <main class="container mx-auto p-4 flex flex-col gap-4 main-content-area" role="main">
     <section class="w-full bg-white rounded-xl shadow-md overflow-hidden flex flex-col" aria-label="Seletor de músicas e imagens">
       <div class="p-4 bg-gray-50 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -363,9 +381,12 @@
           <input type="file" id="file-input" class="hidden" accept="image/*" multiple aria-hidden="true" tabindex="-1" />
         </div>
       </div>
-      <nav class="tabs" id="tabs-container" role="tablist" aria-label="Abas das categorias de cifras"></nav>
+
+      <nav class="tabs" id="tabs-container" role="tablist" aria-label="Abas das categorias de cifras">
+      </nav>
+
       <div class="p-4 flex flex-col gap-4 flex-1">
-        <div id="select-all-container" class="flex flex-wrap items-center gap-4 mb-2 hidden">
+        <div class="flex flex-wrap items-center gap-4 mb-2">
           <label class="inline-flex items-center gap-2 cursor-pointer text-gray-700 font-medium" for="select-all">
             <input type="checkbox" id="select-all" class="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500" aria-label="Selecionar todas as imagens" />
             <span>Selecionar todas</span>
@@ -377,17 +398,21 @@
             <i class="fas fa-trash-alt mr-2" aria-hidden="true"></i> Excluir selecionadas
           </button>
         </div>
+
         <div id="image-list" class="flex flex-col gap-4" aria-live="polite" aria-atomic="true">
           <p class="text-center text-gray-500 py-8">Nenhuma imagem encontrada nesta categoria.</p>
         </div>
       </div>
     </section>
   </main>
+
   <div id="loading-spinner" class="loading-spinner">
     <i class="fas fa-spinner fa-spin fa-3x text-blue-600" aria-hidden="true"></i>
     <span class="sr-only">Carregando...</span>
   </div>
+
   <div id="status-message" aria-live="polite"></div>
+
   <script>
     // Cache de elementos DOM
     const DOM = {
@@ -396,15 +421,13 @@
       fileInput: document.getElementById('file-input'),
       openFileDialogButton: document.getElementById('open-file-dialog'),
       openCloudFolderButton: document.getElementById('open-cloud-folder'),
-      selectAllContainer: document.getElementById('select-all-container'),
       selectAllCheckbox: document.getElementById('select-all'),
       deleteSelectedBtn: document.getElementById('delete-selected-btn'),
       clearSelectionBtn: document.getElementById('clear-selection-btn'),
       syncBtn: document.getElementById('sync-btn'),
       settingsBtn: document.getElementById('settings-btn'),
       loadingSpinner: document.getElementById('loading-spinner'),
-      statusMessage: document.getElementById('status-message'),
-      body: document.body,
+      statusMessage: document.getElementById('status-message')
     };
 
     // Abas desejadas
@@ -418,8 +441,6 @@
     let selectedImagesByTab = new Map();
     let currentTab = tabs[0];
     let dragStartIndex = null;
-    let longPressTimer;
-    let isLongPress = false;
 
     // Inicializar estado
     tabs.forEach(tab => {
@@ -540,7 +561,7 @@
           try {
               const db = await IndexedDBManager.open();
               const transaction = db.transaction([STORE_IMAGES], 'readonly');
-              const store = db.transaction(STORE_IMAGES, 'readonly').objectStore(STORE_IMAGES);
+              const store = transaction.objectStore(STORE_IMAGES);
               const request = store.getAllKeys();
 
               request.onsuccess = (event) => resolve(event.target.result);
@@ -690,7 +711,7 @@
           tabBtn.setAttribute('role', 'tab');
           tabBtn.setAttribute('tabindex', index === 0 ? '0' : '-1');
           tabBtn.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
-          tabBtn.id = tab-${tab.replace(/\s+/g, '-').toLowerCase()};
+          tabBtn.id = `tab-${tab.replace(/\s+/g, '-').toLowerCase()}`;
           tabBtn.textContent = tab;
 
           tabBtn.addEventListener('click', () => TabManager.switchTab(tab));
@@ -711,7 +732,7 @@
             if (nextIndex !== currentActiveIndex) {
               e.preventDefault();
               TabManager.switchTab(tabs[nextIndex]);
-              DOM.tabsContainer.querySelector(#tab-${tabs[nextIndex].replace(/\s+/g, '-').toLowerCase()}).focus();
+              DOM.tabsContainer.querySelector(`#tab-${tabs[nextIndex].replace(/\s+/g, '-').toLowerCase()}`).focus();
             } else if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
               TabManager.switchTab(tab);
@@ -747,8 +768,10 @@
           p.className = 'text-center text-gray-500 py-8';
           p.textContent = 'Nenhuma imagem encontrada nesta categoria.';
           fragment.appendChild(p);
+          DOM.selectAllCheckbox.checked = false;
+          DOM.selectAllCheckbox.disabled = true;
         } else {
-          DOM.selectAllCheckbox.disabled = false; 
+          DOM.selectAllCheckbox.disabled = false;
 
           const imagesToRender = [];
           for (const imageName of imageNames) {
@@ -756,7 +779,7 @@
             if (blob) {
                 imagesToRender.push({ name: imageName, blob: blob });
             } else {
-                console.warn(Imagem ${imageName} não encontrada no IndexedDB. Removendo da lista.);
+                console.warn(`Imagem ${imageName} não encontrada no IndexedDB. Removendo da lista.`);
                 imageGalleryByTab.set(currentTab, imageNames.filter(name => name !== imageName));
                 selectedImagesByTab.get(currentTab).delete(imageName);
             }
@@ -772,7 +795,6 @@
         DOM.imageList.appendChild(fragment);
         UI.updateSelectAllCheckbox();
         UI.updateButtonsState();
-        UI.updateCheckboxesVisibility();
       },
 
       createImageElement: (imageName, imageBlob) => {
@@ -780,22 +802,12 @@
         container.className = 'image-container';
         container.setAttribute('draggable', 'true');
         container.setAttribute('tabindex', '0');
+        container.setAttribute('role', 'checkbox');
+        container.setAttribute('aria-checked', selectedImagesByTab.get(currentTab).has(imageName));
         container.dataset.name = imageName;
 
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.className = 'form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 image-checkbox';
-        checkbox.setAttribute('aria-label', Selecionar ${Utils.removeFileExtension(imageName)});
-        checkbox.checked = selectedImagesByTab.get(currentTab).has(imageName);
-        checkbox.addEventListener('change', (e) => {
-            e.stopPropagation();
-            ImageManager.toggleSelectImage(imageName, checkbox.checked, container);
-        });
-
-        if (checkbox.checked) {
-            container.classList.add('selected');
-        } else {
-            container.classList.remove('selected');
+        if (selectedImagesByTab.get(currentTab).has(imageName)) {
+          container.classList.add('selected');
         }
 
         const img = document.createElement('img');
@@ -813,17 +825,99 @@
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'ml-auto p-1 text-red-500 hover:text-red-700 rounded-full transition-colors hidden sm:block';
         deleteBtn.innerHTML = '<i class="fas fa-times" aria-hidden="true"></i>';
-        deleteBtn.setAttribute('aria-label', Excluir cifra ${Utils.removeFileExtension(imageName)});
-        deleteBtn.title = Excluir ${Utils.removeFileExtension(imageName)};
+        deleteBtn.setAttribute('aria-label', `Excluir cifra ${Utils.removeFileExtension(imageName)}`);
+        deleteBtn.title = `Excluir ${Utils.removeFileExtension(imageName)}`;
         deleteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             ImageManager.deleteImage(imageName);
         });
 
-        container.appendChild(checkbox);
         container.appendChild(img);
         container.appendChild(nameSpan);
         container.appendChild(deleteBtn);
+
+        // Variáveis para controle de long press
+        let pressTimer;
+        let isLongPress = false;
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        // Evento de toque iniciado
+        container.addEventListener('touchstart', (e) => {
+            isLongPress = false;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            
+            pressTimer = setTimeout(() => {
+                isLongPress = true;
+                ImageManager.toggleSelectImage(imageName, container);
+            }, 500); // 500ms para considerar como long press
+        }, { passive: true });
+
+        // Evento de toque movido
+        container.addEventListener('touchmove', (e) => {
+            // Se o movimento for significativo, cancela o long press
+            const moveX = Math.abs(e.touches[0].clientX - touchStartX);
+            const moveY = Math.abs(e.touches[0].clientY - touchStartY);
+            
+            if (moveX > 10 || moveY > 10) {
+                clearTimeout(pressTimer);
+            }
+        }, { passive: true });
+
+        // Evento de toque finalizado
+        container.addEventListener('touchend', (e) => {
+            clearTimeout(pressTimer);
+            
+            // Se não foi um long press e o toque foi rápido (tap), abre em fullscreen
+            if (!isLongPress && e.changedTouches.length === 1) {
+                const touchEndX = e.changedTouches[0].clientX;
+                const touchEndY = e.changedTouches[0].clientY;
+                
+                // Verifica se o toque terminou próximo ao início (não foi um arrasto)
+                if (Math.abs(touchEndX - touchStartX) < 10 && Math.abs(touchEndY - touchStartY) < 10) {
+                    const objectURL = Utils.createObjectURL(imageBlob);
+                    UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
+                }
+            }
+        }, { passive: true });
+
+        // Eventos de mouse para desktop
+        container.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return; // Apenas botão esquerdo
+            pressTimer = setTimeout(() => {
+                isLongPress = true;
+                ImageManager.toggleSelectImage(imageName, container);
+            }, 500);
+        });
+
+        container.addEventListener('mousemove', (e) => {
+            clearTimeout(pressTimer);
+        });
+
+        container.addEventListener('mouseup', (e) => {
+            clearTimeout(pressTimer);
+            if (!isLongPress && e.button === 0) {
+                const objectURL = Utils.createObjectURL(imageBlob);
+                UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
+            }
+            isLongPress = false;
+        });
+
+        container.addEventListener('mouseleave', () => {
+            clearTimeout(pressTimer);
+            isLongPress = false;
+        });
+
+        // Eventos de drag and drop
+        container.addEventListener('dragstart', (e) => {
+            if (!selectedImagesByTab.get(currentTab).has(imageName)) {
+                ImageManager.toggleSelectImage(imageName, container);
+            }
+            container.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', imageName);
+        });
 
         return container;
       },
@@ -831,14 +925,13 @@
       updateSelectAllCheckbox: () => {
         const images = imageGalleryByTab.get(currentTab) || [];
         if (images.length === 0) {
-            DOM.selectAllCheckbox.checked = false;
-            DOM.selectAllCheckbox.indeterminate = false;
-            DOM.selectAllCheckbox.disabled = true;
-            return;
+          DOM.selectAllCheckbox.checked = false;
+          DOM.selectAllCheckbox.indeterminate = false;
+          DOM.selectAllCheckbox.disabled = true;
+          return;
         }
 
         DOM.selectAllCheckbox.disabled = false;
-
         const selectedCount = selectedImagesByTab.get(currentTab).size;
         DOM.selectAllCheckbox.checked = selectedCount === images.length;
         DOM.selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < images.length;
@@ -853,21 +946,12 @@
         DOM.clearSelectionBtn.setAttribute('aria-disabled', !anySelected);
       },
 
-      updateCheckboxesVisibility: () => {
-        const anySelected = selectedImagesByTab.get(currentTab).size > 0;
-        if (anySelected) {
-            DOM.body.classList.add('show-checkboxes');
-        } else {
-            DOM.body.classList.remove('show-checkboxes');
-        }
-      },
-
       openFullscreen: (src, alt) => {
         const overlay = document.createElement('div');
         overlay.className = 'fullscreen-image';
         overlay.setAttribute('role', 'dialog');
         overlay.setAttribute('aria-modal', 'true');
-        overlay.setAttribute('aria-label', Visualização da imagem ${alt});
+        overlay.setAttribute('aria-label', `Visualização da imagem ${alt}`);
 
         const img = document.createElement('img');
         img.src = src;
@@ -897,9 +981,11 @@
         let translateX = 0, translateY = 0;
         let isDragging = false;
         let startPoint = { x: 0, y: 0 };
+        let initialPinchDistance = null;
+        let lastScale = 1;
 
         const updateTransform = () => {
-          img.style.transform = scale(${scale}) translate(${translateX}px, ${translateY}px);
+          img.style.transform = `scale(${scale}) translate(${translateX}px, ${translateY}px)`;
         };
 
         zoomInBtn.addEventListener('click', (e) => {
@@ -926,6 +1012,7 @@
           updateTransform();
         });
 
+        // Eventos de mouse
         img.addEventListener('wheel', (e) => {
           e.preventDefault();
           const delta = -e.deltaY;
@@ -972,9 +1059,7 @@
           overlay.style.cursor = 'zoom-out';
         });
 
-        let initialPinchDistance = null;
-        let lastScale = 1;
-
+        // Eventos de toque
         img.addEventListener('touchstart', (e) => {
             if (e.touches.length === 1) {
                 isDragging = true;
@@ -1059,32 +1144,32 @@
         UI.updateTabsUI();
         await UI.renderImages();
         UI.updateButtonsState();
-        UI.updateCheckboxesVisibility();
         StateManager.saveState();
       }
     };
 
     // Gerenciamento de imagens
     const ImageManager = {
-      toggleSelectImage: (imageName, isChecked, container) => {
+      toggleSelectImage: (imageName, container) => {
         const selectedSet = selectedImagesByTab.get(currentTab);
 
-        if (isChecked) {
-          selectedSet.add(imageName);
-          container.classList.add('selected');
-        } else {
+        if (selectedSet.has(imageName)) {
           selectedSet.delete(imageName);
           container.classList.remove('selected');
+          container.setAttribute('aria-checked', 'false');
+        } else {
+          selectedSet.add(imageName);
+          container.classList.add('selected');
+          container.setAttribute('aria-checked', 'true');
         }
 
         UI.updateSelectAllCheckbox();
         UI.updateButtonsState();
-        UI.updateCheckboxesVisibility();
         StateManager.saveState();
       },
 
       deleteImage: async imageName => {
-        if (!confirm(Tem certeza que deseja excluir "${Utils.removeFileExtension(imageName)}"?)) return;
+        if (!confirm(`Tem certeza que deseja excluir "${Utils.removeFileExtension(imageName)}"?`)) return;
 
         UI.showLoading();
         try {
@@ -1104,13 +1189,11 @@
         }
       },
 
-      reorderImages: async (fromIndex, toIndex, draggedImageName) => {
+      reorderImages: async (fromIndex, toIndex) => {
         const images = imageGalleryByTab.get(currentTab) || [];
         const movedImageName = images.splice(fromIndex, 1)[0];
         images.splice(toIndex, 0, movedImageName);
         imageGalleryByTab.set(currentTab, images);
-
-        selectedImagesByTab.get(currentTab).delete(draggedImageName);
 
         await UI.renderImages();
         StateManager.saveState();
@@ -1119,7 +1202,7 @@
       deleteSelected: async () => {
         const selectedNames = Array.from(selectedImagesByTab.get(currentTab));
         const count = selectedNames.length;
-        if (!count || !confirm(Excluir ${count} imagem(ns) selecionada(s)?)) return;
+        if (!count || !confirm(`Excluir ${count} imagem(ns) selecionada(s)?`)) return;
 
         UI.showLoading();
         try {
@@ -1135,8 +1218,9 @@
             selectedImagesByTab.get(currentTab).clear();
 
             await UI.renderImages();
+            UI.updateButtonsState();
             StateManager.saveState();
-            Utils.showStatus(${count} imagens excluídas.);
+            Utils.showStatus(`${count} imagens excluídas.`);
         }
         catch (error) {
             console.error('Erro ao excluir imagens selecionadas:', error);
@@ -1149,6 +1233,7 @@
       clearSelection: () => {
         selectedImagesByTab.get(currentTab).clear();
         UI.renderImages();
+        UI.updateButtonsState();
         StateManager.saveState();
         Utils.showStatus('Seleção limpa.');
       },
@@ -1168,7 +1253,7 @@
         try {
           for (const file of files) {
             if (!file.type.startsWith('image/')) {
-              console.warn(Arquivo ignorado (não é imagem): ${file.name});
+              console.warn(`Arquivo ignorado (não é imagem): ${file.name}`);
               continue;
             }
 
@@ -1182,18 +1267,18 @@
                 imageGalleryByTab.get(currentTab).push(processed.name);
                 currentImageNamesInTab.add(processed.name);
               } else {
-                console.warn(Imagem "${processed.name}" já existe na aba atual. Conteúdo será atualizado.);
+                console.warn(`Imagem "${processed.name}" já existe na aba atual. Conteúdo será atualizado.`);
               }
               loadedCount++;
             } catch (error) {
-              console.error(Erro ao processar ${file.name}:, error);
-              Utils.showStatus(Erro ao carregar ${file.name});
+              console.error(`Erro ao processar ${file.name}:`, error);
+              Utils.showStatus(`Erro ao carregar ${file.name}`);
             }
           }
 
           await UI.renderImages();
           StateManager.saveState();
-          Utils.showStatus(${loadedCount} imagem(ns) carregada(s) com sucesso!);
+          Utils.showStatus(`${loadedCount} imagem(ns) carregada(s) com sucesso!`);
         } catch (error) {
           console.error('Erro geral no carregamento:', error);
           Utils.showStatus('Erro ao carregar imagens.');
@@ -1206,103 +1291,7 @@
     // Configuração de eventos
     const EventManager = {
       setup: () => {
-        DOM.imageList.addEventListener('mousedown', (e) => {
-            const container = e.target.closest('.image-container');
-            if (!container) return;
-
-            longPressTimer = setTimeout(() => {
-                isLongPress = true;
-                const checkbox = container.querySelector('.image-checkbox');
-                if (checkbox) {
-                    checkbox.checked = !checkbox.checked;
-                    ImageManager.toggleSelectImage(container.dataset.name, checkbox.checked, container);
-                }
-            }, 500);
-        });
-
-        DOM.imageList.addEventListener('mouseup', () => {
-            clearTimeout(longPressTimer);
-            isLongPress = false;
-        });
-
-        DOM.imageList.addEventListener('touchstart', (e) => {
-            const container = e.target.closest('.image-container');
-            if (!container) return;
-
-            longPressTimer = setTimeout(() => {
-                isLongPress = true;
-                const checkbox = container.querySelector('.image-checkbox');
-                if (checkbox) {
-                    checkbox.checked = !checkbox.checked;
-                    ImageManager.toggleSelectImage(container.dataset.name, checkbox.checked, container);
-                }
-            }, 500);
-        }, { passive: true });
-
-        DOM.imageList.addEventListener('touchend', () => {
-            clearTimeout(longPressTimer);
-            isLongPress = false;
-        });
-
-        DOM.imageList.addEventListener('click', async (e) => {
-          const container = e.target.closest('.image-container');
-          if (!container || isLongPress) return;
-
-          if (e.target.tagName === 'IMG' || e.target.classList.contains('image-name')) {
-            const imageName = container.dataset.name;
-            const blob = await IndexedDBManager.getImageBlob(imageName);
-            if (blob) {
-                const objectURL = Utils.createObjectURL(blob);
-                UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
-            } else {
-                Utils.showStatus('Erro: Imagem não encontrada para ampliar.');
-            }
-          } else if (e.target.type === 'checkbox') {
-            return; 
-          } else {
-            if (DOM.body.classList.contains('show-checkboxes')) {
-                const checkbox = container.querySelector('.image-checkbox');
-                if (checkbox) {
-                    checkbox.checked = !checkbox.checked;
-                    ImageManager.toggleSelectImage(container.dataset.name, checkbox.checked, container);
-                }
-            }
-          }
-        });
-
-        DOM.imageList.addEventListener('keydown', (e) => {
-          const container = e.target.closest('.image-container');
-          if (!container) return;
-
-          const imageName = container.dataset.name;
-
-          if (e.key === ' ' || e.key === 'Enter') {
-            e.preventDefault();
-            const checkbox = container.querySelector('.image-checkbox');
-            if (checkbox) {
-                DOM.body.classList.add('show-checkboxes');
-                checkbox.checked = !checkbox.checked;
-                ImageManager.toggleSelectImage(imageName, checkbox.checked, container);
-            }
-          }
-          if (e.key === 'Delete' || e.key === 'Backspace') {
-            e.preventDefault();
-            ImageManager.deleteImage(imageName);
-          }
-        });
-
-        DOM.imageList.addEventListener('dragstart', (e) => {
-          const container = e.target.closest('.image-container');
-          if (!container) return;
-
-          const currentImageNames = imageGalleryByTab.get(currentTab);
-          dragStartIndex = currentImageNames.indexOf(container.dataset.name);
-
-          container.classList.add('dragging');
-          e.dataTransfer.effectAllowed = 'move';
-          e.dataTransfer.setData('text/plain', container.dataset.name);
-        });
-
+        // Eventos de drag and drop para reordenar
         DOM.imageList.addEventListener('dragover', (e) => {
           e.preventDefault();
           const container = e.target.closest('.image-container');
@@ -1326,7 +1315,7 @@
             const dragEndIndex = imageGalleryByTab.get(currentTab).indexOf(container.dataset.name);
             
             if (dragStartIndex !== null && dragEndIndex !== -1 && dragStartIndex !== dragEndIndex) {
-              ImageManager.reorderImages(dragStartIndex, dragEndIndex, draggedImageName);
+              ImageManager.reorderImages(dragStartIndex, dragEndIndex);
             }
           }
           dragStartIndex = null;
@@ -1340,33 +1329,26 @@
           dragStartIndex = null;
         });
 
+        // Eventos dos botões de seleção
         DOM.selectAllCheckbox.addEventListener('change', () => {
           const images = imageGalleryByTab.get(currentTab) || [];
           const selectedSet = selectedImagesByTab.get(currentTab);
-          const imageContainers = DOM.imageList.querySelectorAll('.image-container');
 
           if (DOM.selectAllCheckbox.checked) {
             images.forEach(name => selectedSet.add(name));
-            imageContainers.forEach(container => {
-                container.classList.add('selected');
-                container.querySelector('.image-checkbox').checked = true;
-            });
           } else {
             selectedSet.clear();
-            imageContainers.forEach(container => {
-                container.classList.remove('selected');
-                container.querySelector('.image-checkbox').checked = false;
-            });
           }
 
+          UI.renderImages();
           UI.updateButtonsState();
-          UI.updateCheckboxesVisibility();
           StateManager.saveState();
         });
 
         DOM.clearSelectionBtn.addEventListener('click', ImageManager.clearSelection);
         DOM.deleteSelectedBtn.addEventListener('click', ImageManager.deleteSelected);
 
+        // Eventos dos botões de arquivo/nuvem
         DOM.openFileDialogButton.addEventListener('click', () => {
           DOM.fileInput.value = '';
           DOM.fileInput.click();
@@ -1378,6 +1360,7 @@
           Utils.showStatus('Abrindo pasta do OneDrive em uma nova aba.');
         });
 
+        // Eventos dos botões do cabeçalho
         DOM.syncBtn.addEventListener('click', () => {
           Utils.showStatus('Funcionalidade de Sincronização em desenvolvimento...');
         });
@@ -1397,8 +1380,8 @@
         UI.createTabs();
         UI.updateTabsUI();
         await UI.renderImages();
+        UI.updateButtonsState();
         EventManager.setup();
-        UI.updateCheckboxesVisibility();
       } catch (e) {
         console.error("Erro na inicialização:", e);
         Utils.showStatus("Erro ao iniciar o aplicativo. Tente recarregar a página.");
