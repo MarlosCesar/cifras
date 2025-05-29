@@ -65,6 +65,20 @@
   </div>
   <div id="status-message" aria-live="polite"></div>
   <div id="selected-popup"></div>
+  <div class="tabs-container">
+  <ul id="tabs-list" class="tabs">
+    <!-- Abas serão inseridas aqui via JS -->
+  </ul>
+</div>
+<!-- Popup para novo nome de aba -->
+<div id="popup-bg" class="popup-bg" style="display:none">
+  <div class="popup">
+    <label for="tabName">Inserir o nome para nova aba:</label>
+    <input type="text" id="tabName" />
+    <button id="addTabBtn">Adicionar</button>
+    <button id="cancelTabBtn">Cancelar</button>
+  </div>
+</div>
 <script src="script.js"></script>
 </body>
 </html>
