@@ -182,19 +182,6 @@
       padding-left: 48px;
     }
 
-    .selection-controls {
-      display: none;
-      align-items: center;
-      gap: 1rem;
-      padding: 0.5rem 1rem;
-      background-color: white;
-      border-bottom: 1px solid var(--gray-medium);
-    }
-
-    .selection-mode .selection-controls {
-      display: flex;
-    }
-
     .drag-over {
       border: 2px dashed var(--primary-dark) !important;
       background-color: rgba(59, 130, 246, 0.1) !important;
@@ -441,18 +428,23 @@
         </div>
       </div>
 
-      <div class="selection-controls">
-        <button id="clear-selection-btn" class="text-gray-700 hover:text-gray-900 transition flex items-center gap-2" aria-label="Limpar seleção">
+      <nav class="tabs" id="tabs-container" role="tablist" aria-label="Abas das categorias de cifras"></nav>
+
+      <!-- NOVO BLOCO DE CONTROLES -->
+      <div class="flex items-center gap-6 px-4 py-2 bg-gray-50 border-b" id="float-controls" style="border-bottom:1px solid #e5e7eb;">
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="select-all-checkbox" class="h-5 w-5 text-blue-600 border-gray-300 rounded">
+          <label for="select-all-checkbox" class="text-sm font-medium text-gray-700 cursor-pointer select-none">Selecionar todas as cifras</label>
+        </div>
+        <button id="clear-selection-btn" class="text-gray-700 hover:text-gray-900 transition flex items-center gap-2 px-2" aria-label="Limpar seleção">
           <i class="fas fa-times" aria-hidden="true"></i> Limpar
         </button>
-        <span id="selected-count" class="text-sm font-medium text-gray-700">0 selecionadas</span>
-        <button id="delete-selected-btn" class="text-red-600 hover:text-red-800 transition flex items-center gap-2 ml-auto" aria-label="Excluir imagens selecionadas">
+        <span id="selected-count" class="text-sm font-medium text-gray-700 ml-1">0 selecionadas</span>
+        <button id="delete-selected-btn" class="text-red-600 hover:text-red-800 transition flex items-center gap-2 ml-auto px-2" aria-label="Excluir imagens selecionadas">
           <i class="fas fa-trash-alt" aria-hidden="true"></i> Excluir
         </button>
       </div>
-
-      <nav class="tabs" id="tabs-container" role="tablist" aria-label="Abas das categorias de cifras">
-      </nav>
+      <!-- FIM NOVO BLOCO DE CONTROLES -->
 
       <div class="p-4 flex flex-col gap-4 flex-1">
         <div id="image-list" class="flex flex-col gap-4" aria-live="polite" aria-atomic="true">
@@ -484,7 +476,9 @@
       settingsBtn: document.getElementById('settings-btn'),
       loadingSpinner: document.getElementById('loading-spinner'),
       statusMessage: document.getElementById('status-message'),
-      body: document.body
+      body: document.body,
+      selectAllCheckbox: document.getElementById('select-all-checkbox'),
+      floatControls: document.getElementById('float-controls'),
     };
 
     // Abas desejadas
@@ -849,6 +843,12 @@
         DOM.imageList.innerHTML = '';
         DOM.imageList.appendChild(fragment);
         UI.updateSelectionUI();
+
+        // Atualização do checkbox "selecionar todas"
+        const allNames = imageGalleryByTab.get(currentTab) || [];
+        const selectedSet = selectedImagesByTab.get(currentTab);
+        DOM.selectAllCheckbox.checked = allNames.length > 0 && allNames.every(name => selectedSet.has(name));
+        DOM.selectAllCheckbox.indeterminate = !DOM.selectAllCheckbox.checked && Array.from(selectedSet).length > 0;
       },
 
       createImageElement: (imageName, imageBlob) => {
@@ -1224,6 +1224,11 @@
 
         UI.updateSelectionUI();
         StateManager.saveState();
+
+        // Atualize o checkbox "Selecionar todas"
+        const allNames = imageGalleryByTab.get(currentTab) || [];
+        DOM.selectAllCheckbox.checked = allNames.length > 0 && allNames.every(name => selectedImagesByTab.get(currentTab).has(name));
+        DOM.selectAllCheckbox.indeterminate = !DOM.selectAllCheckbox.checked && Array.from(selectedImagesByTab.get(currentTab)).length > 0;
       },
 
       deleteImage: async imageName => {
@@ -1410,6 +1415,19 @@
         // Eventos dos botões de seleção
         DOM.clearSelectionBtn.addEventListener('click', ImageManager.clearSelection);
         DOM.deleteSelectedBtn.addEventListener('click', ImageManager.deleteSelected);
+
+        // Checkbox Selecionar todas
+        DOM.selectAllCheckbox.addEventListener('change', function() {
+          const allNames = imageGalleryByTab.get(currentTab) || [];
+          const selectedSet = selectedImagesByTab.get(currentTab);
+          if (this.checked) {
+            allNames.forEach(name => selectedSet.add(name));
+          } else {
+            selectedSet.clear();
+          }
+          UI.renderImages();
+          StateManager.saveState();
+        });
 
         // Eventos dos botões de arquivo/nuvem
         DOM.openFileDialogButton.addEventListener('click', () => {
