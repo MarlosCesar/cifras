@@ -431,99 +431,110 @@
       await renderImages();
       showLoading(false);
     })();
+// MINHA ALTERAÇÃO COMEÇA AQUI
+// Abas padrão
 const defaultTabs = [
-  { id: 'cifras', name: 'Cifras', removable: false },
-  { id: 'favoritos', name: 'Favoritos', removable: false }
+  { id: 'domingo_manha', name: 'Domingo Manhã', removable: false },
+  { id: 'domingo_noite', name: 'Domingo Noite', removable: false },
+  { id: 'segunda', name: 'Segunda', removable: false },
+  { id: 'quarta', name: 'Quarta', removable: false },
+  { id: 'culto_jovem', name: 'Culto Jovem', removable: false }
 ];
-let userTabs = []; // { id, name, removable: true }
-let selectedTab = 'cifras';
+// Abas do usuário
+let userTabs = []; // { id, name }
+let selectedTab = defaultTabs[0].id;
 
 function renderTabs() {
-  const tabsList = document.getElementById('tabs-list');
-  tabsList.innerHTML = '';
+    const tabsList = document.getElementById('tabs-list');
+    // Remove abas de usuário (sem remover a aba +)
+    [...tabsList.querySelectorAll('.user-tab')].forEach(tab => tab.remove());
 
-  [...defaultTabs, ...userTabs].forEach(tab => {
-    const li = document.createElement('li');
-    li.className = 'tab' + (tab.removable ? ' user-tab' : '')
-      + (tab.id === selectedTab ? ' selected' : '');
-    li.textContent = tab.name;
-    li.dataset.tabId = tab.id;
+    // Adiciona as abas do usuário antes do botão "+"
+    const addBtn = document.getElementById('add-tab-btn');
+    userTabs.forEach(tab => {
+        const li = document.createElement('li');
+        li.className = 'tab user-tab';
+        li.textContent = tab.name;
+        li.dataset.id = tab.id;
+        if (selectedTab === tab.id) li.classList.add('selected');
 
-    // Para abas removíveis, adiciona botão X flutuante
-    if (tab.removable) {
-      const closeBtn = document.createElement('span');
-      closeBtn.className = 'close-btn';
-      closeBtn.textContent = '✖';
-      closeBtn.onclick = (e) => {
-        e.stopPropagation();
-        removeTab(tab.id);
-      };
-      li.appendChild(closeBtn);
+        // Botão X para remover
+        const closeBtn = document.createElement('span');
+        closeBtn.className = 'close-btn';
+        closeBtn.textContent = '✖';
+        closeBtn.onclick = (e) => {
+            e.stopPropagation();
+            removeTab(tab.id);
+        };
+        li.appendChild(closeBtn);
 
-      // Mantém o botão X visível enquanto pressiona
-      let pressTimer = null;
-      li.addEventListener('mousedown', (ev) => {
-        pressTimer = setTimeout(() => {
-          li.classList.add('show-close');
-        }, 350);
-      });
-      li.addEventListener('mouseup', (ev) => {
-        clearTimeout(pressTimer);
-      });
-      li.addEventListener('mouseleave', (ev) => {
-        clearTimeout(pressTimer);
-        li.classList.remove('show-close');
-      });
-    }
+        // Pressionar e segurar para mostrar o X
+        let pressTimer = null;
+        li.addEventListener('mousedown', () => {
+            pressTimer = setTimeout(() => {
+                li.classList.add('show-close');
+            }, 350);
+        });
+        li.addEventListener('mouseup', () => {
+            clearTimeout(pressTimer);
+        });
+        li.addEventListener('mouseleave', () => {
+            clearTimeout(pressTimer);
+            li.classList.remove('show-close');
+        });
 
-    li.onclick = () => {
-      if (!li.classList.contains('show-close')) {
-        selectedTab = tab.id;
-        renderTabs();
-      }
-    };
-    tabsList.appendChild(li);
-  });
+        li.onclick = () => {
+            if (!li.classList.contains('show-close')) {
+                selectTab(tab.id);
+            }
+        };
+        tabsList.insertBefore(li, addBtn);
+    });
 
-  // Aba de adicionar
-  const addLi = document.createElement('li');
-  addLi.className = 'tab add-tab';
-  addLi.textContent = '+';
-  addLi.onclick = () => openPopup();
-  tabsList.appendChild(addLi);
+    // Seleciona aba padrão ao clicar
+    tabsList.querySelectorAll('.tab:not(.add-tab):not(.user-tab)').forEach(tab => {
+        tab.onclick = () => selectTab(tab.dataset.id);
+        tab.classList.toggle('selected', tab.dataset.id === selectedTab);
+    });
+}
+
+function selectTab(id) {
+    selectedTab = id;
+    renderTabs();
 }
 
 function openPopup() {
-  document.getElementById('popup-bg').style.display = 'flex';
-  document.getElementById('tabName').value = '';
-  setTimeout(() => document.getElementById('tabName').focus(), 100);
+    document.getElementById('popup-bg').style.display = 'flex';
+    document.getElementById('tabName').value = '';
+    setTimeout(() => document.getElementById('tabName').focus(), 100);
 }
 function closePopup() {
-  document.getElementById('popup-bg').style.display = 'none';
+    document.getElementById('popup-bg').style.display = 'none';
 }
 function addTab() {
-  const name = document.getElementById('tabName').value.trim();
-  if (!name) return;
-  const id = 'user_' + Date.now();
-  userTabs.push({ id, name, removable: true });
-  selectedTab = id;
-  renderTabs();
-  closePopup();
+    const name = document.getElementById('tabName').value.trim();
+    if (!name) return;
+    const id = 'user_' + Date.now();
+    userTabs.push({ id, name });
+    selectedTab = id;
+    renderTabs();
+    closePopup();
 }
 function removeTab(id) {
-  userTabs = userTabs.filter(tab => tab.id !== id);
-  // Se a aba removida era a selecionada, volta para a primeira default
-  if (selectedTab === id) selectedTab = defaultTabs[0].id;
-  renderTabs();
+    userTabs = userTabs.filter(tab => tab.id !== id);
+    if (selectedTab === id) selectedTab = defaultTabs[0].id;
+    renderTabs();
 }
 
-// Popup botões
+// Eventos popup
 document.getElementById('addTabBtn').onclick = addTab;
 document.getElementById('cancelTabBtn').onclick = closePopup;
 document.getElementById('tabName').onkeydown = (e) => {
-  if (e.key === 'Enter') addTab();
-  if (e.key === 'Escape') closePopup();
+    if (e.key === 'Enter') addTab();
+    if (e.key === 'Escape') closePopup();
 };
+// Botão "+"
+document.getElementById('add-tab-btn').onclick = openPopup;
 
 // Render inicial
 renderTabs();
