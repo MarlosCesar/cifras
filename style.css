@@ -325,3 +325,99 @@ body {
     font-size: 0.875rem;
   }
 }
+/* Estilos para o Modo Noturno */
+body.dark-mode {
+  background-color: #121212;
+  color: #f8f9fa;
+}
+
+body.dark-mode .header-professional {
+  background-color: #212529;
+}
+
+body.dark-mode .container {
+  color: #fff;
+}
+
+body.dark-mode .tabs {
+  background-color: #343a40;
+  border-bottom-color: #6c757d;
+}
+
+body.dark-mode .tab {
+  background-color: #495057;
+  color: #f8f9fa;
+}
+
+body.dark-mode .tab.selected {
+  background-color: #212529;
+  color: #fff;
+  border-color: #6c757d;
+}
+
+body.dark-mode .tab.add-tab {
+  background-color: #6c757d;
+  color: #212529;
+}
+
+body.dark-mode .user-tab {
+  background-color: #5a6268;
+  color: #f8f9fa;
+}
+
+body.dark-mode .close-btn {
+  color: #ffc107;
+}
+
+body.dark-mode .close-btn:hover {
+  color: #ff9800;
+}
+
+body.dark-mode .popup {
+  background-color: #343a40;
+  color: #f8f9fa;
+}
+
+body.dark-mode .popup input,
+body.dark-mode .popup label {
+  color: #f8f9fa;
+}
+
+body.dark-mode .popup button {
+  background-color: #6c757d;
+  color: #212529;
+}
+
+body.dark-mode .popup button:hover {
+  background-color: #5a6268;
+}
+
+body.dark-mode .main-content-area {
+  background-color: #212529;
+  color: #f8f9fa;
+}
+
+body.dark-mode .w-full {
+  background-color: #343a40;
+}
+
+body.dark-mode .bg-gray-50 {
+  background-color: #495057;
+}
+
+body.dark-mode .text-gray-500 {
+  color: #999;
+}
+
+body.dark-mode .cifra-thumb {
+  background-color: #495057;
+  color: #f8f9fa;
+}
+
+body.dark-mode .cifra-thumb button {
+  color: #ffc107;
+}
+
+body.dark-mode .cifra-thumb button:hover {
+  color: #ff9800;
+}
