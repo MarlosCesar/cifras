@@ -67,18 +67,23 @@
   <div id="selected-popup"></div>
   <div class="tabs-container">
   <ul id="tabs-list" class="tabs">
-    <!-- Abas serão inseridas aqui via JS -->
-  </ul>
-</div>
-<!-- Popup para novo nome de aba -->
-<div id="popup-bg" class="popup-bg" style="display:none">
-  <div class="popup">
-    <label for="tabName">Inserir o nome para nova aba:</label>
-    <input type="text" id="tabName" />
-    <button id="addTabBtn">Adicionar</button>
-    <button id="cancelTabBtn">Cancelar</button>
-  </div>
-</div>
+        <li class="tab" data-id="domingo_manha">Domingo Manhã</li>
+        <li class="tab" data-id="domingo_noite">Domingo Noite</li>
+        <li class="tab" data-id="segunda">Segunda</li>
+        <li class="tab" data-id="quarta">Quarta</li>
+        <li class="tab" data-id="culto_jovem">Culto Jovem</li>
+        <!-- Abas do usuário são inseridas via JS -->
+        <li class="tab add-tab" id="add-tab-btn">+</li>
+    </ul>
+    <!-- Popup para nova aba -->
+    <div id="popup-bg" class="popup-bg" style="display:none">
+        <div class="popup">
+            <label for="tabName">Inserir o nome para nova aba:</label>
+            <input type="text" id="tabName" />
+            <button id="addTabBtn">Adicionar</button>
+            <button id="cancelTabBtn">Cancelar</button>
+        </div>
+    </div>
 <script src="script.js"></script>
 </body>
 </html>
