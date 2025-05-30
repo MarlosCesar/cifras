@@ -155,14 +155,25 @@
       .tab { font-size:.92rem; padding:.45rem .7rem;}
       .flex.flex-wrap.gap-2 { flex-direction: row; gap: .5rem;}
     }
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', Arial, sans-serif;
+}
+
 .tabs {
   display: flex;
   list-style: none;
   padding: 0;
-  margin: 0 0 20px 0;
+  margin: 0;
+  border-bottom: 2px solid #eee;
+  background: #fafafa;
+  width: 100%;
+  position: relative;
+  z-index: 2;
 }
 .tab {
-  padding: 8px 16px;
+  padding: 10px 20px;
   background: #eee;
   margin-right: 2px;
   cursor: pointer;
@@ -170,32 +181,41 @@
   position: relative;
   user-select: none;
   transition: background .2s;
+  border: 1px solid transparent;
+  border-bottom: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .tab.selected {
   background: #fff;
-  border-bottom: 2px solid #fff;
+  border-left: 1px solid #ddd;
+  border-right: 1px solid #ddd;
+  border-top: 2px solid #3498db;
   font-weight: bold;
+  color: #3498db;
 }
 .tab.add-tab {
   background: #ddd;
   color: #333;
   font-weight: bold;
+  border: 1px solid transparent;
+  border-bottom: none;
 }
 .tab.user-tab {
   background: #cfc;
 }
 .tab .close-btn {
   display: none;
-  position: absolute;
-  right: 8px;
-  top: 4px;
+  position: relative;
   color: red;
   font-size: 18px;
   cursor: pointer;
   z-index: 10;
+  margin-left: 8px;
 }
 .tab.show-close .close-btn {
-  display: block;
+  display: inline;
 }
 .popup-bg {
   position: fixed; left:0; top:0; width:100vw; height:100vh;
