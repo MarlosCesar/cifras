@@ -27,7 +27,8 @@ let appState = {
     isDragging: false,
     startIndex: null,
     sourceTab: null
-  }
+  },
+  darkMode: false // Adicionado: estado do modo noturno
 };
 
 // ================ INICIALIZAÇÃO ================
@@ -37,6 +38,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupEventListeners();
   renderTabs();
   renderCifras();
+  applyDarkMode(); // Adicionado: aplica o modo noturno salvo
 });
 
 // ================ INDEXEDDB HELPERS ================
@@ -102,6 +104,7 @@ function loadState() {
       appState.userTabs = savedState.userTabs || [];
       appState.cifrasByTab = savedState.cifrasByTab || {};
       appState.selectedTab = savedState.selectedTab || DEFAULT_TABS[0].id;
+      appState.darkMode = savedState.darkMode === true; // Carrega o estado do modo noturno
       
       // Inicializa todas as abas no mapa de seleção
       getAllTabIds().forEach(tabId => {
@@ -119,7 +122,8 @@ function saveState() {
   const stateToSave = {
     userTabs: appState.userTabs,
     cifrasByTab: appState.cifrasByTab,
-    selectedTab: appState.selectedTab
+    selectedTab: appState.selectedTab,
+    darkMode: appState.darkMode // Salva o estado do modo noturno
   };
   
   localStorage.setItem('cifrasAppState', JSON.stringify(stateToSave));
@@ -478,6 +482,28 @@ function setupFileInput() {
   });
 }
 
+// ================ MODO NOTURNO ================
+function toggleNightMode() {
+  appState.darkMode = !appState.darkMode;
+  saveState();
+  applyDarkMode();
+}
+
+function applyDarkMode() {
+  const body = document.body;
+  const nightModeIcon = document.getElementById('night-mode-icon');
+  
+  if (appState.darkMode) {
+    body.classList.add('dark-mode');
+    nightModeIcon.classList.remove('fa-moon');
+    nightModeIcon.classList.add('fa-sun');
+  } else {
+    body.classList.remove('dark-mode');
+    nightModeIcon.classList.remove('fa-sun');
+    nightModeIcon.classList.add('fa-moon');
+  }
+}
+
 // ================ UI HELPERS ================
 function showLoading(show) {
   const spinner = document.getElementById('loading-spinner');
@@ -590,14 +616,10 @@ function setupEventListeners() {
     showStatus('Abrindo pasta do OneDrive em uma nova aba');
   });
   
-  // Sincronização
-  document.getElementById('sync-btn').addEventListener('click', () => {
-    showLoading(true);
-    setTimeout(() => {
-      showLoading(false);
-      showStatus('Sincronização completa');
-    }, 1500);
-  });
+  // Modo Noturno (substitui a sincronização)
+  const syncBtn = document.getElementById('sync-btn');
+  syncBtn.addEventListener('click', toggleNightMode);
+  syncBtn.setAttribute('title', 'Alternar Modo Noturno'); // Atualiza tooltip
   
   // Configurações
   document.getElementById('settings-btn').addEventListener('click', () => {
