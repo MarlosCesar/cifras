@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <circle fill="#fff" cx="32" cy="32" r="32"/>
+  <!-- Clave de fá estilizada -->
+  <path d="M39 44c-6-1-10-7-10-13 0-6 4-12 10-13"
+        stroke="#222"
+        stroke-width="4"
+        fill="none"
+        stroke-linecap="round"/>
+  <circle fill="#222" cx="44" cy="22" r="3"/>
+  <circle fill="#222" cx="44" cy="42" r="3"/>
+</svg>
