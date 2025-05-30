@@ -440,101 +440,166 @@ const defaultTabs = [
   { id: 'quarta', name: 'Quarta', removable: false },
   { id: 'culto_jovem', name: 'Culto Jovem', removable: false }
 ];
-// Abas do usuário
+
+// Armazenamento de cifras por aba (id da aba => array de cifras)
+// No mundo real, recarregar perde as cifras adicionadas. Integrar com backend ou localStorage se desejar persistência.
+let cifrasByTab = {};
+defaultTabs.forEach(tab => cifrasByTab[tab.id] = []);
 let userTabs = []; // { id, name }
 let selectedTab = defaultTabs[0].id;
 
+// Renderiza as abas
 function renderTabs() {
-    const tabsList = document.getElementById('tabs-list');
-    // Remove abas de usuário (sem remover a aba +)
-    [...tabsList.querySelectorAll('.user-tab')].forEach(tab => tab.remove());
+  const tabsList = document.getElementById('tabs-list');
+  tabsList.innerHTML = ''; // Limpa tudo
 
-    // Adiciona as abas do usuário antes do botão "+"
-    const addBtn = document.getElementById('add-tab-btn');
-    userTabs.forEach(tab => {
-        const li = document.createElement('li');
-        li.className = 'tab user-tab';
-        li.textContent = tab.name;
-        li.dataset.id = tab.id;
-        if (selectedTab === tab.id) li.classList.add('selected');
+  // Render abas padrão
+  defaultTabs.forEach(tab => {
+    const li = document.createElement('li');
+    li.className = 'tab' + (selectedTab === tab.id ? ' selected' : '');
+    li.textContent = tab.name;
+    li.dataset.id = tab.id;
+    li.onclick = () => selectTab(tab.id);
+    tabsList.appendChild(li);
+  });
 
-        // Botão X para remover
-        const closeBtn = document.createElement('span');
-        closeBtn.className = 'close-btn';
-        closeBtn.textContent = '✖';
-        closeBtn.onclick = (e) => {
-            e.stopPropagation();
-            removeTab(tab.id);
-        };
-        li.appendChild(closeBtn);
+  // Render abas do usuário
+  userTabs.forEach(tab => {
+    const li = document.createElement('li');
+    li.className = 'tab user-tab' + (selectedTab === tab.id ? ' selected' : '');
+    li.textContent = tab.name;
+    li.dataset.id = tab.id;
 
-        // Pressionar e segurar para mostrar o X
-        let pressTimer = null;
-        li.addEventListener('mousedown', () => {
-            pressTimer = setTimeout(() => {
-                li.classList.add('show-close');
-            }, 350);
-        });
-        li.addEventListener('mouseup', () => {
-            clearTimeout(pressTimer);
-        });
-        li.addEventListener('mouseleave', () => {
-            clearTimeout(pressTimer);
-            li.classList.remove('show-close');
-        });
+    // botão X para remover (visível em modo show-close)
+    const closeBtn = document.createElement('span');
+    closeBtn.className = 'close-btn';
+    closeBtn.textContent = '✖';
+    closeBtn.onclick = (e) => {
+      e.stopPropagation();
+      removeTab(tab.id);
+    };
+    li.appendChild(closeBtn);
 
-        li.onclick = () => {
-            if (!li.classList.contains('show-close')) {
-                selectTab(tab.id);
-            }
-        };
-        tabsList.insertBefore(li, addBtn);
+    // Pressionar e segurar para mostrar X (só some se clicar);
+    let pressTimer = null;
+    li.addEventListener('mousedown', (ev) => {
+      // Botão esquerdo apenas
+      if (ev.button !== 0) return;
+      pressTimer = setTimeout(() => {
+        li.classList.add('show-close');
+      }, 350);
+    });
+    li.addEventListener('mouseup', (ev) => {
+      clearTimeout(pressTimer);
+    });
+    // Ao clicar na aba, esconde o X, se estiver visível
+    li.addEventListener('click', () => {
+      if (li.classList.contains('show-close')) {
+        li.classList.remove('show-close');
+      } else {
+        selectTab(tab.id);
+      }
     });
 
-    // Seleciona aba padrão ao clicar
-    tabsList.querySelectorAll('.tab:not(.add-tab):not(.user-tab)').forEach(tab => {
-        tab.onclick = () => selectTab(tab.dataset.id);
-        tab.classList.toggle('selected', tab.dataset.id === selectedTab);
-    });
+    tabsList.appendChild(li);
+  });
+
+  // Botão "+"
+  const addBtn = document.createElement('li');
+  addBtn.className = 'tab add-tab';
+  addBtn.textContent = '+';
+  addBtn.onclick = openPopup;
+  tabsList.appendChild(addBtn);
+
+  renderCifras();
 }
 
+// Seleciona aba
 function selectTab(id) {
-    selectedTab = id;
-    renderTabs();
+  selectedTab = id;
+  renderTabs();
 }
 
+// Popup lógica
 function openPopup() {
-    document.getElementById('popup-bg').style.display = 'flex';
-    document.getElementById('tabName').value = '';
-    setTimeout(() => document.getElementById('tabName').focus(), 100);
+  document.getElementById('popup-bg').style.display = 'flex';
+  document.getElementById('tabName').value = '';
+  setTimeout(() => document.getElementById('tabName').focus(), 100);
 }
 function closePopup() {
-    document.getElementById('popup-bg').style.display = 'none';
+  document.getElementById('popup-bg').style.display = 'none';
 }
 function addTab() {
-    const name = document.getElementById('tabName').value.trim();
-    if (!name) return;
-    const id = 'user_' + Date.now();
-    userTabs.push({ id, name });
-    selectedTab = id;
-    renderTabs();
-    closePopup();
+  const name = document.getElementById('tabName').value.trim();
+  if (!name) return;
+  const id = 'user_' + Date.now();
+  userTabs.push({ id, name });
+  cifrasByTab[id] = [];
+  selectedTab = id;
+  renderTabs();
+  closePopup();
 }
 function removeTab(id) {
-    userTabs = userTabs.filter(tab => tab.id !== id);
-    if (selectedTab === id) selectedTab = defaultTabs[0].id;
-    renderTabs();
+  userTabs = userTabs.filter(tab => tab.id !== id);
+  delete cifrasByTab[id];
+  if (selectedTab === id) selectedTab = defaultTabs[0].id;
+  renderTabs();
 }
 
 // Eventos popup
 document.getElementById('addTabBtn').onclick = addTab;
 document.getElementById('cancelTabBtn').onclick = closePopup;
 document.getElementById('tabName').onkeydown = (e) => {
-    if (e.key === 'Enter') addTab();
-    if (e.key === 'Escape') closePopup();
+  if (e.key === 'Enter') addTab();
+  if (e.key === 'Escape') closePopup();
 };
-// Botão "+"
-document.getElementById('add-tab-btn').onclick = openPopup;
 
-// Render inicial
+// Cifras: cada aba tem sua própria lista
+function renderCifras() {
+  const imageList = document.getElementById('image-list');
+  imageList.innerHTML = '';
+  const cifras = cifrasByTab[selectedTab] || [];
+  if (cifras.length === 0) {
+    const p = document.createElement('p');
+    p.className = "text-center text-gray-500 py-8";
+    p.textContent = "Nenhuma cifra selecionada.";
+    imageList.appendChild(p);
+  } else {
+    cifras.forEach((cifra, idx) => {
+      const item = document.createElement('div');
+      item.className = "bg-gray-100 p-4 rounded flex items-center justify-between";
+      item.innerHTML = `<span>${cifra}</span>
+        <button class="text-red-600 hover:text-red-800" title="Remover" aria-label="Remover" onclick="removeCifra('${selectedTab}', ${idx})"><i class="fas fa-trash-alt"></i></button>`;
+      imageList.appendChild(item);
+    });
+  }
+}
+
+// Adiciona cifra à aba selecionada (exemplo: pode integrar com upload, etc)
+window.addCifraToCurrentTab = function(cifraName) {
+  if (!cifrasByTab[selectedTab]) cifrasByTab[selectedTab] = [];
+  cifrasByTab[selectedTab].push(cifraName);
+  renderCifras();
+};
+// Remove cifra
+window.removeCifra = function(tabId, idx) {
+  if (!cifrasByTab[tabId]) return;
+  cifrasByTab[tabId].splice(idx, 1);
+  renderCifras();
+};
+
+// Exemplo: para teste, adicione um botão temporário para inserir cifras manualmente
+// Remova este bloco para produção
+{
+  const btn = document.createElement('button');
+  btn.textContent = 'Adicionar Cifra Exemplo';
+  btn.className = 'my-4 ml-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600';
+  btn.onclick = () => {
+    const cifra = prompt("Nome da cifra?");
+    if (cifra) window.addCifraToCurrentTab(cifra);
+  };
+  document.body.appendChild(btn);
+}
+
+// Inicialização
 renderTabs();
