@@ -1,23 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <circle fill="#fff" cx="32" cy="32" r="32"/>
-  <!-- Clave de sol estilizada -->
-  <path d="M36 12
-           Q24 30 30 33
-           Q44 38 36 52
-           Q28 62 33 56
-           Q37 51 36 44
-           Q35 29 31 32"
-        stroke="#222"
-        stroke-width="3.5"
-        fill="none"
-        stroke-linecap="round"/>
-  <!-- A espiral da clave -->
-  <path d="M36 44
-           Q42 54 29 54
-           Q20 54 23 45
-           Q25 37 34 41"
-        stroke="#222"
-        stroke-width="2"
-        fill="none"
-        stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <path fill="#3b82f6" 
+        d="M9 3 Q5 8 7 8 Q11 9 9 13 Q7 16 8 14 Q9 12 9 10 Q9 7 8 8
+           M9 10 Q11 14 6 14 Q4 14 5 11 Q6 9 9 10"/>
 </svg>
