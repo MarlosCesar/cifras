@@ -432,7 +432,7 @@
       showLoading(false);
     })();
 // MINHA ALTERAÇÃO COMEÇA AQUI
-// Abas padrão
+// Abas padrão fixas
 const defaultTabs = [
   { id: 'domingo_manha', name: 'Domingo Manhã', removable: false },
   { id: 'domingo_noite', name: 'Domingo Noite', removable: false },
@@ -441,17 +441,33 @@ const defaultTabs = [
   { id: 'culto_jovem', name: 'Culto Jovem', removable: false }
 ];
 
-// Armazenamento de cifras por aba (id da aba => array de cifras)
-// No mundo real, recarregar perde as cifras adicionadas. Integrar com backend ou localStorage se desejar persistência.
-let cifrasByTab = {};
-defaultTabs.forEach(tab => cifrasByTab[tab.id] = []);
-let userTabs = []; // { id, name }
-let selectedTab = defaultTabs[0].id;
+function loadState() {
+  let userTabs = [];
+  let cifrasByTab = {};
+  let selectedTab = defaultTabs[0].id;
+  try {
+    userTabs = JSON.parse(localStorage.getItem('userTabs')) || [];
+    cifrasByTab = JSON.parse(localStorage.getItem('cifrasByTab')) || {};
+    selectedTab = localStorage.getItem('selectedTab') || defaultTabs[0].id;
+  } catch (e) {}
+  // Garante que todas as abas padrão têm entry
+  [...defaultTabs, ...userTabs].forEach(tab => {
+    if (!cifrasByTab[tab.id]) cifrasByTab[tab.id] = [];
+  });
+  return { userTabs, cifrasByTab, selectedTab };
+}
 
-// Renderiza as abas
+function saveState() {
+  localStorage.setItem('userTabs', JSON.stringify(userTabs));
+  localStorage.setItem('cifrasByTab', JSON.stringify(cifrasByTab));
+  localStorage.setItem('selectedTab', selectedTab);
+}
+
+let { userTabs, cifrasByTab, selectedTab } = loadState();
+
 function renderTabs() {
   const tabsList = document.getElementById('tabs-list');
-  tabsList.innerHTML = ''; // Limpa tudo
+  tabsList.innerHTML = '';
 
   // Render abas padrão
   defaultTabs.forEach(tab => {
@@ -483,7 +499,6 @@ function renderTabs() {
     // Pressionar e segurar para mostrar X (só some se clicar);
     let pressTimer = null;
     li.addEventListener('mousedown', (ev) => {
-      // Botão esquerdo apenas
       if (ev.button !== 0) return;
       pressTimer = setTimeout(() => {
         li.classList.add('show-close');
@@ -492,7 +507,6 @@ function renderTabs() {
     li.addEventListener('mouseup', (ev) => {
       clearTimeout(pressTimer);
     });
-    // Ao clicar na aba, esconde o X, se estiver visível
     li.addEventListener('click', () => {
       if (li.classList.contains('show-close')) {
         li.classList.remove('show-close');
@@ -511,12 +525,13 @@ function renderTabs() {
   addBtn.onclick = openPopup;
   tabsList.appendChild(addBtn);
 
+  saveState();
   renderCifras();
 }
 
-// Seleciona aba
 function selectTab(id) {
   selectedTab = id;
+  saveState();
   renderTabs();
 }
 
@@ -536,6 +551,7 @@ function addTab() {
   userTabs.push({ id, name });
   cifrasByTab[id] = [];
   selectedTab = id;
+  saveState();
   renderTabs();
   closePopup();
 }
@@ -543,6 +559,7 @@ function removeTab(id) {
   userTabs = userTabs.filter(tab => tab.id !== id);
   delete cifrasByTab[id];
   if (selectedTab === id) selectedTab = defaultTabs[0].id;
+  saveState();
   renderTabs();
 }
 
@@ -554,15 +571,16 @@ document.getElementById('tabName').onkeydown = (e) => {
   if (e.key === 'Escape') closePopup();
 };
 
-// Cifras: cada aba tem sua própria lista
+// ---------------- CIFRAS POR ABA -------------------
+
 function renderCifras() {
   const imageList = document.getElementById('image-list');
   imageList.innerHTML = '';
-  const cifras = cifrasByTab[selectedTab] || [];
-  if (cifras.length === 0) {
+  let cifras = cifrasByTab[selectedTab] || [];
+  if (!cifras || cifras.length === 0) {
     const p = document.createElement('p');
     p.className = "text-center text-gray-500 py-8";
-    p.textContent = "Nenhuma cifra selecionada.";
+    p.textContent = "Nenhuma cifra nesta aba.";
     imageList.appendChild(p);
   } else {
     cifras.forEach((cifra, idx) => {
@@ -573,10 +591,12 @@ function renderCifras() {
       imageList.appendChild(item);
     });
   }
+  saveState();
 }
 
-// Adiciona cifra à aba selecionada (exemplo: pode integrar com upload, etc)
+// Adiciona cifra para a aba selecionada
 window.addCifraToCurrentTab = function(cifraName) {
+  if (!cifraName) return;
   if (!cifrasByTab[selectedTab]) cifrasByTab[selectedTab] = [];
   cifrasByTab[selectedTab].push(cifraName);
   renderCifras();
