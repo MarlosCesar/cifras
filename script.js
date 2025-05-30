@@ -573,8 +573,8 @@ function renderCifras() {
     cifras.forEach((cifra, idx) => {
       const item = document.createElement('div');
       item.className = "cifra-thumb";
-      item.innerHTML = `<button title="Remover" aria-label="Remover" onclick="removeCifra('${selectedTab}', ${idx})"><i class="fas fa-trash-alt"></i></button>
-        <span>${cifra}</span>`;
+item.innerHTML = `<button title="Remover" aria-label="Remover" onclick="removeCifra('${selectedTab}', ${idx})"><i class="fas fa-trash-alt"></i></button>
+  <span>${cifra}</span>`;
       imageList.appendChild(item);
     });
   }
