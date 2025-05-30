@@ -29,6 +29,27 @@
   </header>
   <main class="container mx-auto p-4 flex flex-col gap-4 main-content-area" role="main">
     <section class="w-full bg-white rounded-xl shadow-md overflow-hidden flex flex-col" aria-label="Seletor de músicas e imagens">
+      <!-- Abas no topo, dentro do conteúdo principal -->
+      <nav class="tabs-custom" id="tabs-container" role="tablist" aria-label="Abas das categorias de cifras">
+        <ul id="tabs-list" class="tabs">
+          <li class="tab" data-id="domingo_manha">Domingo Manhã</li>
+          <li class="tab" data-id="domingo_noite">Domingo Noite</li>
+          <li class="tab" data-id="segunda">Segunda</li>
+          <li class="tab" data-id="quarta">Quarta</li>
+          <li class="tab" data-id="culto_jovem">Culto Jovem</li>
+          <!-- Abas do usuário são inseridas via JS -->
+          <li class="tab add-tab" id="add-tab-btn">+</li>
+        </ul>
+      </nav>
+      <!-- Popup para nova aba -->
+      <div id="popup-bg" class="popup-bg" style="display:none">
+        <div class="popup">
+          <label for="tabName">Inserir o nome para nova aba:</label>
+          <input type="text" id="tabName" />
+          <button id="addTabBtn">Adicionar</button>
+          <button id="cancelTabBtn">Cancelar</button>
+        </div>
+      </div>
       <div class="p-4 bg-gray-50 border-b flex flex-wrap sm:flex-row sm:items-center sm:justify-end gap-2">
         <div class="flex flex-wrap gap-2 w-full justify-center sm:justify-end">
           <button id="open-cloud-folder" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition flex items-center" aria-label="Buscar cifras na nuvem (OneDrive)" title="Buscar em Nuvem">
@@ -40,7 +61,6 @@
           <input type="file" id="file-input" class="hidden" accept="image/*" multiple aria-hidden="true" tabindex="-1" />
         </div>
       </div>
-      <nav class="tabs-custom" id="tabs-container" role="tablist" aria-label="Abas das categorias de cifras"></nav>
       <div class="flex gap-4 items-center p-2 px-4 bg-gray-50 border-b" id="selection-controls" style="display:none;">
         <button id="select-all-btn" class="text-blue-600 hover:text-blue-800 flex items-center gap-2" style="display:none;">
           <i class="fas fa-check-double"></i> Selecionar todas
@@ -65,25 +85,6 @@
   </div>
   <div id="status-message" aria-live="polite"></div>
   <div id="selected-popup"></div>
-  <div class="tabs-container">
-  <ul id="tabs-list" class="tabs">
-        <li class="tab" data-id="domingo_manha">Domingo Manhã</li>
-        <li class="tab" data-id="domingo_noite">Domingo Noite</li>
-        <li class="tab" data-id="segunda">Segunda</li>
-        <li class="tab" data-id="quarta">Quarta</li>
-        <li class="tab" data-id="culto_jovem">Culto Jovem</li>
-        <!-- Abas do usuário são inseridas via JS -->
-        <li class="tab add-tab" id="add-tab-btn">+</li>
-    </ul>
-    <!-- Popup para nova aba -->
-    <div id="popup-bg" class="popup-bg" style="display:none">
-        <div class="popup">
-            <label for="tabName">Inserir o nome para nova aba:</label>
-            <input type="text" id="tabName" />
-            <button id="addTabBtn">Adicionar</button>
-            <button id="cancelTabBtn">Cancelar</button>
-        </div>
-    </div>
-<script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
