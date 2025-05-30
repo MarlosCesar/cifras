@@ -450,7 +450,6 @@ function loadState() {
     cifrasByTab = JSON.parse(localStorage.getItem('cifrasByTab')) || {};
     selectedTab = localStorage.getItem('selectedTab') || defaultTabs[0].id;
   } catch (e) {}
-  // Garante que todas as abas padrão têm entry
   [...defaultTabs, ...userTabs].forEach(tab => {
     if (!cifrasByTab[tab.id]) cifrasByTab[tab.id] = [];
   });
@@ -469,7 +468,6 @@ function renderTabs() {
   const tabsList = document.getElementById('tabs-list');
   tabsList.innerHTML = '';
 
-  // Render abas padrão
   defaultTabs.forEach(tab => {
     const li = document.createElement('li');
     li.className = 'tab' + (selectedTab === tab.id ? ' selected' : '');
@@ -479,14 +477,11 @@ function renderTabs() {
     tabsList.appendChild(li);
   });
 
-  // Render abas do usuário
   userTabs.forEach(tab => {
     const li = document.createElement('li');
     li.className = 'tab user-tab' + (selectedTab === tab.id ? ' selected' : '');
     li.textContent = tab.name;
     li.dataset.id = tab.id;
-
-    // botão X para remover (visível em modo show-close)
     const closeBtn = document.createElement('span');
     closeBtn.className = 'close-btn';
     closeBtn.textContent = '✖';
@@ -495,8 +490,6 @@ function renderTabs() {
       removeTab(tab.id);
     };
     li.appendChild(closeBtn);
-
-    // Pressionar e segurar para mostrar X (só some se clicar);
     let pressTimer = null;
     li.addEventListener('mousedown', (ev) => {
       if (ev.button !== 0) return;
@@ -514,11 +507,9 @@ function renderTabs() {
         selectTab(tab.id);
       }
     });
-
     tabsList.appendChild(li);
   });
 
-  // Botão "+"
   const addBtn = document.createElement('li');
   addBtn.className = 'tab add-tab';
   addBtn.textContent = '+';
@@ -535,7 +526,6 @@ function selectTab(id) {
   renderTabs();
 }
 
-// Popup lógica
 function openPopup() {
   document.getElementById('popup-bg').style.display = 'flex';
   document.getElementById('tabName').value = '';
@@ -563,15 +553,12 @@ function removeTab(id) {
   renderTabs();
 }
 
-// Eventos popup
 document.getElementById('addTabBtn').onclick = addTab;
 document.getElementById('cancelTabBtn').onclick = closePopup;
 document.getElementById('tabName').onkeydown = (e) => {
   if (e.key === 'Enter') addTab();
   if (e.key === 'Escape') closePopup();
 };
-
-// ---------------- CIFRAS POR ABA -------------------
 
 function renderCifras() {
   const imageList = document.getElementById('image-list');
@@ -585,9 +572,9 @@ function renderCifras() {
   } else {
     cifras.forEach((cifra, idx) => {
       const item = document.createElement('div');
-      item.className = "bg-gray-100 p-4 rounded flex items-center justify-between";
-      item.innerHTML = `<span>${cifra}</span>
-        <button class="text-red-600 hover:text-red-800" title="Remover" aria-label="Remover" onclick="removeCifra('${selectedTab}', ${idx})"><i class="fas fa-trash-alt"></i></button>`;
+      item.className = "cifra-thumb";
+      item.innerHTML = `<button title="Remover" aria-label="Remover" onclick="removeCifra('${selectedTab}', ${idx})"><i class="fas fa-trash-alt"></i></button>
+        <span>${cifra}</span>`;
       imageList.appendChild(item);
     });
   }
