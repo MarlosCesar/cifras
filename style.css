@@ -130,11 +130,6 @@ body {
 
 /* Responsivo para miniaturas */
 @media (max-width: 600px) {
-  .tab {
-    min-width: 80px;
-    font-size: 0.95rem;
-    padding: 8px 8px;
-  }
   .cifra-thumb {
     width: 90px;
     min-height: 70px;
