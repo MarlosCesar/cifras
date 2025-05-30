@@ -588,18 +588,5 @@ window.removeCifra = function(tabId, idx) {
   renderCifras();
 };
 
-// Exemplo: para teste, adicione um botão temporário para inserir cifras manualmente
-// Remova este bloco para produção
-{
-  const btn = document.createElement('button');
-  btn.textContent = 'Adicionar Cifra Exemplo';
-  btn.className = 'my-4 ml-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600';
-  btn.onclick = () => {
-    const cifra = prompt("Nome da cifra?");
-    if (cifra) window.addCifraToCurrentTab(cifra);
-  };
-  document.body.appendChild(btn);
-}
-
 // Inicialização
 renderTabs();
