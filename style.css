@@ -83,11 +83,62 @@ body {
   gap: 12px;
 }
 
-/* Para responsividade extra em telas pequenas */
+/* MINIATURAS DAS CIFRAS */
+#image-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: flex-start;
+}
+
+.cifra-thumb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 120px;
+  min-height: 100px;
+  max-width: 120px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  padding: 10px 8px 8px 8px;
+  box-shadow: 0 2px 4px #0001;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  font-size: 0.96rem;
+}
+.cifra-thumb span {
+  white-space: normal;
+  word-break: break-word;
+  margin-bottom: 4px;
+}
+.cifra-thumb button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: transparent;
+  border: none;
+  color: #e11d48;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 2px;
+  transition: color 0.2s;
+}
+.cifra-thumb button:hover {
+  color: #b91c1c;
+}
+
+/* Responsivo para miniaturas */
 @media (max-width: 600px) {
   .tab {
     min-width: 80px;
     font-size: 0.95rem;
     padding: 8px 8px;
+  }
+  .cifra-thumb {
+    width: 90px;
+    min-height: 70px;
+    max-width: 90px;
+    font-size: 0.90rem;
   }
 }
