@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Seletor de cifras para músicas de culto"/>
+  <meta name="description" content="Seletor de cifras"/>
   <meta name="theme-color" content="#3b82f6"/> <!-- Cor do tema -->
   <title>Cifras</title>
   <link rel="preload" href="https://cdn.tailwindcss.com" as="script">
@@ -20,7 +20,7 @@
 <!-- trecho do header, com botão "Modo Noturno" -->
 <header class="header-professional p-4">
   <div class="container mx-auto flex justify-between items-center">
-    <h1 class="text-2xl font-semibold tracking-wide">Seletor de Cifras</h1>
+    <h1 class="text-2xl font-semibold tracking-wide">Cifras</h1>
     <div class="flex items-center space-x-4">
       <button id="sync-btn" class="p-2 rounded-full" aria-label="Sincronizar" title="Sincronizar">
         <i class="fas fa-sync-alt text-lg" aria-hidden="true"></i>
@@ -35,7 +35,6 @@
 <main class="container mx-auto p-4 flex flex-col gap-4 main-content-area" role="main">
   <section class="w-full bg-white rounded-xl shadow-md overflow-hidden flex flex-col" aria-label="Seletor de músicas e imagens">
     <div class="p-4 bg-gray-50 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-      <h2 class="font-semibold text-xl text-gray-700">Minhas Cifras</h2>
       <div class="flex flex-wrap gap-2 justify-end">
         <button id="open-cloud-folder" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition flex items-center" aria-label="Buscar cifras na nuvem (OneDrive)" title="Buscar cifras na nuvem (OneDrive)">
           <i class="fas fa-cloud mr-2" aria-hidden="true"></i> Buscar em Nuvem
