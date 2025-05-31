@@ -808,4 +808,23 @@ async function init() {
   }
 }
 
+
+async function renderImages() {
+  const list = document.getElementById('image-list');
+  list.innerHTML = "";
+  const names = imageGalleryByTab.get(currentTab) || [];
+  if (!names.length) {
+    list.innerHTML = `<p class="text-center text-gray-500 py-8">Nenhuma cifra adicionada.</p>`;
+  } else {
+    for (let name of names) {
+      const blob = await IndexedDB.getImage(`${currentTab}:${name}`);
+      if (!blob) continue;
+      const container = createImageElement(name, blob);
+      list.appendChild(container);
+    }
+  }
+  updateSelectionControls();
+}
+
+
 document.addEventListener('DOMContentLoaded', init);
