@@ -16,27 +16,23 @@ const DOM = {
   body: document.body,
 };
 
-// Abas desejadas
-const tabs = ["Domingo Manhã", "Domingo Noite", "Segunda", "Quarta", "Culto Jovem", "Santa Ceia", "Outros"];
-
-// URL da pasta do OneDrive
+const tabs = [
+  "Domingo Manhã", "Domingo Noite", "Segunda", "Quarta", "Culto Jovem", "Santa Ceia", "Outros"
+];
 const ONE_DRIVE_FOLDER_URL = "https://1drv.ms/f/c/a71268bf66931c02/EpYyUsypAQhGgpWC9YuvE54BD_o9NX9tRar0piSzq4V4Xg";
 
-// Estado otimizado com Map/Set
+// Estado
 let imageGalleryByTab = new Map();
 let selectedImagesByTab = new Map();
 let currentTab = tabs[0];
 let isSelectionMode = false;
-let longPressTimer = null;
 let dragStartIndex = null;
 
-// Inicializar estado
 tabs.forEach(tab => {
   imageGalleryByTab.set(tab, []);
   selectedImagesByTab.set(tab, new Set());
 });
 
-// Funções utilitárias
 const Utils = {
   removeFileExtension: filename => filename.replace(/\.[^/.]+$/, ""),
   showStatus: message => {
@@ -53,19 +49,19 @@ const Utils = {
   },
   objectURLCache: new Map(),
   revokeObjectURL: (url) => {
-      if (Utils.objectURLCache.has(url)) {
-          URL.revokeObjectURL(url);
-          Utils.objectURLCache.delete(url);
-      }
+    if (Utils.objectURLCache.has(url)) {
+      URL.revokeObjectURL(url);
+      Utils.objectURLCache.delete(url);
+    }
   },
   createObjectURL: (blob) => {
-      const url = URL.createObjectURL(blob);
-      Utils.objectURLCache.set(url, true);
-      return url;
+    const url = URL.createObjectURL(blob);
+    Utils.objectURLCache.set(url, true);
+    return url;
   }
 };
 
-// --- IndexedDB Manager ---
+// IndexedDB
 const DB_NAME = 'ImageSelectorDB';
 const DB_VERSION = 2;
 const STORE_IMAGES = 'images';
@@ -76,12 +72,10 @@ const IndexedDBManager = {
 
   open: () => new Promise((resolve, reject) => {
     if (IndexedDBManager.db) {
-        resolve(IndexedDBManager.db);
-        return;
+      resolve(IndexedDBManager.db);
+      return;
     }
-
     const request = indexedDB.open(DB_NAME, DB_VERSION);
-
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
       if (!db.objectStoreNames.contains(STORE_IMAGES)) {
@@ -91,12 +85,10 @@ const IndexedDBManager = {
         db.createObjectStore(STORE_METADATA, { keyPath: 'id' });
       }
     };
-
     request.onsuccess = (event) => {
       IndexedDBManager.db = event.target.result;
       resolve(IndexedDBManager.db);
     };
-
     request.onerror = (event) => {
       console.error('IndexedDB error:', event.target.errorCode);
       reject(event.target.errorCode);
@@ -109,7 +101,6 @@ const IndexedDBManager = {
       const transaction = db.transaction([STORE_IMAGES], 'readwrite');
       const store = transaction.objectStore(STORE_IMAGES);
       const request = store.put({ name: imageName, blob: blob });
-
       request.onsuccess = () => resolve();
       request.onerror = (event) => reject(event.target.error);
     } catch (e) {
@@ -123,7 +114,6 @@ const IndexedDBManager = {
       const transaction = db.transaction([STORE_IMAGES], 'readonly');
       const store = transaction.objectStore(STORE_IMAGES);
       const request = store.get(imageName);
-
       request.onsuccess = (event) => resolve(event.target.result ? event.target.result.blob : null);
       request.onerror = (event) => reject(event.target.error);
     } catch (e) {
@@ -137,26 +127,11 @@ const IndexedDBManager = {
       const transaction = db.transaction([STORE_IMAGES], 'readwrite');
       const store = transaction.objectStore(STORE_IMAGES);
       const request = store.delete(imageName);
-
       request.onsuccess = () => resolve();
       request.onerror = (event) => reject(event.target.error);
     } catch (e) {
       reject(e);
     }
-  }),
-
-  getAllImageNames: () => new Promise(async (resolve, reject) => {
-      try {
-          const db = await IndexedDBManager.open();
-          const transaction = db.transaction([STORE_IMAGES], 'readonly');
-          const store = transaction.objectStore(STORE_IMAGES);
-          const request = store.getAllKeys();
-
-          request.onsuccess = (event) => resolve(event.target.result);
-          request.onerror = (event) => reject(event.target.error);
-      } catch (e) {
-          reject(e);
-      }
   }),
 
   saveMetadata: (state) => new Promise(async (resolve, reject) => {
@@ -165,7 +140,6 @@ const IndexedDBManager = {
       const transaction = db.transaction([STORE_METADATA], 'readwrite');
       const store = transaction.objectStore(STORE_METADATA);
       const request = store.put({ id: 'appState', state: state });
-
       request.onsuccess = () => resolve();
       request.onerror = (event) => reject(event.target.error);
     } catch (e) {
@@ -179,7 +153,6 @@ const IndexedDBManager = {
       const transaction = db.transaction([STORE_METADATA], 'readonly');
       const store = transaction.objectStore(STORE_METADATA);
       const request = store.get('appState');
-
       request.onsuccess = (event) => resolve(event.target.result ? event.target.result.state : null);
       request.onerror = (event) => reject(event.target.error);
     } catch (e) {
@@ -188,7 +161,6 @@ const IndexedDBManager = {
   })
 };
 
-// Processamento de imagens
 const ImageProcessor = {
   processImageFile: file => new Promise((resolve, reject) => {
     const img = new Image();
@@ -220,12 +192,9 @@ const ImageProcessor = {
       canvas.toBlob(blob => {
         Utils.revokeObjectURL(url);
         if (blob) {
-            resolve({
-                name: file.name,
-                blob: blob
-            });
+          resolve({ name: file.name, blob: blob });
         } else {
-            reject(new Error('Falha ao criar Blob da imagem.'));
+          reject(new Error('Falha ao criar Blob da imagem.'));
         }
       }, 'image/webp', 0.75);
     };
@@ -239,52 +208,50 @@ const ImageProcessor = {
   })
 };
 
-// Gerenciamento de estado
 const StateManager = {
-    saveState: Utils.debounce(async () => {
-        const state = {
-            images: Object.fromEntries(Array.from(imageGalleryByTab.entries()).map(([tab, names]) => [tab, Array.from(names)])),
-            selected: Object.fromEntries(Array.from(selectedImagesByTab.entries()).map(([tab, set]) => [tab, Array.from(set)])),
-            currentTab,
-        };
-        try {
-            await IndexedDBManager.saveMetadata(state);
-        } catch (e) {
-            console.error('Erro ao salvar estado no IndexedDB:', e);
-            Utils.showStatus('Erro ao salvar dados.');
-        }
-    }, 500),
-
-    loadState: async () => {
-        try {
-            const state = await IndexedDBManager.loadMetadata();
-            if (state) {
-                imageGalleryByTab = new Map(Object.entries(state.images || {}));
-                selectedImagesByTab = new Map();
-                for (const tab of tabs) {
-                    selectedImagesByTab.set(tab, new Set(state.selected?.[tab] || []));
-                }
-                currentTab = state.currentTab || tabs[0];
-            } else {
-                StateManager.initEmptyState();
-            }
-        } catch (e) {
-            console.error('Erro ao carregar estado do IndexedDB:', e);
-            StateManager.initEmptyState();
-        }
-    },
-
-    initEmptyState: () => {
-        imageGalleryByTab = new Map();
-        selectedImagesByTab = new Map();
-        tabs.forEach(tab => {
-            imageGalleryByTab.set(tab, []);
-            selectedImagesByTab.set(tab, new Set());
-        });
+  saveState: Utils.debounce(async () => {
+    const state = {
+      images: Object.fromEntries(Array.from(imageGalleryByTab.entries()).map(([tab, names]) => [tab, Array.from(names)])),
+      selected: Object.fromEntries(Array.from(selectedImagesByTab.entries()).map(([tab, set]) => [tab, Array.from(set)])),
+      currentTab,
+    };
+    try {
+      await IndexedDBManager.saveMetadata(state);
+    } catch (e) {
+      console.error('Erro ao salvar estado no IndexedDB:', e);
+      Utils.showStatus('Erro ao salvar dados.');
     }
+  }, 500),
+
+  loadState: async () => {
+    try {
+      const state = await IndexedDBManager.loadMetadata();
+      if (state) {
+        imageGalleryByTab = new Map(Object.entries(state.images || {}));
+        selectedImagesByTab = new Map();
+        for (const tab of tabs) {
+          selectedImagesByTab.set(tab, new Set(state.selected?.[tab] || []));
+        }
+        currentTab = state.currentTab || tabs[0];
+      } else {
+        StateManager.initEmptyState();
+      }
+    } catch (e) {
+      console.error('Erro ao carregar estado do IndexedDB:', e);
+      StateManager.initEmptyState();
+    }
+  },
+
+  initEmptyState: () => {
+    imageGalleryByTab = new Map();
+    selectedImagesByTab = new Map();
+    tabs.forEach(tab => {
+      imageGalleryByTab.set(tab, []);
+      selectedImagesByTab.set(tab, new Set());
+    });
+  }
 };
 
-// Interface do usuário
 const UI = {
   showLoading: () => DOM.loadingSpinner.classList.add('active'),
   hideLoading: () => DOM.loadingSpinner.classList.remove('active'),
@@ -307,15 +274,10 @@ const UI = {
         const currentActiveIndex = tabs.indexOf(currentTab);
         let nextIndex = currentActiveIndex;
 
-        if (e.key === 'ArrowRight') {
-          nextIndex = (currentActiveIndex + 1) % tabs.length;
-        } else if (e.key === 'ArrowLeft') {
-          nextIndex = (currentActiveIndex - 1 + tabs.length) % tabs.length;
-        } else if (e.key === 'Home') {
-          nextIndex = 0;
-        } else if (e.key === 'End') {
-          nextIndex = tabs.length - 1;
-        }
+        if (e.key === 'ArrowRight') nextIndex = (currentActiveIndex + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') nextIndex = (currentActiveIndex - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') nextIndex = 0;
+        else if (e.key === 'End') nextIndex = tabs.length - 1;
 
         if (nextIndex !== currentActiveIndex) {
           e.preventDefault();
@@ -345,7 +307,7 @@ const UI = {
 
   renderImages: async () => {
     DOM.imageList.querySelectorAll('img[data-object-url]').forEach(img => {
-        Utils.revokeObjectURL(img.dataset.objectUrl);
+      Utils.revokeObjectURL(img.dataset.objectUrl);
     });
 
     const imageNames = imageGalleryByTab.get(currentTab) || [];
@@ -361,26 +323,22 @@ const UI = {
       for (const imageName of imageNames) {
         const blob = await IndexedDBManager.getImageBlob(imageName);
         if (blob) {
-            imagesToRender.push({ name: imageName, blob: blob });
+          imagesToRender.push({ name: imageName, blob: blob });
         } else {
-            console.warn(`Imagem ${imageName} não encontrada no IndexedDB. Removendo da lista.`);
-            imageGalleryByTab.set(currentTab, imageNames.filter(name => name !== imageName));
-            selectedImagesByTab.get(currentTab).delete(imageName);
+          imageGalleryByTab.set(currentTab, imageNames.filter(name => name !== imageName));
+          selectedImagesByTab.get(currentTab).delete(imageName);
         }
       }
-
       imagesToRender.forEach(({ name, blob }) => {
         const container = UI.createImageElement(name, blob);
         fragment.appendChild(container);
       });
     }
-
     DOM.imageList.innerHTML = '';
     DOM.imageList.appendChild(fragment);
     UI.updateSelectionUI();
   },
 
-  // ALTERADO: abrir fullscreen só com duplo clique/double tap
   createImageElement: (imageName, imageBlob) => {
     const container = document.createElement('div');
     container.className = 'image-container';
@@ -418,8 +376,7 @@ const UI = {
     container.appendChild(img);
     container.appendChild(nameSpan);
 
-    // --- NOVO: DETECÇÃO DE DUPLO CLIQUE E DOUBLE TAP ---
-    // Desktop: duplo clique
+    // Duplo clique/Double tap para abrir fullscreen
     container.addEventListener('dblclick', () => {
       if (!isSelectionMode) {
         const objectURL = Utils.createObjectURL(imageBlob);
@@ -427,21 +384,23 @@ const UI = {
       }
     });
 
-    // Mobile: double tap (dois toques rápidos)
     let lastTapTime = 0;
+    let tapTimeout = null;
     container.addEventListener('touchend', (e) => {
+      if (e.touches && e.touches.length > 1) return; // ignore multi-touch
       const currentTime = new Date().getTime();
-      if (currentTime - lastTapTime < 400) { // 400ms para double tap
-        e.preventDefault();
+      if (currentTime - lastTapTime < 400) {
+        clearTimeout(tapTimeout);
         if (!isSelectionMode) {
           const objectURL = Utils.createObjectURL(imageBlob);
           UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
         }
       }
       lastTapTime = currentTime;
+      tapTimeout = setTimeout(() => { lastTapTime = 0; }, 450);
     });
 
-    // Demais eventos de seleção e drag and drop continuam igual
+    // Seleção e drag and drop
     let pressTimer;
     let isLongPress = false;
     container.addEventListener('mousedown', (e) => {
@@ -454,17 +413,9 @@ const UI = {
         ImageManager.toggleSelectImage(imageName, container);
       }, 500);
     });
-    container.addEventListener('mousemove', (e) => {
-      clearTimeout(pressTimer);
-    });
-    container.addEventListener('mouseup', (e) => {
-      clearTimeout(pressTimer);
-      isLongPress = false;
-    });
-    container.addEventListener('mouseleave', () => {
-      clearTimeout(pressTimer);
-      isLongPress = false;
-    });
+    container.addEventListener('mousemove', () => { clearTimeout(pressTimer); });
+    container.addEventListener('mouseup', () => { clearTimeout(pressTimer); isLongPress = false; });
+    container.addEventListener('mouseleave', () => { clearTimeout(pressTimer); isLongPress = false; });
 
     container.addEventListener('dragstart', (e) => {
       if (!isSelectionMode) {
@@ -499,7 +450,6 @@ const UI = {
     }
   },
 
-  // ALTERADO: fullscreen só fecha com duplo clique/double tap
   openFullscreen: (src, alt) => {
     const overlay = document.createElement('div');
     overlay.className = 'fullscreen-image';
@@ -511,102 +461,142 @@ const UI = {
     img.src = src;
     img.alt = alt;
     img.tabIndex = 0;
-    img.style.transform = 'scale(1)';
 
-    // Não haverá botões de zoom, apenas scroll/pinça
+    // Centro da imagem para zoom
     let scale = 1;
     let translateX = 0, translateY = 0;
+    let originX = 0.5, originY = 0.5;
     let isDragging = false;
-    let startPoint = { x: 0, y: 0 };
+    let dragStart = { x: 0, y: 0 };
+    let imgStart = { x: 0, y: 0 };
     let initialPinchDistance = null;
     let lastScale = 1;
 
-    const updateTransform = () => {
+    function updateTransform() {
+      img.style.transformOrigin = `${originX * 100}% ${originY * 100}%`;
       img.style.transform = `scale(${scale}) translate(${translateX}px, ${translateY}px)`;
-    };
+    }
 
-    // Zoom com scroll do mouse
+    // Desktop: ZOOM centralizado no mouse e arrastar imagem
     img.addEventListener('wheel', (e) => {
       e.preventDefault();
-      const delta = -e.deltaY;
-      const oldScale = scale;
-      if (delta > 0) {
-        scale = Math.min(scale * 1.1, 5);
-      } else {
-        scale = Math.max(scale / 1.1, 1);
-      }
-
       const rect = img.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
+      originX = mouseX / rect.width;
+      originY = mouseY / rect.height;
 
-      translateX = translateX + mouseX * (1 / oldScale - 1 / scale);
-      translateY = translateY + mouseY * (1 / oldScale - 1 / scale);
+      const prevScale = scale;
+      if (-e.deltaY > 0) scale = Math.min(scale * 1.1, 5);
+      else scale = Math.max(scale / 1.1, 1);
+
+      // Corrige a posição para manter o ponto sob o cursor
+      if (scale !== prevScale) {
+        translateX = (translateX - (originX - 0.5) * rect.width) * (scale / prevScale) + (originX - 0.5) * rect.width;
+        translateY = (translateY - (originY - 0.5) * rect.height) * (scale / prevScale) + (originY - 0.5) * rect.height;
+      }
 
       if (scale === 1) {
         translateX = 0;
         translateY = 0;
+        originX = 0.5;
+        originY = 0.5;
       }
       updateTransform();
     });
 
-    // Pinça no mobile
+    img.addEventListener('mousedown', (e) => {
+      if (scale === 1) return;
+      isDragging = true;
+      dragStart = { x: e.clientX, y: e.clientY };
+      imgStart = { x: translateX, y: translateY };
+      document.body.style.cursor = 'grabbing';
+    });
+
+    overlay.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      translateX = imgStart.x + (e.clientX - dragStart.x);
+      translateY = imgStart.y + (e.clientY - dragStart.y);
+      updateTransform();
+    });
+    overlay.addEventListener('mouseup', () => {
+      isDragging = false;
+      document.body.style.cursor = '';
+    });
+    overlay.addEventListener('mouseleave', () => {
+      isDragging = false;
+      document.body.style.cursor = '';
+    });
+
+    // Mobile: pinch/drag, impede fechar ao pinçar
+    let lastTapTime = 0;
+    let tapTimeout = null;
     img.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 1) {
-            isDragging = true;
-            startPoint = { x: e.touches[0].clientX - translateX, y: e.touches[0].clientY - translateY };
-        } else if (e.touches.length === 2) {
-            initialPinchDistance = Math.hypot(
-                e.touches[1].pageX - e.touches[0].pageX,
-                e.touches[1].pageY - e.touches[0].pageY
-            );
-            lastScale = scale;
-        }
-        e.preventDefault();
+      if (e.touches.length === 2) {
+        initialPinchDistance = Math.hypot(
+          e.touches[1].pageX - e.touches[0].pageX,
+          e.touches[1].pageY - e.touches[0].pageY
+        );
+        lastScale = scale;
+        // calcula centro inicial do pinch
+        const rect = img.getBoundingClientRect();
+        const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+        const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+        originX = centerX / rect.width;
+        originY = centerY / rect.height;
+      } else if (e.touches.length === 1) {
+        isDragging = true;
+        dragStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        imgStart = { x: translateX, y: translateY };
+      }
+      e.preventDefault();
     }, { passive: false });
 
     img.addEventListener('touchmove', (e) => {
-        if (e.touches.length === 1 && isDragging) {
-            translateX = e.touches[0].clientX - startPoint.x;
-            translateY = e.touches[0].clientY - startPoint.y;
-            updateTransform();
-        } else if (e.touches.length === 2 && initialPinchDistance) {
-            const currentPinchDistance = Math.hypot(
-                e.touches[1].pageX - e.touches[0].pageX,
-                e.touches[1].pageY - e.touches[0].pageY
-            );
-            scale = lastScale * (currentPinchDistance / initialPinchDistance);
-            scale = Math.max(1, Math.min(scale, 5));
-            if (scale === 1) {
-                translateX = 0;
-                translateY = 0;
-            }
-            updateTransform();
-        }
+      if (e.touches.length === 2 && initialPinchDistance) {
+        // pinch zoom
+        const currentPinchDistance = Math.hypot(
+          e.touches[1].pageX - e.touches[0].pageX,
+          e.touches[1].pageY - e.touches[0].pageY
+        );
+        let newScale = lastScale * (currentPinchDistance / initialPinchDistance);
+        newScale = Math.max(1, Math.min(newScale, 5));
+        scale = newScale;
+        updateTransform();
         e.preventDefault();
+      } else if (e.touches.length === 1 && isDragging) {
+        // arrastar
+        translateX = imgStart.x + (e.touches[0].clientX - dragStart.x);
+        translateY = imgStart.y + (e.touches[0].clientY - dragStart.y);
+        updateTransform();
+        e.preventDefault();
+      }
     }, { passive: false });
 
-    img.addEventListener('touchend', () => {
+    img.addEventListener('touchend', (e) => {
+      if (e.touches.length === 0) {
         isDragging = false;
         initialPinchDistance = null;
+      }
     });
 
-    // Fechar fullscreen com duplo clique (desktop)
-    overlay.addEventListener('dblclick', () => {
-      document.body.removeChild(overlay);
-      Utils.revokeObjectURL(img.src);
+    // Fechar fullscreen: duplo clique ou double tap no overlay (não na imagem!)
+    overlay.addEventListener('dblclick', (e) => {
+      if (e.target === overlay) {
+        document.body.removeChild(overlay);
+        Utils.revokeObjectURL(img.src);
+      }
     });
-
-    // Fechar fullscreen com double tap (mobile)
-    let lastTapTime = 0;
     overlay.addEventListener('touchend', (e) => {
+      if (e.target !== overlay) return;
       const currentTime = new Date().getTime();
       if (currentTime - lastTapTime < 400) {
-        e.preventDefault();
+        clearTimeout(tapTimeout);
         document.body.removeChild(overlay);
         Utils.revokeObjectURL(img.src);
       }
       lastTapTime = currentTime;
+      tapTimeout = setTimeout(() => { lastTapTime = 0; }, 450);
     });
 
     overlay.appendChild(img);
@@ -615,7 +605,6 @@ const UI = {
   }
 };
 
-// Gerenciamento de abas
 const TabManager = {
   switchTab: async tabName => {
     if (currentTab === tabName) return;
@@ -626,21 +615,17 @@ const TabManager = {
   }
 };
 
-// Gerenciamento de imagens
 const ImageManager = {
   enterSelectionMode: () => {
     isSelectionMode = true;
     DOM.body.classList.add('selection-mode');
   },
-
   exitSelectionMode: () => {
     isSelectionMode = false;
     DOM.body.classList.remove('selection-mode');
   },
-
   toggleSelectImage: (imageName, container) => {
     const selectedSet = selectedImagesByTab.get(currentTab);
-
     if (selectedSet.has(imageName)) {
       selectedSet.delete(imageName);
       container.classList.remove('selected');
@@ -652,76 +637,56 @@ const ImageManager = {
       container.setAttribute('aria-checked', 'true');
       container.querySelector('.image-checkbox').classList.add('checked');
     }
-
     UI.updateSelectionUI();
     StateManager.saveState();
   },
-
   deleteImage: async imageName => {
     if (!confirm(`Tem certeza que deseja excluir "${Utils.removeFileExtension(imageName)}"?`)) return;
-
     UI.showLoading();
     try {
-        await IndexedDBManager.deleteImageBlob(imageName);
-        const images = imageGalleryByTab.get(currentTab).filter(name => name !== imageName);
-        imageGalleryByTab.set(currentTab, images);
-        selectedImagesByTab.get(currentTab).delete(imageName);
-
-        await UI.renderImages();
-        StateManager.saveState();
-        Utils.showStatus('Imagem excluída com sucesso!');
+      await IndexedDBManager.deleteImageBlob(imageName);
+      const images = imageGalleryByTab.get(currentTab).filter(name => name !== imageName);
+      imageGalleryByTab.set(currentTab, images);
+      selectedImagesByTab.get(currentTab).delete(imageName);
+      await UI.renderImages();
+      StateManager.saveState();
+      Utils.showStatus('Imagem excluída com sucesso!');
     } catch (error) {
-        console.error('Erro ao excluir imagem:', error);
-        Utils.showStatus('Erro ao excluir imagem.');
+      Utils.showStatus('Erro ao excluir imagem.');
     } finally {
-        UI.hideLoading();
+      UI.hideLoading();
     }
   },
-
   reorderImages: async (fromIndex, toIndex) => {
     const images = imageGalleryByTab.get(currentTab) || [];
     const movedImageName = images.splice(fromIndex, 1)[0];
     images.splice(toIndex, 0, movedImageName);
     imageGalleryByTab.set(currentTab, images);
-
     selectedImagesByTab.get(currentTab).clear();
     ImageManager.exitSelectionMode();
-
     await UI.renderImages();
     StateManager.saveState();
   },
-
   deleteSelected: async () => {
     const selectedNames = Array.from(selectedImagesByTab.get(currentTab));
     const count = selectedNames.length;
     if (!count || !confirm(`Excluir ${count} imagem(ns) selecionada(s)?`)) return;
-
     UI.showLoading();
     try {
-        for (const name of selectedNames) {
-            await IndexedDBManager.deleteImageBlob(name);
-        }
-
-        const images = imageGalleryByTab.get(currentTab).filter(name =>
-          !selectedImagesByTab.get(currentTab).has(name)
-        );
-
-        imageGalleryByTab.set(currentTab, images);
-        selectedImagesByTab.get(currentTab).clear();
-        ImageManager.exitSelectionMode();
-
-        await UI.renderImages();
-        StateManager.saveState();
-        Utils.showStatus(`${count} imagens excluídas.`);
-    }
-    catch (error) {
-        console.error('Erro ao excluir imagens selecionadas:', error);
-        Utils.showStatus('Erro ao excluir imagens.');
+      for (const name of selectedNames) await IndexedDBManager.deleteImageBlob(name);
+      const images = imageGalleryByTab.get(currentTab).filter(name => !selectedImagesByTab.get(currentTab).has(name));
+      imageGalleryByTab.set(currentTab, images);
+      selectedImagesByTab.get(currentTab).clear();
+      ImageManager.exitSelectionMode();
+      await UI.renderImages();
+      StateManager.saveState();
+      Utils.showStatus(`${count} imagens excluídas.`);
+    } catch (error) {
+      Utils.showStatus('Erro ao excluir imagens.');
     } finally {
-        UI.hideLoading();
+      UI.hideLoading();
     }
   },
-
   clearSelection: () => {
     selectedImagesByTab.get(currentTab).clear();
     ImageManager.exitSelectionMode();
@@ -729,64 +694,42 @@ const ImageManager = {
     StateManager.saveState();
     Utils.showStatus('Seleção limpa.');
   },
-
   toggleSelectAll: () => {
     const allNames = imageGalleryByTab.get(currentTab) || [];
     const selectedSet = selectedImagesByTab.get(currentTab);
-    
-    if (selectedSet.size === allNames.length) {
-      selectedSet.clear();
-    } else {
-      allNames.forEach(name => selectedSet.add(name));
-    }
-    
+    if (selectedSet.size === allNames.length) selectedSet.clear();
+    else allNames.forEach(name => selectedSet.add(name));
     UI.renderImages();
     StateManager.saveState();
   },
-
   handleFileSelection: async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
-
     UI.showLoading();
-
     if (!imageGalleryByTab.get(currentTab)) imageGalleryByTab.set(currentTab, []);
     if (!selectedImagesByTab.get(currentTab)) selectedImagesByTab.set(currentTab, new Set());
-
     const currentImageNamesInTab = new Set(imageGalleryByTab.get(currentTab));
     let loadedCount = 0;
-
     try {
       for (const file of files) {
-        if (!file.type.startsWith('image/')) {
-          console.warn(`Arquivo ignorado (não é imagem): ${file.name}`);
-          continue;
-        }
-
+        if (!file.type.startsWith('image/')) continue;
         try {
           const processed = await ImageProcessor.processImageFile(file);
           if (!processed) continue;
-
           await IndexedDBManager.addImageBlob(processed.name, processed.blob);
-
           if (!currentImageNamesInTab.has(processed.name)) {
             imageGalleryByTab.get(currentTab).push(processed.name);
             currentImageNamesInTab.add(processed.name);
-          } else {
-            console.warn(`Imagem "${processed.name}" já existe na aba atual. Conteúdo será atualizado.`);
           }
           loadedCount++;
         } catch (error) {
-          console.error(`Erro ao processar ${file.name}:`, error);
           Utils.showStatus(`Erro ao carregar ${file.name}`);
         }
       }
-
       await UI.renderImages();
       StateManager.saveState();
       Utils.showStatus(`${loadedCount} imagem(ns) carregada(s) com sucesso!`);
     } catch (error) {
-      console.error('Erro geral no carregamento:', error);
       Utils.showStatus('Erro ao carregar imagens.');
     } finally {
       UI.hideLoading();
@@ -794,21 +737,16 @@ const ImageManager = {
   }
 };
 
-// Configuração de eventos
 const EventManager = {
   setup: () => {
-    // Drag & Drop REORDENAR
     DOM.imageList.addEventListener('dragover', (e) => {
       e.preventDefault();
       const afterElement = getDragAfterElement(DOM.imageList, e.clientY);
       const draggable = document.querySelector('.dragging');
       if (!draggable) return;
       DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-      if (afterElement) {
-        afterElement.classList.add('drag-over');
-      }
+      if (afterElement) afterElement.classList.add('drag-over');
     });
-
     DOM.imageList.addEventListener('drop', (e) => {
       e.preventDefault();
       const draggable = document.querySelector('.dragging');
@@ -817,35 +755,24 @@ const EventManager = {
       const containers = Array.from(DOM.imageList.children);
       const fromIndex = containers.indexOf(draggable);
       let toIndex = afterElement ? containers.indexOf(afterElement) : containers.length - 1;
-      if (fromIndex < toIndex) {
-        toIndex--;
-      }
-      if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
-        ImageManager.reorderImages(fromIndex, toIndex);
-      }
+      if (fromIndex < toIndex) toIndex--;
+      if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) ImageManager.reorderImages(fromIndex, toIndex);
       draggable.classList.remove('dragging');
       DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
     });
-
     function getDragAfterElement(container, y) {
       const draggableElements = [...container.querySelectorAll('.image-container:not(.dragging)')];
       return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
         const offset = y - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) {
-          return { offset: offset, element: child };
-        } else {
-          return closest;
-        }
+        if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
+        else return closest;
       }, { offset: -Infinity, element: null }).element;
     }
-
-    // Eventos dos botões de seleção
     DOM.clearSelectionBtn.addEventListener('click', ImageManager.clearSelection);
     DOM.deleteSelectedBtn.addEventListener('click', ImageManager.deleteSelected);
     DOM.selectAllBtn.addEventListener('click', ImageManager.toggleSelectAll);
 
-    // Eventos dos botões de arquivo/nuvem
     DOM.openFileDialogButton.addEventListener('click', () => {
       DOM.fileInput.value = '';
       DOM.fileInput.click();
@@ -856,19 +783,15 @@ const EventManager = {
       window.open(ONE_DRIVE_FOLDER_URL, '_blank');
       Utils.showStatus('Abrindo pasta do OneDrive em uma nova aba.');
     });
-
-    // Eventos dos botões do cabeçalho
     DOM.syncBtn.addEventListener('click', () => {
       Utils.showStatus('Funcionalidade de Sincronização em desenvolvimento...');
     });
-
     DOM.settingsBtn.addEventListener('click', () => {
       Utils.showStatus('Funcionalidade de Configurações em desenvolvimento...');
     });
   }
 };
 
-// Função de inicialização
 async function init() {
   UI.showLoading();
   try {
@@ -879,7 +802,6 @@ async function init() {
     await UI.renderImages();
     EventManager.setup();
   } catch (e) {
-    console.error("Erro na inicialização:", e);
     Utils.showStatus("Erro ao iniciar o aplicativo. Tente recarregar a página.");
   } finally {
     UI.hideLoading();
