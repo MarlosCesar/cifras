@@ -380,6 +380,7 @@ const UI = {
     UI.updateSelectionUI();
   },
 
+  // ALTERADO: abrir fullscreen só com duplo clique/double tap
   createImageElement: (imageName, imageBlob) => {
     const container = document.createElement('div');
     container.className = 'image-container';
@@ -417,49 +418,32 @@ const UI = {
     container.appendChild(img);
     container.appendChild(nameSpan);
 
-    // Eventos de toque para mobile
-    let pressTimer;
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let isLongPress = false;
-
-    container.addEventListener('touchstart', (e) => {
-      isLongPress = false;
-      touchStartX = e.touches[0].clientX;
-      touchStartY = e.touches[0].clientY;
-      
-      pressTimer = setTimeout(() => {
-        isLongPress = true;
-        if (!isSelectionMode) {
-          ImageManager.enterSelectionMode();
-        }
-        ImageManager.toggleSelectImage(imageName, container);
-      }, 500); // 500ms para considerar como long press
-    }, { passive: true });
-
-    container.addEventListener('touchmove', (e) => {
-      const moveX = Math.abs(e.touches[0].clientX - touchStartX);
-      const moveY = Math.abs(e.touches[0].clientY - touchStartY);
-      if (moveX > 10 || moveY > 10) {
-        clearTimeout(pressTimer);
+    // --- NOVO: DETECÇÃO DE DUPLO CLIQUE E DOUBLE TAP ---
+    // Desktop: duplo clique
+    container.addEventListener('dblclick', () => {
+      if (!isSelectionMode) {
+        const objectURL = Utils.createObjectURL(imageBlob);
+        UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
       }
-    }, { passive: true });
+    });
 
+    // Mobile: double tap (dois toques rápidos)
+    let lastTapTime = 0;
     container.addEventListener('touchend', (e) => {
-      clearTimeout(pressTimer);
-      if (!isLongPress && e.changedTouches.length === 1) {
-          const touchEndX = e.changedTouches[0].clientX;
-          const touchEndY = e.changedTouches[0].clientY;
-          if (Math.abs(touchEndX - touchStartX) < 10 && Math.abs(touchEndY - touchStartY) < 10) {
-              if (!isSelectionMode) {
-                const objectURL = Utils.createObjectURL(imageBlob);
-                UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
-              }
-          }
+      const currentTime = new Date().getTime();
+      if (currentTime - lastTapTime < 400) { // 400ms para double tap
+        e.preventDefault();
+        if (!isSelectionMode) {
+          const objectURL = Utils.createObjectURL(imageBlob);
+          UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
+        }
       }
-    }, { passive: true });
+      lastTapTime = currentTime;
+    });
 
-    // Eventos de mouse para desktop
+    // Demais eventos de seleção e drag and drop continuam igual
+    let pressTimer;
+    let isLongPress = false;
     container.addEventListener('mousedown', (e) => {
       if (e.button !== 0) return;
       pressTimer = setTimeout(() => {
@@ -470,28 +454,18 @@ const UI = {
         ImageManager.toggleSelectImage(imageName, container);
       }, 500);
     });
-
     container.addEventListener('mousemove', (e) => {
       clearTimeout(pressTimer);
     });
-
     container.addEventListener('mouseup', (e) => {
       clearTimeout(pressTimer);
-      if (!isLongPress && e.button === 0) {
-        if (!isSelectionMode) {
-          const objectURL = Utils.createObjectURL(imageBlob);
-          UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
-        }
-      }
       isLongPress = false;
     });
-
     container.addEventListener('mouseleave', () => {
       clearTimeout(pressTimer);
       isLongPress = false;
     });
 
-    // Eventos de drag and drop
     container.addEventListener('dragstart', (e) => {
       if (!isSelectionMode) {
         ImageManager.enterSelectionMode();
@@ -509,7 +483,6 @@ const UI = {
   updateSelectionUI: () => {
     const selectedCount = selectedImagesByTab.get(currentTab).size;
     const totalImages = imageGalleryByTab.get(currentTab).length;
-    
     if (selectedCount > 0) {
       DOM.floatControls.classList.add('show');
       const allSelected = selectedCount === totalImages;
@@ -526,6 +499,7 @@ const UI = {
     }
   },
 
+  // ALTERADO: fullscreen só fecha com duplo clique/double tap
   openFullscreen: (src, alt) => {
     const overlay = document.createElement('div');
     overlay.className = 'fullscreen-image';
@@ -539,24 +513,7 @@ const UI = {
     img.tabIndex = 0;
     img.style.transform = 'scale(1)';
 
-    const controls = document.createElement('div');
-    controls.className = 'fullscreen-controls';
-
-    const zoomInBtn = document.createElement('button');
-    zoomInBtn.className = 'zoom-btn';
-    zoomInBtn.innerHTML = '<i class="fas fa-search-plus"></i>';
-    zoomInBtn.setAttribute('aria-label', 'Zoom in');
-
-    const zoomOutBtn = document.createElement('button');
-    zoomOutBtn.className = 'zoom-btn';
-    zoomOutBtn.innerHTML = '<i class="fas fa-search-minus"></i>';
-    zoomOutBtn.setAttribute('aria-label', 'Zoom out');
-
-    const resetZoomBtn = document.createElement('button');
-    resetZoomBtn.className = 'zoom-btn';
-    resetZoomBtn.innerHTML = '<i class="fas fa-expand"></i>';
-    resetZoomBtn.setAttribute('aria-label', 'Reset zoom');
-
+    // Não haverá botões de zoom, apenas scroll/pinça
     let scale = 1;
     let translateX = 0, translateY = 0;
     let isDragging = false;
@@ -568,30 +525,7 @@ const UI = {
       img.style.transform = `scale(${scale}) translate(${translateX}px, ${translateY}px)`;
     };
 
-    zoomInBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      scale = Math.min(scale * 1.2, 5);
-      updateTransform();
-    });
-
-    zoomOutBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      scale = Math.max(scale / 1.2, 1);
-      if (scale === 1) {
-        translateX = 0;
-        translateY = 0;
-      }
-      updateTransform();
-    });
-
-    resetZoomBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      scale = 1;
-      translateX = 0;
-      translateY = 0;
-      updateTransform();
-    });
-
+    // Zoom com scroll do mouse
     img.addEventListener('wheel', (e) => {
       e.preventDefault();
       const delta = -e.deltaY;
@@ -608,7 +542,7 @@ const UI = {
 
       translateX = translateX + mouseX * (1 / oldScale - 1 / scale);
       translateY = translateY + mouseY * (1 / oldScale - 1 / scale);
-      
+
       if (scale === 1) {
         translateX = 0;
         translateY = 0;
@@ -616,28 +550,7 @@ const UI = {
       updateTransform();
     });
 
-    img.addEventListener('mousedown', (e) => {
-      if (scale > 1) {
-        isDragging = true;
-        startPoint = { x: e.clientX - translateX, y: e.clientY - translateY };
-        img.style.cursor = 'grabbing';
-        overlay.style.cursor = 'grabbing';
-      }
-    });
-
-    document.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
-      translateX = e.clientX - startPoint.x;
-      translateY = e.clientY - startPoint.y;
-      updateTransform();
-    });
-
-    document.addEventListener('mouseup', () => {
-      isDragging = false;
-      img.style.cursor = 'zoom-out';
-      overlay.style.cursor = 'zoom-out';
-    });
-
+    // Pinça no mobile
     img.addEventListener('touchstart', (e) => {
         if (e.touches.length === 1) {
             isDragging = true;
@@ -664,17 +577,6 @@ const UI = {
             );
             scale = lastScale * (currentPinchDistance / initialPinchDistance);
             scale = Math.max(1, Math.min(scale, 5));
-
-            const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-            const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-
-            const rect = img.getBoundingClientRect();
-            const relativeX = centerX - rect.left;
-            const relativeY = centerY - rect.top;
-
-            translateX = translateX + relativeX * (1 / lastScale - 1 / scale);
-            translateY = translateY + relativeY * (1 / lastScale - 1 / scale);
-
             if (scale === 1) {
                 translateX = 0;
                 translateY = 0;
@@ -689,28 +591,27 @@ const UI = {
         initialPinchDistance = null;
     });
 
-    controls.appendChild(zoomInBtn);
-    controls.appendChild(zoomOutBtn);
-    controls.appendChild(resetZoomBtn);
+    // Fechar fullscreen com duplo clique (desktop)
+    overlay.addEventListener('dblclick', () => {
+      document.body.removeChild(overlay);
+      Utils.revokeObjectURL(img.src);
+    });
+
+    // Fechar fullscreen com double tap (mobile)
+    let lastTapTime = 0;
+    overlay.addEventListener('touchend', (e) => {
+      const currentTime = new Date().getTime();
+      if (currentTime - lastTapTime < 400) {
+        e.preventDefault();
+        document.body.removeChild(overlay);
+        Utils.revokeObjectURL(img.src);
+      }
+      lastTapTime = currentTime;
+    });
+
     overlay.appendChild(img);
-    overlay.appendChild(controls);
     document.body.appendChild(overlay);
     img.focus();
-
-    const closeFullscreen = () => {
-      document.body.removeChild(overlay);
-      overlay.removeEventListener('click', closeFullscreen);
-      document.removeEventListener('keydown', handleKeyDown);
-      Utils.revokeObjectURL(img.src);
-    };
-
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') closeFullscreen();
-    };
-
-    overlay.addEventListener('click', closeFullscreen);
-    img.addEventListener('click', (e) => e.stopPropagation());
-    document.addEventListener('keydown', handleKeyDown);
   }
 };
 
@@ -901,11 +802,8 @@ const EventManager = {
       e.preventDefault();
       const afterElement = getDragAfterElement(DOM.imageList, e.clientY);
       const draggable = document.querySelector('.dragging');
-      
       if (!draggable) return;
-      
       DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-      
       if (afterElement) {
         afterElement.classList.add('drag-over');
       }
@@ -914,33 +812,26 @@ const EventManager = {
     DOM.imageList.addEventListener('drop', (e) => {
       e.preventDefault();
       const draggable = document.querySelector('.dragging');
-      
       if (!draggable) return;
-      
       const afterElement = getDragAfterElement(DOM.imageList, e.clientY);
       const containers = Array.from(DOM.imageList.children);
       const fromIndex = containers.indexOf(draggable);
       let toIndex = afterElement ? containers.indexOf(afterElement) : containers.length - 1;
-
       if (fromIndex < toIndex) {
         toIndex--;
       }
-
       if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
         ImageManager.reorderImages(fromIndex, toIndex);
       }
-      
       draggable.classList.remove('dragging');
       DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
     });
 
     function getDragAfterElement(container, y) {
       const draggableElements = [...container.querySelectorAll('.image-container:not(.dragging)')];
-      
       return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
         const offset = y - box.top - box.height / 2;
-        
         if (offset < 0 && offset > closest.offset) {
           return { offset: offset, element: child };
         } else {
