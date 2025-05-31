@@ -16,668 +16,796 @@ const DOM = {
   body: document.body,
 };
 
-// ================ CONSTANTES E CONFIGURAÇÕES ================
-const DEFAULT_TABS = [
-  { id: 'domingo_manha', name: 'Domingo Manhã', removable: false },
-  { id: 'domingo_noite', name: 'Domingo Noite', removable: false },
-  { id: 'segunda', name: 'Segunda', removable: false },
-  { id: 'quarta', name: 'Quarta', removable: false },
-  { id: 'culto_jovem', name: 'Culto Jovem', removable: false }
+const tabs = [
+  "Domingo Manhã", "Domingo Noite", "Segunda", "Quarta", "Culto Jovem", "Santa Ceia", "Outros"
 ];
+const ONE_DRIVE_FOLDER_URL = "https://1drv.ms/f/c/a71268bf66931c02/EpYyUsypAQhGgpWC9YuvE54BD_o9NX9tRar0piSzq4V4Xg";
 
-const DB_CONFIG = {
-  name: 'CifrasDB',
-  version: 1,
-  stores: {
-    images: 'images',
-    state: 'state'
-  }
-};
+// Estado
+let imageGalleryByTab = new Map();
+let selectedImagesByTab = new Map();
+let currentTab = tabs[0];
+let isSelectionMode = false;
+let dragStartIndex = null;
 
-// ================ ESTADO DA APLICAÇÃO ================
-let appState = {
-  userTabs: [],
-  cifrasByTab: {},
-  selectedTab: DEFAULT_TABS[0].id,
-  selectedImages: new Map(), // Mapeia tabId -> Set de índices selecionados
-  isSelectionMode: false,
-  dragState: {
-    isDragging: false,
-    startIndex: null,
-    sourceTab: null
-  },
-  darkMode: false // Adicionado: estado do modo noturno
-};
-
-// ================ INICIALIZAÇÃO ================
-document.addEventListener('DOMContentLoaded', async () => {
-  await initializeDB();
-  loadState();
-  setupEventListeners();
-  renderTabs();
-  renderCifras();
-  applyDarkMode();
+tabs.forEach(tab => {
+  imageGalleryByTab.set(tab, []);
+  selectedImagesByTab.set(tab, new Set());
 });
 
-// ================ INDEXEDDB HELPERS ================
-async function initializeDB() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_CONFIG.name, DB_CONFIG.version);
+const Utils = {
+  removeFileExtension: filename => filename.replace(/\.[^/.]+$/, ""),
+  showStatus: message => {
+    DOM.statusMessage.textContent = message;
+    DOM.statusMessage.classList.add('show');
+    setTimeout(() => DOM.statusMessage.classList.remove('show'), 3000);
+  },
+  debounce: (func, timeout = 100) => {
+    let timer;
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => { func.apply(this, args); }, timeout);
+    };
+  },
+  objectURLCache: new Map(),
+  revokeObjectURL: (url) => {
+    if (Utils.objectURLCache.has(url)) {
+      URL.revokeObjectURL(url);
+      Utils.objectURLCache.delete(url);
+    }
+  },
+  createObjectURL: (blob) => {
+    const url = URL.createObjectURL(blob);
+    Utils.objectURLCache.set(url, true);
+    return url;
+  }
+};
+
+// IndexedDB
+const DB_NAME = 'ImageSelectorDB';
+const DB_VERSION = 2;
+const STORE_IMAGES = 'images';
+const STORE_METADATA = 'metadata';
+
+const IndexedDBManager = {
+  db: null,
+
+  open: () => new Promise((resolve, reject) => {
+    if (IndexedDBManager.db) {
+      resolve(IndexedDBManager.db);
+      return;
+    }
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
-      if (!db.objectStoreNames.contains(DB_CONFIG.stores.images)) {
-        db.createObjectStore(DB_CONFIG.stores.images, { keyPath: 'key' });
+      if (!db.objectStoreNames.contains(STORE_IMAGES)) {
+        db.createObjectStore(STORE_IMAGES, { keyPath: 'name' });
       }
-      if (!db.objectStoreNames.contains(DB_CONFIG.stores.state)) {
-        db.createObjectStore(DB_CONFIG.stores.state, { keyPath: 'key' });
+      if (!db.objectStoreNames.contains(STORE_METADATA)) {
+        db.createObjectStore(STORE_METADATA, { keyPath: 'id' });
       }
     };
-    request.onsuccess = () => resolve();
-    request.onerror = (event) => reject(event.target.error);
-  });
-}
-
-async function dbOperation(storeName, operation, data) {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_CONFIG.name, DB_CONFIG.version);
     request.onsuccess = (event) => {
-      const db = event.target.result;
-      const tx = db.transaction(storeName, 'readwrite');
-      const store = tx.objectStore(storeName);
-      let req;
-      switch (operation) {
-        case 'get': req = store.get(data.key); break;
-        case 'getAll': req = store.getAll(); break;
-        case 'put': req = store.put(data); break;
-        case 'delete': req = store.delete(data.key); break;
-        default: reject(new Error('Operação inválida'));
-      }
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = (event) => reject(event.target.error);
+      IndexedDBManager.db = event.target.result;
+      resolve(IndexedDBManager.db);
     };
-    request.onerror = (event) => reject(event.target.error);
-  });
-}
+    request.onerror = (event) => {
+      console.error('IndexedDB error:', event.target.errorCode);
+      reject(event.target.errorCode);
+    };
+  }),
 
-// ================ GERENCIAMENTO DE ESTADO ================
-function loadState() {
-  try {
-    const savedState = JSON.parse(localStorage.getItem('cifrasAppState'));
-    if (savedState) {
-      appState.userTabs = savedState.userTabs || [];
-      appState.cifrasByTab = savedState.cifrasByTab || {};
-      appState.selectedTab = savedState.selectedTab || DEFAULT_TABS[0].id;
-      appState.darkMode = savedState.darkMode === true;
-      getAllTabIds().forEach(tabId => {
-        if (!appState.selectedImages.has(tabId)) {
-          appState.selectedImages.set(tabId, new Set());
+  addImageBlob: (imageName, blob) => new Promise(async (resolve, reject) => {
+    try {
+      const db = await IndexedDBManager.open();
+      const transaction = db.transaction([STORE_IMAGES], 'readwrite');
+      const store = transaction.objectStore(STORE_IMAGES);
+      const request = store.put({ name: imageName, blob: blob });
+      request.onsuccess = () => resolve();
+      request.onerror = (event) => reject(event.target.error);
+    } catch (e) {
+      reject(e);
+    }
+  }),
+
+  getImageBlob: (imageName) => new Promise(async (resolve, reject) => {
+    try {
+      const db = await IndexedDBManager.open();
+      const transaction = db.transaction([STORE_IMAGES], 'readonly');
+      const store = transaction.objectStore(STORE_IMAGES);
+      const request = store.get(imageName);
+      request.onsuccess = (event) => resolve(event.target.result ? event.target.result.blob : null);
+      request.onerror = (event) => reject(event.target.error);
+    } catch (e) {
+      reject(e);
+    }
+  }),
+
+  deleteImageBlob: (imageName) => new Promise(async (resolve, reject) => {
+    try {
+      const db = await IndexedDBManager.open();
+      const transaction = db.transaction([STORE_IMAGES], 'readwrite');
+      const store = transaction.objectStore(STORE_IMAGES);
+      const request = store.delete(imageName);
+      request.onsuccess = () => resolve();
+      request.onerror = (event) => reject(event.target.error);
+    } catch (e) {
+      reject(e);
+    }
+  }),
+
+  saveMetadata: (state) => new Promise(async (resolve, reject) => {
+    try {
+      const db = await IndexedDBManager.open();
+      const transaction = db.transaction([STORE_METADATA], 'readwrite');
+      const store = transaction.objectStore(STORE_METADATA);
+      const request = store.put({ id: 'appState', state: state });
+      request.onsuccess = () => resolve();
+      request.onerror = (event) => reject(event.target.error);
+    } catch (e) {
+      reject(e);
+    }
+  }),
+
+  loadMetadata: () => new Promise(async (resolve, reject) => {
+    try {
+      const db = await IndexedDBManager.open();
+      const transaction = db.transaction([STORE_METADATA], 'readonly');
+      const store = transaction.objectStore(STORE_METADATA);
+      const request = store.get('appState');
+      request.onsuccess = (event) => resolve(event.target.result ? event.target.result.state : null);
+      request.onerror = (event) => reject(event.target.error);
+    } catch (e) {
+      reject(e);
+    }
+  })
+};
+
+const ImageProcessor = {
+  processImageFile: file => new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = Utils.createObjectURL(file);
+
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const MAX_SIZE = 800;
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height) {
+        if (width > MAX_SIZE) {
+          height *= MAX_SIZE / width;
+          width = MAX_SIZE;
+        }
+      } else {
+        if (height > MAX_SIZE) {
+          width *= MAX_SIZE / height;
+          height = MAX_SIZE;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(blob => {
+        Utils.revokeObjectURL(url);
+        if (blob) {
+          resolve({ name: file.name, blob: blob });
+        } else {
+          reject(new Error('Falha ao criar Blob da imagem.'));
+        }
+      }, 'image/webp', 0.75);
+    };
+
+    img.onerror = () => {
+      Utils.revokeObjectURL(url);
+      reject(new Error('Erro ao carregar a imagem para processamento.'));
+    };
+
+    img.src = url;
+  })
+};
+
+const StateManager = {
+  saveState: Utils.debounce(async () => {
+    const state = {
+      images: Object.fromEntries(Array.from(imageGalleryByTab.entries()).map(([tab, names]) => [tab, Array.from(names)])),
+      selected: Object.fromEntries(Array.from(selectedImagesByTab.entries()).map(([tab, set]) => [tab, Array.from(set)])),
+      currentTab,
+    };
+    try {
+      await IndexedDBManager.saveMetadata(state);
+    } catch (e) {
+      console.error('Erro ao salvar estado no IndexedDB:', e);
+      Utils.showStatus('Erro ao salvar dados.');
+    }
+  }, 500),
+
+  loadState: async () => {
+    try {
+      const state = await IndexedDBManager.loadMetadata();
+      if (state) {
+        imageGalleryByTab = new Map(Object.entries(state.images || {}));
+        selectedImagesByTab = new Map();
+        for (const tab of tabs) {
+          selectedImagesByTab.set(tab, new Set(state.selected?.[tab] || []));
+        }
+        currentTab = state.currentTab || tabs[0];
+      } else {
+        StateManager.initEmptyState();
+      }
+    } catch (e) {
+      console.error('Erro ao carregar estado do IndexedDB:', e);
+      StateManager.initEmptyState();
+    }
+  },
+
+  initEmptyState: () => {
+    imageGalleryByTab = new Map();
+    selectedImagesByTab = new Map();
+    tabs.forEach(tab => {
+      imageGalleryByTab.set(tab, []);
+      selectedImagesByTab.set(tab, new Set());
+    });
+  }
+};
+
+const UI = {
+  showLoading: () => DOM.loadingSpinner.classList.add('active'),
+  hideLoading: () => DOM.loadingSpinner.classList.remove('active'),
+
+  createTabs: () => {
+    DOM.tabsContainer.innerHTML = '';
+    const fragment = document.createDocumentFragment();
+
+    tabs.forEach((tab, index) => {
+      const tabBtn = document.createElement('button');
+      tabBtn.className = 'tab';
+      tabBtn.setAttribute('role', 'tab');
+      tabBtn.setAttribute('tabindex', index === 0 ? '0' : '-1');
+      tabBtn.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
+      tabBtn.id = `tab-${tab.replace(/\s+/g, '-').toLowerCase()}`;
+      tabBtn.textContent = tab;
+
+      tabBtn.addEventListener('click', () => TabManager.switchTab(tab));
+      tabBtn.addEventListener('keydown', (e) => {
+        const currentActiveIndex = tabs.indexOf(currentTab);
+        let nextIndex = currentActiveIndex;
+
+        if (e.key === 'ArrowRight') nextIndex = (currentActiveIndex + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') nextIndex = (currentActiveIndex - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') nextIndex = 0;
+        else if (e.key === 'End') nextIndex = tabs.length - 1;
+
+        if (nextIndex !== currentActiveIndex) {
+          e.preventDefault();
+          TabManager.switchTab(tabs[nextIndex]);
+          DOM.tabsContainer.querySelector(`#tab-${tabs[nextIndex].replace(/\s+/g, '-').toLowerCase()}`).focus();
+        } else if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          TabManager.switchTab(tab);
         }
       });
+
+      fragment.appendChild(tabBtn);
+    });
+
+    DOM.tabsContainer.appendChild(fragment);
+  },
+
+  updateTabsUI: () => {
+    const buttons = DOM.tabsContainer.querySelectorAll('.tab');
+    buttons.forEach(btn => {
+      const isActive = btn.textContent === currentTab;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-selected', isActive);
+      btn.setAttribute('tabindex', isActive ? '0' : '-1');
+    });
+  },
+
+  renderImages: async () => {
+    DOM.imageList.querySelectorAll('img[data-object-url]').forEach(img => {
+      Utils.revokeObjectURL(img.dataset.objectUrl);
+    });
+
+    const imageNames = imageGalleryByTab.get(currentTab) || [];
+    const fragment = document.createDocumentFragment();
+
+    if (imageNames.length === 0) {
+      const p = document.createElement('p');
+      p.className = 'text-center text-gray-500 py-8';
+      p.textContent = 'Nenhuma imagem encontrada nesta categoria.';
+      fragment.appendChild(p);
+    } else {
+      const imagesToRender = [];
+      for (const imageName of imageNames) {
+        const blob = await IndexedDBManager.getImageBlob(imageName);
+        if (blob) {
+          imagesToRender.push({ name: imageName, blob: blob });
+        } else {
+          imageGalleryByTab.set(currentTab, imageNames.filter(name => name !== imageName));
+          selectedImagesByTab.get(currentTab).delete(imageName);
+        }
+      }
+      imagesToRender.forEach(({ name, blob }) => {
+        const container = UI.createImageElement(name, blob);
+        fragment.appendChild(container);
+      });
     }
-  } catch (e) {
-    console.error('Erro ao carregar estado:', e);
-  }
-}
+    DOM.imageList.innerHTML = '';
+    DOM.imageList.appendChild(fragment);
+    UI.updateSelectionUI();
+  },
 
-function saveState() {
-  const stateToSave = {
-    userTabs: appState.userTabs,
-    cifrasByTab: appState.cifrasByTab,
-    selectedTab: appState.selectedTab,
-    darkMode: appState.darkMode
-  };
-  localStorage.setItem('cifrasAppState', JSON.stringify(stateToSave));
-  dbOperation(DB_CONFIG.stores.state, 'put', { key: 'appState', ...stateToSave }).catch(console.error);
-}
+  createImageElement: (imageName, imageBlob) => {
+    const container = document.createElement('div');
+    container.className = 'image-container';
+    container.setAttribute('draggable', 'true');
+    container.setAttribute('tabindex', '0');
+    container.setAttribute('role', 'checkbox');
+    container.setAttribute('aria-checked', selectedImagesByTab.get(currentTab).has(imageName));
+    container.dataset.name = imageName;
 
-function getAllTabIds() {
-  return [...DEFAULT_TABS, ...appState.userTabs].map(tab => tab.id);
-}
+    if (selectedImagesByTab.get(currentTab).has(imageName)) {
+      container.classList.add('selected');
+    }
 
-// ================ RENDERIZAÇÃO ================
-function renderTabs() {
-  const tabsList = document.getElementById('tabs-list');
-  tabsList.innerHTML = '';
-  DEFAULT_TABS.forEach(tab => tabsList.appendChild(createTabElement(tab)));
-  appState.userTabs.forEach(tab => tabsList.appendChild(createTabElement(tab, true)));
-  const addBtn = document.createElement('li');
-  addBtn.className = 'tab add-tab';
-  addBtn.innerHTML = '<span aria-hidden="true">+</span><span class="sr-only">Adicionar nova categoria</span>';
-  addBtn.onclick = showAddTabDialog;
-  tabsList.appendChild(addBtn);
-  updateSelectionControls();
-}
+    const checkbox = document.createElement('div');
+    checkbox.className = 'image-checkbox';
+    if (selectedImagesByTab.get(currentTab).has(imageName)) {
+      checkbox.classList.add('checked');
+    }
+    checkbox.addEventListener('click', (e) => {
+      e.stopPropagation();
+      ImageManager.toggleSelectImage(imageName, container);
+    });
 
-function createTabElement(tab, isUserTab = false) {
-  const li = document.createElement('li');
-  li.className = `tab ${isUserTab ? 'user-tab' : ''} ${appState.selectedTab === tab.id ? 'selected' : ''}`;
-  li.setAttribute('role', 'tab');
-  li.setAttribute('aria-selected', appState.selectedTab === tab.id);
-  li.setAttribute('aria-controls', `${tab.id}-panel`);
-  li.dataset.id = tab.id;
-  const nameSpan = document.createElement('span');
-  nameSpan.textContent = tab.name;
-  li.appendChild(nameSpan);
-  if (isUserTab) {
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'close-btn';
-    closeBtn.innerHTML = '<span aria-hidden="true">×</span><span class="sr-only">Remover aba</span>';
-    closeBtn.onclick = (e) => { e.stopPropagation(); removeTab(tab.id); };
-    li.appendChild(closeBtn);
-  }
-  li.onclick = () => selectTab(tab.id);
-  return li;
-}
-
-function renderCifras() {
-  const imageList = document.getElementById('image-list');
-  imageList.innerHTML = '';
-  const currentTabId = appState.selectedTab;
-  const cifras = appState.cifrasByTab[currentTabId] || [];
-  if (cifras.length === 0) {
-    const emptyState = document.createElement('p');
-    emptyState.className = 'empty-state';
-    emptyState.textContent = 'Nenhuma cifra nesta aba.';
-    imageList.appendChild(emptyState);
-    return;
-  }
-  cifras.forEach((cifra, index) => {
-    const isSelected = appState.selectedImages.get(currentTabId).has(index);
-    const cifraElement = createCifraElement(cifra, index, isSelected);
-    imageList.appendChild(cifraElement);
-  });
-}
-
-function createCifraElement(cifra, index, isSelected = false) {
-  const container = document.createElement('div');
-  container.className = `cifra-thumb ${isSelected ? 'selected' : ''}`;
-  container.dataset.index = index;
-  container.setAttribute('role', 'checkbox');
-  container.setAttribute('aria-checked', isSelected);
-  container.tabIndex = 0;
-  loadCifraImage(cifra).then(imgUrl => {
     const img = document.createElement('img');
-    img.src = imgUrl;
-    img.alt = cifra.name || `Cifra ${index + 1}`;
+    const objectURL = Utils.createObjectURL(imageBlob);
+    img.src = objectURL;
+    img.dataset.objectUrl = objectURL;
+    img.alt = Utils.removeFileExtension(imageName);
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'image-name';
+    nameSpan.textContent = Utils.removeFileExtension(imageName);
+
+    container.appendChild(checkbox);
     container.appendChild(img);
-  }).catch(console.error);
-  const nameSpan = document.createElement('span');
-  nameSpan.textContent = cifra.name || cifra.replace(/\.[^/.]+$/, '');
-  container.appendChild(nameSpan);
-  setupCifraInteractions(container, index);
-  return container;
-}
+    container.appendChild(nameSpan);
 
-async function loadCifraImage(cifra) {
-  if (typeof cifra === 'string') {
-    const blob = await dbOperation(DB_CONFIG.stores.images, 'get', { key: `${appState.selectedTab}:${cifra}` });
-    return blob ? URL.createObjectURL(blob.blob) : '';
-  }
-  return URL.createObjectURL(cifra);
-}
+    // Duplo clique/Double tap para abrir fullscreen
+    container.addEventListener('dblclick', () => {
+      if (!isSelectionMode) {
+        const objectURL = Utils.createObjectURL(imageBlob);
+        UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
+      }
+    });
 
-function setupCifraInteractions(element, index) {
-  let pressTimer = null;
-  const currentTabId = appState.selectedTab;
-  let lastTapTime = 0, tapTimeout = null;
-  // Seleção longa (mobile/desktop)
-  element.addEventListener('mousedown', (e) => {
-    if (e.button !== 0) return;
-    pressTimer = setTimeout(() => {
-      appState.isSelectionMode = true;
-      toggleSelectCifra(currentTabId, index, element);
-    }, 500);
-  });
-  element.addEventListener('mouseup', () => {
-    clearTimeout(pressTimer);
-    if (!appState.isSelectionMode) return;
-  });
-  element.addEventListener('mouseleave', () => clearTimeout(pressTimer));
-  element.addEventListener('touchstart', (e) => {
-    if (e.touches.length > 1) return;
-    pressTimer = setTimeout(() => {
-      appState.isSelectionMode = true;
-      toggleSelectCifra(currentTabId, index, element);
-    }, 500);
-  }, { passive: true });
-  element.addEventListener('touchend', (e) => {
-    clearTimeout(pressTimer);
-    if (!appState.isSelectionMode) {
+    let lastTapTime = 0;
+    let tapTimeout = null;
+    container.addEventListener('touchend', (e) => {
+      if (e.touches && e.touches.length > 1) return; // ignore multi-touch
       const currentTime = new Date().getTime();
       if (currentTime - lastTapTime < 400) {
         clearTimeout(tapTimeout);
-        openFullscreenView(element.querySelector('img').src, element.textContent);
+        if (!isSelectionMode) {
+          const objectURL = Utils.createObjectURL(imageBlob);
+          UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
+        }
       }
       lastTapTime = currentTime;
       tapTimeout = setTimeout(() => { lastTapTime = 0; }, 450);
-    }
-  }, { passive: true });
-  // Duplo clique Desktop
-  element.addEventListener('dblclick', () => {
-    if (!appState.isSelectionMode) {
-      openFullscreenView(element.querySelector('img').src, element.textContent);
-    }
-  });
-  // Teclado
-  element.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      toggleSelectCifra(currentTabId, index, element);
-    }
-  });
-}
-
-// ================ GERENCIAMENTO DE ABAS ================
-function selectTab(tabId) {
-  appState.selectedTab = tabId;
-  appState.isSelectionMode = false;
-  saveState();
-  renderTabs();
-  renderCifras();
-}
-
-function showAddTabDialog() {
-  const dialog = document.getElementById('popup-bg');
-  dialog.style.display = '';
-  document.getElementById('tabName').value = '';
-  document.getElementById('tabName').focus();
-}
-
-function closeAddTabDialog() {
-  document.getElementById('popup-bg').style.display = 'none';
-}
-
-function addTab() {
-  const nameInput = document.getElementById('tabName');
-  const name = nameInput.value.trim();
-  if (!name) {
-    showStatus('Por favor, insira um nome para a aba');
-    return;
-  }
-  const id = `user_${Date.now()}`;
-  appState.userTabs.push({ id, name, removable: true });
-  appState.cifrasByTab[id] = [];
-  appState.selectedImages.set(id, new Set());
-  saveState();
-  renderTabs();
-  closeAddTabDialog();
-  showStatus(`Aba "${name}" adicionada`);
-}
-
-function removeTab(tabId) {
-  if (!confirm('Tem certeza que deseja remover esta aba e todas as suas cifras?')) return;
-  appState.userTabs = appState.userTabs.filter(tab => tab.id !== tabId);
-  delete appState.cifrasByTab[tabId];
-  appState.selectedImages.delete(tabId);
-  if (appState.selectedTab === tabId) {
-    appState.selectedTab = DEFAULT_TABS[0].id;
-  }
-  saveState();
-  renderTabs();
-  renderCifras();
-  showStatus('Aba removida');
-}
-
-// ================ GERENCIAMENTO DE CIFRAS ================
-function toggleSelectCifra(tabId, index, element) {
-  const selectedSet = appState.selectedImages.get(tabId);
-  if (selectedSet.has(index)) {
-    selectedSet.delete(index);
-    element.classList.remove('selected');
-    element.setAttribute('aria-checked', 'false');
-  } else {
-    selectedSet.add(index);
-    element.classList.add('selected');
-    element.setAttribute('aria-checked', 'true');
-  }
-  updateSelectionControls();
-  showSelectedCount(selectedSet.size);
-}
-
-function selectAllCifras() {
-  const currentTabId = appState.selectedTab;
-  const cifras = appState.cifrasByTab[currentTabId] || [];
-  const selectedSet = appState.selectedImages.get(currentTabId);
-  cifras.forEach((_, index) => selectedSet.add(index));
-  renderCifras();
-  updateSelectionControls();
-  showSelectedCount(selectedSet.size);
-}
-
-function clearSelection() {
-  const currentTabId = appState.selectedTab;
-  appState.selectedImages.get(currentTabId).clear();
-  appState.isSelectionMode = false;
-  renderCifras();
-  updateSelectionControls();
-  showSelectedCount(0);
-}
-
-async function deleteSelectedCifras() {
-  const currentTabId = appState.selectedTab;
-  const selectedSet = appState.selectedImages.get(currentTabId);
-  const cifras = appState.cifrasByTab[currentTabId] || [];
-  if (selectedSet.size === 0) return;
-  if (!confirm(`Excluir ${selectedSet.size} cifra(s) selecionada(s)?`)) return;
-  showLoading(true);
-  try {
-    const deletePromises = Array.from(selectedSet).map(index => {
-      const cifra = cifras[index];
-      if (typeof cifra === 'string') {
-        return dbOperation(DB_CONFIG.stores.images, 'delete', { key: `${currentTabId}:${cifra}` });
-      }
-      return Promise.resolve();
     });
-    await Promise.all(deletePromises);
-    appState.cifrasByTab[currentTabId] = cifras.filter((_, index) => !selectedSet.has(index));
-    selectedSet.clear();
-    appState.isSelectionMode = false;
-    saveState();
-    renderCifras();
-    updateSelectionControls();
-    showStatus(`${selectedSet.size} cifra(s) excluída(s)`);
-  } catch (error) {
-    console.error('Erro ao excluir cifras:', error);
-    showStatus('Erro ao excluir cifras');
-  } finally {
-    showLoading(false);
-  }
-}
 
-// ================ IMPORTAR CIFRAS ================
-function setupFileInput() {
-  const fileInput = document.getElementById('file-input');
-  fileInput.addEventListener('change', async (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
-    showLoading(true);
+    // Seleção e drag and drop
+    let pressTimer;
+    let isLongPress = false;
+    container.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      pressTimer = setTimeout(() => {
+        isLongPress = true;
+        if (!isSelectionMode) {
+          ImageManager.enterSelectionMode();
+        }
+        ImageManager.toggleSelectImage(imageName, container);
+      }, 500);
+    });
+    container.addEventListener('mousemove', () => { clearTimeout(pressTimer); });
+    container.addEventListener('mouseup', () => { clearTimeout(pressTimer); isLongPress = false; });
+    container.addEventListener('mouseleave', () => { clearTimeout(pressTimer); isLongPress = false; });
+
+    container.addEventListener('dragstart', (e) => {
+      if (!isSelectionMode) {
+        ImageManager.enterSelectionMode();
+        ImageManager.toggleSelectImage(imageName, container);
+      }
+      container.classList.add('dragging');
+      dragStartIndex = Array.from(DOM.imageList.children).indexOf(container);
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', imageName);
+    });
+
+    return container;
+  },
+
+  updateSelectionUI: () => {
+    const selectedCount = selectedImagesByTab.get(currentTab).size;
+    const totalImages = imageGalleryByTab.get(currentTab).length;
+    if (selectedCount > 0) {
+      DOM.floatControls.classList.add('show');
+      const allSelected = selectedCount === totalImages;
+      DOM.selectAllBtn.querySelector('span').textContent = allSelected ? 'Desselecionar todas' : 'Selecionar todas';
+      DOM.selectAllBtn.querySelector('i').className = allSelected ? 'far fa-square' : 'fas fa-check-square';
+      Utils.showStatus(`${selectedCount} ${selectedCount === 1 ? 'cifra selecionada' : 'cifras selecionadas'}`);
+    } else {
+      DOM.floatControls.classList.remove('show');
+    }
+    if (totalImages <= 1) {
+      DOM.selectAllBtn.style.display = 'none';
+    } else {
+      DOM.selectAllBtn.style.display = 'flex';
+    }
+  },
+
+  openFullscreen: (src, alt) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'fullscreen-image';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', `Visualização da imagem ${alt}`);
+
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = alt;
+    img.tabIndex = 0;
+
+    // Centro da imagem para zoom
+    let scale = 1;
+    let translateX = 0, translateY = 0;
+    let originX = 0.5, originY = 0.5;
+    let isDragging = false;
+    let dragStart = { x: 0, y: 0 };
+    let imgStart = { x: 0, y: 0 };
+    let initialPinchDistance = null;
+    let lastScale = 1;
+
+    function updateTransform() {
+      img.style.transformOrigin = `${originX * 100}% ${originY * 100}%`;
+      img.style.transform = `scale(${scale}) translate(${translateX}px, ${translateY}px)`;
+    }
+
+    // Desktop: ZOOM centralizado no mouse e arrastar imagem
+    img.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const rect = img.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      originX = mouseX / rect.width;
+      originY = mouseY / rect.height;
+
+      const prevScale = scale;
+      if (-e.deltaY > 0) scale = Math.min(scale * 1.1, 5);
+      else scale = Math.max(scale / 1.1, 1);
+
+      // Corrige a posição para manter o ponto sob o cursor
+      if (scale !== prevScale) {
+        translateX = (translateX - (originX - 0.5) * rect.width) * (scale / prevScale) + (originX - 0.5) * rect.width;
+        translateY = (translateY - (originY - 0.5) * rect.height) * (scale / prevScale) + (originY - 0.5) * rect.height;
+      }
+
+      if (scale === 1) {
+        translateX = 0;
+        translateY = 0;
+        originX = 0.5;
+        originY = 0.5;
+      }
+      updateTransform();
+    });
+
+    img.addEventListener('mousedown', (e) => {
+      if (scale === 1) return;
+      isDragging = true;
+      dragStart = { x: e.clientX, y: e.clientY };
+      imgStart = { x: translateX, y: translateY };
+      document.body.style.cursor = 'grabbing';
+    });
+
+    overlay.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      translateX = imgStart.x + (e.clientX - dragStart.x);
+      translateY = imgStart.y + (e.clientY - dragStart.y);
+      updateTransform();
+    });
+    overlay.addEventListener('mouseup', () => {
+      isDragging = false;
+      document.body.style.cursor = '';
+    });
+    overlay.addEventListener('mouseleave', () => {
+      isDragging = false;
+      document.body.style.cursor = '';
+    });
+
+    // Mobile: pinch/drag, impede fechar ao pinçar
+    let lastTapTime = 0;
+    let tapTimeout = null;
+    img.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2) {
+        initialPinchDistance = Math.hypot(
+          e.touches[1].pageX - e.touches[0].pageX,
+          e.touches[1].pageY - e.touches[0].pageY
+        );
+        lastScale = scale;
+        // calcula centro inicial do pinch
+        const rect = img.getBoundingClientRect();
+        const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+        const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+        originX = centerX / rect.width;
+        originY = centerY / rect.height;
+      } else if (e.touches.length === 1) {
+        isDragging = true;
+        dragStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        imgStart = { x: translateX, y: translateY };
+      }
+      e.preventDefault();
+    }, { passive: false });
+
+    img.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 2 && initialPinchDistance) {
+        // pinch zoom
+        const currentPinchDistance = Math.hypot(
+          e.touches[1].pageX - e.touches[0].pageX,
+          e.touches[1].pageY - e.touches[0].pageY
+        );
+        let newScale = lastScale * (currentPinchDistance / initialPinchDistance);
+        newScale = Math.max(1, Math.min(newScale, 5));
+        scale = newScale;
+        updateTransform();
+        e.preventDefault();
+      } else if (e.touches.length === 1 && isDragging) {
+        // arrastar
+        translateX = imgStart.x + (e.touches[0].clientX - dragStart.x);
+        translateY = imgStart.y + (e.touches[0].clientY - dragStart.y);
+        updateTransform();
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    img.addEventListener('touchend', (e) => {
+      if (e.touches.length === 0) {
+        isDragging = false;
+        initialPinchDistance = null;
+      }
+    });
+
+    // Fechar fullscreen: duplo clique ou double tap no overlay (não na imagem!)
+    overlay.addEventListener('dblclick', (e) => {
+      if (e.target === overlay) {
+        document.body.removeChild(overlay);
+        Utils.revokeObjectURL(img.src);
+      }
+    });
+    overlay.addEventListener('touchend', (e) => {
+      if (e.target !== overlay) return;
+      const currentTime = new Date().getTime();
+      if (currentTime - lastTapTime < 400) {
+        clearTimeout(tapTimeout);
+        document.body.removeChild(overlay);
+        Utils.revokeObjectURL(img.src);
+      }
+      lastTapTime = currentTime;
+      tapTimeout = setTimeout(() => { lastTapTime = 0; }, 450);
+    });
+
+    overlay.appendChild(img);
+    document.body.appendChild(overlay);
+    img.focus();
+  }
+};
+
+const TabManager = {
+  switchTab: async tabName => {
+    if (currentTab === tabName) return;
+    currentTab = tabName;
+    UI.updateTabsUI();
+    await UI.renderImages();
+    StateManager.saveState();
+  }
+};
+
+const ImageManager = {
+  enterSelectionMode: () => {
+    isSelectionMode = true;
+    DOM.body.classList.add('selection-mode');
+  },
+  exitSelectionMode: () => {
+    isSelectionMode = false;
+    DOM.body.classList.remove('selection-mode');
+  },
+  toggleSelectImage: (imageName, container) => {
+    const selectedSet = selectedImagesByTab.get(currentTab);
+    if (selectedSet.has(imageName)) {
+      selectedSet.delete(imageName);
+      container.classList.remove('selected');
+      container.setAttribute('aria-checked', 'false');
+      container.querySelector('.image-checkbox').classList.remove('checked');
+    } else {
+      selectedSet.add(imageName);
+      container.classList.add('selected');
+      container.setAttribute('aria-checked', 'true');
+      container.querySelector('.image-checkbox').classList.add('checked');
+    }
+    UI.updateSelectionUI();
+    StateManager.saveState();
+  },
+  deleteImage: async imageName => {
+    if (!confirm(`Tem certeza que deseja excluir "${Utils.removeFileExtension(imageName)}"?`)) return;
+    UI.showLoading();
     try {
-      const currentTabId = appState.selectedTab;
-      const cifras = appState.cifrasByTab[currentTabId] || [];
+      await IndexedDBManager.deleteImageBlob(imageName);
+      const images = imageGalleryByTab.get(currentTab).filter(name => name !== imageName);
+      imageGalleryByTab.set(currentTab, images);
+      selectedImagesByTab.get(currentTab).delete(imageName);
+      await UI.renderImages();
+      StateManager.saveState();
+      Utils.showStatus('Imagem excluída com sucesso!');
+    } catch (error) {
+      Utils.showStatus('Erro ao excluir imagem.');
+    } finally {
+      UI.hideLoading();
+    }
+  },
+  reorderImages: async (fromIndex, toIndex) => {
+    const images = imageGalleryByTab.get(currentTab) || [];
+    const movedImageName = images.splice(fromIndex, 1)[0];
+    images.splice(toIndex, 0, movedImageName);
+    imageGalleryByTab.set(currentTab, images);
+    selectedImagesByTab.get(currentTab).clear();
+    ImageManager.exitSelectionMode();
+    await UI.renderImages();
+    StateManager.saveState();
+  },
+  deleteSelected: async () => {
+    const selectedNames = Array.from(selectedImagesByTab.get(currentTab));
+    const count = selectedNames.length;
+    if (!count || !confirm(`Excluir ${count} imagem(ns) selecionada(s)?`)) return;
+    UI.showLoading();
+    try {
+      for (const name of selectedNames) await IndexedDBManager.deleteImageBlob(name);
+      const images = imageGalleryByTab.get(currentTab).filter(name => !selectedImagesByTab.get(currentTab).has(name));
+      imageGalleryByTab.set(currentTab, images);
+      selectedImagesByTab.get(currentTab).clear();
+      ImageManager.exitSelectionMode();
+      await UI.renderImages();
+      StateManager.saveState();
+      Utils.showStatus(`${count} imagens excluídas.`);
+    } catch (error) {
+      Utils.showStatus('Erro ao excluir imagens.');
+    } finally {
+      UI.hideLoading();
+    }
+  },
+  clearSelection: () => {
+    selectedImagesByTab.get(currentTab).clear();
+    ImageManager.exitSelectionMode();
+    UI.renderImages();
+    StateManager.saveState();
+    Utils.showStatus('Seleção limpa.');
+  },
+  toggleSelectAll: () => {
+    const allNames = imageGalleryByTab.get(currentTab) || [];
+    const selectedSet = selectedImagesByTab.get(currentTab);
+    if (selectedSet.size === allNames.length) selectedSet.clear();
+    else allNames.forEach(name => selectedSet.add(name));
+    UI.renderImages();
+    StateManager.saveState();
+  },
+  handleFileSelection: async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    UI.showLoading();
+    if (!imageGalleryByTab.get(currentTab)) imageGalleryByTab.set(currentTab, []);
+    if (!selectedImagesByTab.get(currentTab)) selectedImagesByTab.set(currentTab, new Set());
+    const currentImageNamesInTab = new Set(imageGalleryByTab.get(currentTab));
+    let loadedCount = 0;
+    try {
       for (const file of files) {
-        const existingIndex = cifras.findIndex(c => typeof c === 'string' ? c === file.name : c.name === file.name);
-        if (existingIndex === -1) {
-          await dbOperation(DB_CONFIG.stores.images, 'put', {
-            key: `${currentTabId}:${file.name}`,
-            blob: file
-          });
-          cifras.push(file.name);
+        if (!file.type.startsWith('image/')) continue;
+        try {
+          const processed = await ImageProcessor.processImageFile(file);
+          if (!processed) continue;
+          await IndexedDBManager.addImageBlob(processed.name, processed.blob);
+          if (!currentImageNamesInTab.has(processed.name)) {
+            imageGalleryByTab.get(currentTab).push(processed.name);
+            currentImageNamesInTab.add(processed.name);
+          }
+          loadedCount++;
+        } catch (error) {
+          Utils.showStatus(`Erro ao carregar ${file.name}`);
         }
       }
-      appState.cifrasByTab[currentTabId] = cifras;
-      saveState();
-      renderCifras();
-      showStatus(`${files.length} cifra(s) adicionada(s)`);
+      await UI.renderImages();
+      StateManager.saveState();
+      Utils.showStatus(`${loadedCount} imagem(ns) carregada(s) com sucesso!`);
     } catch (error) {
-      console.error('Erro ao importar cifras:', error);
-      showStatus('Erro ao importar cifras');
+      Utils.showStatus('Erro ao carregar imagens.');
     } finally {
-      showLoading(false);
-      fileInput.value = '';
+      UI.hideLoading();
     }
-  });
-}
-
-// ================ MODO NOTURNO ================
-function toggleNightMode() {
-  appState.darkMode = !appState.darkMode;
-  saveState();
-  applyDarkMode();
-}
-
-function applyDarkMode() {
-  const body = document.body;
-  const nightModeIcon = document.getElementById('night-mode-icon');
-  if (appState.darkMode) {
-    body.classList.add('dark-mode');
-    nightModeIcon.classList.remove('fa-moon');
-    nightModeIcon.classList.add('fa-sun');
-  } else {
-    body.classList.remove('dark-mode');
-    nightModeIcon.classList.remove('fa-sun');
-    nightModeIcon.classList.add('fa-moon');
   }
-}
+};
 
-// ================ UI HELPERS ================
-function showLoading(show) {
-  const spinner = document.getElementById('loading-spinner');
-  spinner.style.display = show ? '' : 'none';
-}
-
-function showStatus(message) {
-  const statusElement = document.getElementById('status-message');
-  statusElement.textContent = message;
-  statusElement.style.display = '';
-  setTimeout(() => {
-    statusElement.style.display = 'none';
-  }, 3000);
-}
-
-function showSelectedCount(count) {
-  const popup = document.getElementById('selected-popup');
-  if (count > 0) {
-    popup.textContent = `${count} selecionada${count > 1 ? 's' : ''}`;
-    popup.style.display = '';
-  } else {
-    popup.style.display = 'none';
-  }
-}
-
-function updateSelectionControls() {
-  const currentTabId = appState.selectedTab;
-  const selectedCount = appState.selectedImages.get(currentTabId).size;
-  const totalCount = appState.cifrasByTab[currentTabId]?.length || 0;
-  const controls = document.getElementById('selection-controls');
-  const selectAllBtn = document.getElementById('select-all-btn');
-  controls.style.display = selectedCount > 0 ? '' : 'none';
-  selectAllBtn.style.display = (selectedCount === totalCount || totalCount === 0) ? 'none' : '';
-}
-
-// ================ FULLSCREEN API: CIFRA COBRE TELA INTEIRA ================
-function openFullscreenView(imageSrc, imageName) {
-  const overlay = document.createElement('div');
-  overlay.className = 'fullscreen-overlay';
-  overlay.setAttribute('role', 'dialog');
-  overlay.setAttribute('aria-modal', 'true');
-  overlay.setAttribute('aria-label', `Visualizando: ${imageName}`);
-  overlay.style.position = 'fixed';
-  overlay.style.inset = 0;
-  overlay.style.background = 'rgba(0,0,0,0.95)';
-  overlay.style.zIndex = 2000;
-  overlay.style.display = 'flex';
-  overlay.style.alignItems = 'center';
-  overlay.style.justifyContent = 'center';
-  overlay.style.cursor = 'zoom-out';
-
-  const img = document.createElement('img');
-  img.src = imageSrc;
-  img.alt = imageName;
-  img.style.maxWidth = '100vw';
-  img.style.maxHeight = '100vh';
-  img.style.objectFit = 'contain';
-  img.style.boxShadow = '0 0 64px rgba(0,0,0,0.6)';
-  img.style.cursor = 'grab';
-  img.tabIndex = 0;
-
-  // Zoom e arraste
-  let scale = 1;
-  let translateX = 0, translateY = 0;
-  let isDragging = false;
-  let dragStart = { x: 0, y: 0 };
-  let imgStart = { x: 0, y: 0 };
-  let initialPinchDistance = null;
-  let lastScale = 1;
-  let originX = 0.5, originY = 0.5;
-
-  function updateTransform() {
-    img.style.transformOrigin = `${originX * 100}% ${originY * 100}%`;
-    img.style.transform = `scale(${scale}) translate(${translateX / scale}px, ${translateY / scale}px)`;
-  }
-
-  // Fullscreen nativo
-  if (overlay.requestFullscreen) overlay.requestFullscreen();
-  else if (overlay.webkitRequestFullscreen) overlay.webkitRequestFullscreen();
-
-  // Mouse: zoom centralizado e arraste
-  img.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    const rect = img.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    originX = mouseX / rect.width;
-    originY = mouseY / rect.height;
-    const prevScale = scale;
-    if (-e.deltaY > 0) scale = Math.min(scale * 1.1, 5);
-    else scale = Math.max(scale / 1.1, 1);
-    if (scale !== prevScale) {
-      translateX = (translateX - (originX - 0.5) * rect.width) * (scale / prevScale) + (originX - 0.5) * rect.width;
-      translateY = (translateY - (originY - 0.5) * rect.height) * (scale / prevScale) + (originY - 0.5) * rect.height;
-    }
-    if (scale === 1) {
-      translateX = 0;
-      translateY = 0;
-      originX = 0.5;
-      originY = 0.5;
-    }
-    updateTransform();
-  });
-
-  img.addEventListener('mousedown', (e) => {
-    if (scale === 1) return;
-    isDragging = true;
-    dragStart = { x: e.clientX, y: e.clientY };
-    imgStart = { x: translateX, y: translateY };
-    img.style.cursor = 'grabbing';
-  });
-
-  overlay.addEventListener('mousemove', (e) => {
-    if (!isDragging) return;
-    translateX = imgStart.x + (e.clientX - dragStart.x);
-    translateY = imgStart.y + (e.clientY - dragStart.y);
-    updateTransform();
-  });
-  overlay.addEventListener('mouseup', () => {
-    isDragging = false;
-    img.style.cursor = 'grab';
-  });
-  overlay.addEventListener('mouseleave', () => {
-    isDragging = false;
-    img.style.cursor = 'grab';
-  });
-
-  // Mobile: pinch/drag, impede fechar ao pinçar
-  let lastTapTime = 0, tapTimeout = null;
-  img.addEventListener('touchstart', (e) => {
-    if (e.touches.length === 2) {
-      initialPinchDistance = Math.hypot(
-        e.touches[1].pageX - e.touches[0].pageX,
-        e.touches[1].pageY - e.touches[0].pageY
-      );
-      lastScale = scale;
-      const rect = img.getBoundingClientRect();
-      const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-      const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
-      originX = centerX / rect.width;
-      originY = centerY / rect.height;
-    } else if (e.touches.length === 1) {
-      isDragging = true;
-      dragStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      imgStart = { x: translateX, y: translateY };
-    }
-    e.preventDefault();
-  }, { passive: false });
-
-  img.addEventListener('touchmove', (e) => {
-    if (e.touches.length === 2 && initialPinchDistance) {
-      const currentPinchDistance = Math.hypot(
-        e.touches[1].pageX - e.touches[0].pageX,
-        e.touches[1].pageY - e.touches[0].pageY
-      );
-      let newScale = lastScale * (currentPinchDistance / initialPinchDistance);
-      newScale = Math.max(1, Math.min(newScale, 5));
-      scale = newScale;
-      updateTransform();
+const EventManager = {
+  setup: () => {
+    DOM.imageList.addEventListener('dragover', (e) => {
       e.preventDefault();
-    } else if (e.touches.length === 1 && isDragging) {
-      translateX = imgStart.x + (e.touches[0].clientX - dragStart.x);
-      translateY = imgStart.y + (e.touches[0].clientY - dragStart.y);
-      updateTransform();
+      const afterElement = getDragAfterElement(DOM.imageList, e.clientY);
+      const draggable = document.querySelector('.dragging');
+      if (!draggable) return;
+      DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+      if (afterElement) afterElement.classList.add('drag-over');
+    });
+    DOM.imageList.addEventListener('drop', (e) => {
       e.preventDefault();
+      const draggable = document.querySelector('.dragging');
+      if (!draggable) return;
+      const afterElement = getDragAfterElement(DOM.imageList, e.clientY);
+      const containers = Array.from(DOM.imageList.children);
+      const fromIndex = containers.indexOf(draggable);
+      let toIndex = afterElement ? containers.indexOf(afterElement) : containers.length - 1;
+      if (fromIndex < toIndex) toIndex--;
+      if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) ImageManager.reorderImages(fromIndex, toIndex);
+      draggable.classList.remove('dragging');
+      DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    });
+    function getDragAfterElement(container, y) {
+      const draggableElements = [...container.querySelectorAll('.image-container:not(.dragging)')];
+      return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
+        else return closest;
+      }, { offset: -Infinity, element: null }).element;
     }
-  }, { passive: false });
+    DOM.clearSelectionBtn.addEventListener('click', ImageManager.clearSelection);
+    DOM.deleteSelectedBtn.addEventListener('click', ImageManager.deleteSelected);
+    DOM.selectAllBtn.addEventListener('click', ImageManager.toggleSelectAll);
 
-  img.addEventListener('touchend', (e) => {
-    if (e.touches.length === 0) {
-      isDragging = false;
-      initialPinchDistance = null;
-    }
-  });
+    DOM.openFileDialogButton.addEventListener('click', () => {
+      DOM.fileInput.value = '';
+      DOM.fileInput.click();
+    });
+    DOM.fileInput.addEventListener('change', ImageManager.handleFileSelection);
 
-  // Fechar fullscreen: duplo clique/double tap no overlay (não na imagem!)
-  overlay.addEventListener('dblclick', (e) => {
-    if (e.target === overlay) closeFullscreen();
-  });
-  overlay.addEventListener('touchend', (e) => {
-    if (e.target !== overlay) return;
-    const currentTime = new Date().getTime();
-    if (currentTime - lastTapTime < 400) {
-      clearTimeout(tapTimeout);
-      closeFullscreen();
-    }
-    lastTapTime = currentTime;
-    tapTimeout = setTimeout(() => { lastTapTime = 0; }, 450);
-  });
-
-  // Fechar com ESC
-  document.addEventListener('keydown', function escListener(e) {
-    if (e.key === 'Escape') {
-      closeFullscreen();
-      document.removeEventListener('keydown', escListener);
-    }
-  });
-
-  // Sai do fullscreen se o usuário usar ESC nativo (ex: F11 ou gesto mobile)
-  document.addEventListener('fullscreenchange', function fsListener() {
-    if (!document.fullscreenElement && document.body.contains(overlay)) {
-      closeFullscreen();
-      document.removeEventListener('fullscreenchange', fsListener);
-    }
-  });
-
-  function closeFullscreen() {
-    // Sai do fullscreen nativo se necessário
-    if (document.fullscreenElement || document.webkitFullscreenElement) {
-      if (document.exitFullscreen) document.exitFullscreen();
-      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-    }
-    if (document.body.contains(overlay)) document.body.removeChild(overlay);
-    URL.revokeObjectURL(imageSrc);
+    DOM.openCloudFolderButton.addEventListener('click', () => {
+      window.open(ONE_DRIVE_FOLDER_URL, '_blank');
+      Utils.showStatus('Abrindo pasta do OneDrive em uma nova aba.');
+    });
+    DOM.syncBtn.addEventListener('click', () => {
+      Utils.showStatus('Funcionalidade de Sincronização em desenvolvimento...');
+    });
+    DOM.settingsBtn.addEventListener('click', () => {
+      Utils.showStatus('Funcionalidade de Configurações em desenvolvimento...');
+    });
   }
+};
 
-  overlay.appendChild(img);
-  document.body.appendChild(overlay);
-  img.focus();
+async function init() {
+  UI.showLoading();
+  try {
+    await IndexedDBManager.open();
+    await StateManager.loadState();
+    UI.createTabs();
+    UI.updateTabsUI();
+    await UI.renderImages();
+    EventManager.setup();
+  } catch (e) {
+    Utils.showStatus("Erro ao iniciar o aplicativo. Tente recarregar a página.");
+  } finally {
+    UI.hideLoading();
+  }
 }
 
-// ================ CONFIGURAÇÃO DE EVENTOS ================
-function setupEventListeners() {
-  document.getElementById('addTabBtn').addEventListener('click', addTab);
-  document.getElementById('cancelTabBtn').addEventListener('click', closeAddTabDialog);
-  document.getElementById('tabName').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') addTab();
-    if (e.key === 'Escape') closeAddTabDialog();
-  });
-  document.getElementById('select-all-btn').addEventListener('click', selectAllCifras);
-  document.getElementById('clear-selection-btn').addEventListener('click', clearSelection);
-  document.getElementById('delete-selected-btn').addEventListener('click', deleteSelectedCifras);
-  document.getElementById('open-file-dialog').addEventListener('click', () => {
-    document.getElementById('file-input').click();
-  });
-  setupFileInput();
-  document.getElementById('open-cloud-folder').addEventListener('click', () => {
-    window.open('https://1drv.ms/f/c/a71268bf66931c02/EpYyUsypAQhGgpWC9YuvE54BD_o9NX9tRar0piSzq4V4Xg', '_blank');
-    showStatus('Abrindo pasta do OneDrive em uma nova aba');
-  });
-  document.getElementById('night-mode-btn').addEventListener('click', toggleNightMode);
-}
+document.addEventListener('DOMContentLoaded', init);
