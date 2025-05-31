@@ -294,7 +294,7 @@ html, body {
 .float-controls {
   display: none;
   position: fixed;
-  bottom: 20px;
+  top: 80px; /* ajuste caso seu header tenha outra altura */
   left: 50%;
   transform: translateX(-50%);
   background-color: white;
