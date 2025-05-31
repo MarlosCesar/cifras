@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Seletor de cifras para músicas de culto"/>
-<meta name="theme-color" content="#3b82f6"/> <!-- Cor do tema -->
+  <meta name="theme-color" content="#3b82f6"/> <!-- Cor do tema -->
   <title>Cifras</title>
   <link rel="preload" href="https://cdn.tailwindcss.com" as="script">
   <link rel="preconnect" href="https://cdnjs.cloudflare.com">
@@ -20,77 +20,59 @@
 <!-- trecho do header, com botão "Modo Noturno" -->
 <header class="header-professional p-4">
   <div class="container mx-auto flex justify-between items-center">
-    <h1 class="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-blue-600 via-green-400 to-purple-600 bg-clip-text text-transparent drop-shadow-md">
-  <i class="fas fa-guitar mr-2"></i>
-  Cifras
-</h1>
+    <h1 class="text-2xl font-semibold tracking-wide">Seletor de Cifras</h1>
     <div class="flex items-center space-x-4">
-      <!-- Botão "Modo Noturno" -->
-      <button id="night-mode-btn" class="p-2 rounded-full" aria-label="Alternar Modo Noturno" title="Modo Noturno">
-        <i id="night-mode-icon" class="fas fa-moon text-lg" aria-hidden="true"></i>
+      <button id="sync-btn" class="p-2 rounded-full" aria-label="Sincronizar" title="Sincronizar">
+        <i class="fas fa-sync-alt text-lg" aria-hidden="true"></i>
       </button>
-      <!--button id="settings-btn" class="p-2 rounded-full" aria-label="Configurações" title="Configurações">
+      <button id="settings-btn" class="p-2 rounded-full" aria-label="Configurações" title="Configurações">
         <i class="fas fa-cog text-lg" aria-hidden="true"></i>
-    </button-->
+      </button>
     </div>
   </div>
 </header>
-  <main class="container mx-auto p-4 flex flex-col gap-4 main-content-area" role="main">
-    <section class="w-full bg-white rounded-xl shadow-md overflow-hidden flex flex-col" aria-label="Seletor de músicas e imagens">
-      <div class="p-4 bg-gray-50 border-b flex flex-wrap sm:flex-row sm:items-center sm:justify-end gap-2">
-        <div class="flex flex-wrap gap-2 w-full justify-center sm:justify-end">
-          <button id="open-file-dialog" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center" aria-label="Buscar cifras localmente" title="Buscar cifras localmente">
-            <i class="fas fa-folder-open mr-2" aria-hidden="true"></i> Buscar Local
-          </button>
-          <button id="open-cloud-folder" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition flex items-center" aria-label="Buscar cifras na nuvem (OneDrive)" title="Buscar em Nuvem">
-            <i class="fas fa-cloud mr-2" aria-hidden="true"></i> Buscar em Nuvem
-          </button>
-          <input type="file" id="file-input" class="hidden" accept="image/*" multiple aria-hidden="true" tabindex="-1" />
-        </div>
+
+<main class="container mx-auto p-4 flex flex-col gap-4 main-content-area" role="main">
+  <section class="w-full bg-white rounded-xl shadow-md overflow-hidden flex flex-col" aria-label="Seletor de músicas e imagens">
+    <div class="p-4 bg-gray-50 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <h2 class="font-semibold text-xl text-gray-700">Minhas Cifras</h2>
+      <div class="flex flex-wrap gap-2 justify-end">
+        <button id="open-cloud-folder" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition flex items-center" aria-label="Buscar cifras na nuvem (OneDrive)" title="Buscar cifras na nuvem (OneDrive)">
+          <i class="fas fa-cloud mr-2" aria-hidden="true"></i> Buscar em Nuvem
+        </button>
+        <button id="open-file-dialog" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center" aria-label="Buscar cifras localmente" title="Buscar cifras localmente">
+          <i class="fas fa-folder-open mr-2" aria-hidden="true"></i> Buscar Local
+        </button>
+        <input type="file" id="file-input" class="hidden" accept="image/*" multiple aria-hidden="true" tabindex="-1" />
       </div>
-      <nav class="tabs-custom" role="tablist" aria-label="Categorias de cifras">
-  <div class="tabs-scroll-container">
-    <ul id="tabs-list" class="tabs">
-          <li class="tab" data-id="domingo_manha">Domingo Manhã</li>
-          <li class="tab" data-id="domingo_noite">Domingo Noite</li>
-          <li class="tab" data-id="segunda">Segunda</li>
-          <li class="tab" data-id="quarta">Quarta</li>
-          <li class="tab" data-id="culto_jovem">Culto Jovem</li>
-          <!-- Abas do usuário são inseridas via JS -->
-          <li class="tab add-tab" id="add-tab-btn">+</li>
-        </ul>
-      </div>
-      </nav>
-      <!-- Popup para nova aba -->
-     <div id="popup-bg" class="popup-bg" style="display:none" role="dialog" aria-modal="true" aria-labelledby="popup-title">
-  <div class="popup">
-    <h2 id="popup-title">Adicionar nova aba</h2>
-    <label for="tabName">Nome da nova aba:</label>
-    <input type="text" id="tabName" aria-required="true" />
-    <div class="popup-buttons">
-      <button id="addTabBtn" class="primary-btn">Adicionar</button>
-      <button id="cancelTabBtn" class="secondary-btn">Cancelar</button>
     </div>
-  </div>
+
+    <nav class="tabs" id="tabs-container" role="tablist" aria-label="Abas das categorias de cifras"></nav>
+
+    <div class="p-4 flex flex-col gap-4 flex-1">
+      <div id="image-list" class="flex flex-col gap-4" aria-live="polite" aria-atomic="true">
+        <p class="text-center text-gray-500 py-8">Nenhuma cifra adicionada.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Controles flutuantes -->
+<div id="float-controls" class="float-controls">
+  <button id="select-all-btn" class="select-all-btn">
+    <i class="fas fa-check-square"></i>
+    <span>Selecionar todas</span>
+  </button>
+  <button id="clear-selection-btn" class="clear-selection-btn">
+    <i class="fas fa-times"></i>
+    <span>Limpar</span>
+  </button>
+  <button id="delete-selected-btn" class="delete-selected-btn">
+    <i class="fas fa-trash-alt"></i>
+    <span>Excluir</span>
+  </button>
 </div>
-      <div class="flex gap-4 items-center p-2 px-4 bg-gray-50 border-b" id="selection-controls" style="display:none;">
-        <button id="select-all-btn" class="text-blue-600 hover:text-blue-800 flex items-center gap-2" style="display:none;">
-          <i class="fas fa-check-double"></i> Selecionar todas
-        </button>
-        <button id="clear-selection-btn" class="text-gray-700 hover:text-gray-900 flex items-center gap-2">
-          <i class="fas fa-times"></i> Limpar
-        </button>
-        <button id="delete-selected-btn" class="text-red-600 hover:text-red-800 flex items-center gap-2 ml-2">
-          <i class="fas fa-trash-alt"></i> Excluir
-        </button>
-      </div>
-      <div class="p-4 flex flex-col gap-4 flex-1">
-        <div id="image-list" class="flex flex-col gap-4" aria-live="polite" aria-atomic="true">
-          <p class="text-center text-gray-500 py-8">Nenhuma cifra selecionada.</p>
-        </div>
-      </div>
-    </section>
-  </main>
+
   <div id="loading-spinner" class="loading-spinner">
     <i class="fas fa-spinner fa-spin fa-3x text-blue-600" aria-hidden="true"></i>
     <span class="sr-only">Carregando...</span>
