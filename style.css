@@ -461,3 +461,20 @@ html, body {
     max-width: calc(100% - 2cm - 10px);
   }
 }
+#online-switch-bar {
+  position: relative;
+  z-index: 10;
+}
+label.inline-flex {
+  position: relative;
+  width: 44px;
+  height: 24px;
+}
+label.inline-flex input[type="checkbox"] + div {
+  position: relative;
+  z-index: 1;
+}
+label.inline-flex .absolute {
+  z-index: 2;
+  pointer-events: none;
+}
