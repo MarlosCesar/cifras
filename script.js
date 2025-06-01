@@ -1,14 +1,23 @@
 // ================================
 // CONFIGURAÇÃO FIREBASE (SUBSTITUA PELOS SEUS DADOS!)
 // ================================
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "SUA_API_KEY",
-  authDomain: "SEU_DOMINIO.firebaseapp.com",
-  projectId: "SEU_PROJECT_ID",
-  storageBucket: "SEU_BUCKET.appspot.com",
-  messagingSenderId: "SEU_MESSAGING_ID",
-  appId: "SEU_APP_ID"
+  apiKey: "AIzaSyA10_i84FS8v2MmayKmbplHQwjQGnWGczY",
+  authDomain: "cifrassite.firebaseapp.com",
+  projectId: "cifrassite",
+  storageBucket: "cifrassite.firebasestorage.app",
+  messagingSenderId: "478416827358",
+  appId: "1:478416827358:web:7944033bddd8e877dc634f"
 };
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
 
 // ================================
 // INICIALIZAÇÃO GLOBAL
