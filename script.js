@@ -20,73 +20,63 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // ================================
-// INICIALIZAÇÃO GLOBAL
-// ================================
-let onlineMode = false; // false = local, true = firebase
-let firebaseApp = null;
-let firestore = null;
-
-const ONLINE_COLLECTION = "cifras-selecionadas"; // Nome da coleção no Firestore
-const ONLINE_DOC = "unico"; // Você pode mudar para por categoria, se quiser
-
-// ================================
-// IndexedDB helpers (corrigidos para chave composta)
-// ================================
-const DB_NAME = 'CifrasDB', DB_VERSION = 1, STORE_IMAGES = 'images', STORE_STATE = 'state';
-const IndexedDB = {
-  db:null, open:()=>new Promise((res,rej)=>{
-    if(IndexedDB.db) return res(IndexedDB.db);
-    const r=indexedDB.open(DB_NAME,DB_VERSION);
-    r.onupgradeneeded=e=>{
-      const db=e.target.result;
-      if(!db.objectStoreNames.contains(STORE_IMAGES))db.createObjectStore(STORE_IMAGES,{keyPath:'key'});
-      if(!db.objectStoreNames.contains(STORE_STATE))db.createObjectStore(STORE_STATE,{keyPath:'key'});
-    };
-    r.onsuccess=e=>{IndexedDB.db=e.target.result;res(IndexedDB.db);};
-    r.onerror=e=>rej(e.target.error);
-  }),
-  putImage:(key,blob)=>IndexedDB.open().then(db=>new Promise((res,rej)=>{
-    const tx=db.transaction([STORE_IMAGES],'readwrite');
-    tx.objectStore(STORE_IMAGES).put({key,blob});
-    tx.oncomplete=res; tx.onerror=e=>rej(e.target.error);
-  })),
-  getImage:key=>IndexedDB.open().then(db=>new Promise((res,rej)=>{
-    const tx=db.transaction([STORE_IMAGES],'readonly');
-    const req=tx.objectStore(STORE_IMAGES).get(key);
-    req.onsuccess=()=>res(req.result?req.result.blob:null);
-    req.onerror=e=>rej(e.target.error);
-  })),
-  deleteImage:key=>IndexedDB.open().then(db=>new Promise((res,rej)=>{
-    const tx=db.transaction([STORE_IMAGES],'readwrite');
-    tx.objectStore(STORE_IMAGES).delete(key);
-    tx.oncomplete=res; tx.onerror=e=>rej(e.target.error);
-  })),
-  saveState:state=>IndexedDB.open().then(db=>new Promise((res,rej)=>{
-    const tx=db.transaction([STORE_STATE],'readwrite');
-    tx.objectStore(STORE_STATE).put({key:"state",...state});
-    tx.oncomplete=res; tx.onerror=e=>rej(e.target.error);
-  })),
-  loadState:()=>IndexedDB.open().then(db=>new Promise((res,rej)=>{
-    const tx=db.transaction([STORE_STATE],'readonly');
-    const req=tx.objectStore(STORE_STATE).get("state");
-    req.onsuccess=()=>res(req.result||null);
-    req.onerror=e=>rej(e.target.error);
-  }))
-};
-
-// ================================
 // VARIÁVEIS GLOBAIS
 // ================================
 const tabs = ["Domingo Manhã", "Domingo Noite", "Segunda", "Quarta", "Culto Jovem", "Santa Ceia", "Outros"];
 let imageGalleryByTab = new Map();
 let selectedImagesByTab = new Map();
 let currentTab = tabs[0];
-window.isSelectionMode = false;
-window.longPressUsed = false;
-window.dragStartIndex = null;
+let isSelectionMode = false;
+let dragStartIndex = null;
 
 // ================================
-// HELPERS DE UI (SEM ALTERAÇÕES)
+// IndexedDB helpers
+// ================================
+const DB_NAME = 'CifrasDB', DB_VERSION = 1, STORE_IMAGES = 'images', STORE_STATE = 'state';
+const IndexedDB = {
+  db: null,
+  open: () => new Promise((res, rej) => {
+    if (IndexedDB.db) return res(IndexedDB.db);
+    const r = indexedDB.open(DB_NAME, DB_VERSION);
+    r.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_IMAGES)) db.createObjectStore(STORE_IMAGES, { keyPath: 'key' });
+      if (!db.objectStoreNames.contains(STORE_STATE)) db.createObjectStore(STORE_STATE, { keyPath: 'key' });
+    };
+    r.onsuccess = e => { IndexedDB.db = e.target.result; res(IndexedDB.db); };
+    r.onerror = e => rej(e.target.error);
+  }),
+  putImage: (key, blob) => IndexedDB.open().then(db => new Promise((res, rej) => {
+    const tx = db.transaction([STORE_IMAGES], 'readwrite');
+    tx.objectStore(STORE_IMAGES).put({ key, blob });
+    tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
+  })),
+  getImage: key => IndexedDB.open().then(db => new Promise((res, rej) => {
+    const tx = db.transaction([STORE_IMAGES], 'readonly');
+    const req = tx.objectStore(STORE_IMAGES).get(key);
+    req.onsuccess = () => res(req.result ? req.result.blob : null);
+    req.onerror = e => rej(e.target.error);
+  })),
+  deleteImage: key => IndexedDB.open().then(db => new Promise((res, rej) => {
+    const tx = db.transaction([STORE_IMAGES], 'readwrite');
+    tx.objectStore(STORE_IMAGES).delete(key);
+    tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
+  })),
+  saveState: state => IndexedDB.open().then(db => new Promise((res, rej) => {
+    const tx = db.transaction([STORE_STATE], 'readwrite');
+    tx.objectStore(STORE_STATE).put({ key: "state", ...state });
+    tx.oncomplete = res; tx.onerror = e => rej(e.target.error);
+  })),
+  loadState: () => IndexedDB.open().then(db => new Promise((res, rej) => {
+    const tx = db.transaction([STORE_STATE], 'readonly');
+    const req = tx.objectStore(STORE_STATE).get("state");
+    req.onsuccess = () => res(req.result || null);
+    req.onerror = e => rej(e.target.error);
+  }))
+};
+
+// ================================
+// HELPERS DE UI
 // ================================
 function showLoading(show) {
   document.getElementById('loading-spinner').classList.toggle('active', show);
@@ -97,88 +87,9 @@ function showStatus(msg) {
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 2500);
 }
-function showSelectedPopup(count) {
-  const el = document.getElementById('selected-popup');
-  if (count > 0) {
-    el.textContent = `${count} selecionada${count > 1 ? "s" : ""}`;
-    el.classList.add('show');
-  } else {
-    el.classList.remove('show');
-    el.textContent = "";
-  }
-}
-
-// ================================
-// SWITCH Online/Off-line
-// ================================
-const onlineSwitch = document.getElementById('online-switch');
-const onlineStatusLabel = document.getElementById('online-status-label');
-
-function setOnlineMode(active) {
-  onlineMode = active;
-  if (onlineMode) {
-    onlineStatusLabel.textContent = "Online";
-    onlineStatusLabel.classList.remove("text-gray-700");
-    onlineStatusLabel.classList.add("text-blue-600");
-    initFirebase();
-    loadOnlineState();
-  } else {
-    onlineStatusLabel.textContent = "Off-line";
-    onlineStatusLabel.classList.remove("text-blue-600");
-    onlineStatusLabel.classList.add("text-gray-700");
-    loadLocalState();
-  }
-}
-
-// Inicialização do Switch
-onlineSwitch.addEventListener('change', function() {
-  setOnlineMode(this.checked);
-});
-
-// Estado inicial
-setOnlineMode(false);
-
-// ================================
-// FIREBASE - INICIALIZAÇÃO E FUNÇÕES CRUD
-// ================================
-function initFirebase() {
-  if (!firebaseApp) {
-    firebaseApp = firebase.initializeApp(firebaseConfig);
-    firestore = firebase.firestore();
-  }
-}
-
-// Salvar estado no Firestore
-async function saveOnlineState() {
-  if (!firestore) return;
-  const imagesObj = {};
-  tabs.forEach(tab => imagesObj[tab] = imageGalleryByTab.get(tab));
-  const selectedObj = {};
-  tabs.forEach(tab => selectedObj[tab] = Array.from(selectedImagesByTab.get(tab)));
-  await firestore.collection(ONLINE_COLLECTION).doc(ONLINE_DOC).set({
-    imagesObj, selectedObj, currentTab
-  });
-}
-
-// Carregar estado do Firestore
-async function loadOnlineState() {
-  showLoading(true);
-  if (!firestore) initFirebase();
-  const doc = await firestore.collection(ONLINE_COLLECTION).doc(ONLINE_DOC).get();
-  if (doc.exists) {
-    const state = doc.data();
-    restoreAppState(state);
-    renderTabs();
-    await renderImages();
-  } else {
-    tabs.forEach(tab => {
-      imageGalleryByTab.set(tab, []);
-      selectedImagesByTab.set(tab, new Set());
-    });
-    renderTabs();
-    await renderImages();
-  }
-  showLoading(false);
+function showSelectionControls(show) {
+  const el = document.getElementById('selection-controls');
+  if (el) el.style.display = show ? "flex" : "none";
 }
 
 // ================================
@@ -201,7 +112,7 @@ async function loadLocalState() {
 }
 
 // ================================
-// RESTAURAÇÃO DE ESTADO (COMUM, corrigido: sempre garante todos tabs)
+// RESTAURAÇÃO DE ESTADO (sempre garante todos os tabs)
 // ================================
 function restoreAppState(state) {
   if (!state) {
@@ -220,7 +131,7 @@ function restoreAppState(state) {
 }
 
 // ================================
-// RENDERIZAÇÃO DE ABAS (SEM ALTERAÇÃO)
+// RENDERIZAÇÃO DE ABAS
 // ================================
 function renderTabs() {
   const tabsContainer = document.getElementById('tabs-container');
@@ -233,15 +144,35 @@ function renderTabs() {
       currentTab = tab;
       renderTabs();
       renderImages();
-      if (onlineMode) saveOnlineState();
-      else saveLocalState();
+      saveLocalState();
     };
     tabsContainer.appendChild(btn);
   });
 }
 
 // ================================
-// IMAGENS E SELEÇÃO (corrigido: chave composta em getImage/putImage/deleteImage)
+// RENDERIZAÇÃO DAS IMAGENS
+// ================================
+async function renderImages() {
+  const list = document.getElementById('image-list');
+  list.innerHTML = "";
+  const names = imageGalleryByTab.get(currentTab) || [];
+  if (!names.length) {
+    list.innerHTML = `<p class="text-center text-gray-500 py-8">Nenhuma cifra adicionada.</p>`;
+    showSelectionControls(false);
+    return;
+  }
+  for (let name of names) {
+    const blob = await IndexedDB.getImage(`${currentTab}:${name}`);
+    if (!blob) continue;
+    const container = createImageElement(name, blob);
+    list.appendChild(container);
+  }
+  updateSelectionControls();
+}
+
+// ================================
+// CRIAÇÃO DE ELEMENTO DA IMAGEM (com seleção, drag, long press)
 // ================================
 function createImageElement(imageName, imageBlob) {
   const container = document.createElement('div');
@@ -257,7 +188,7 @@ function createImageElement(imageName, imageBlob) {
   const checkbox = document.createElement('div');
   checkbox.className = 'image-checkbox';
   if (selectedImagesByTab.get(currentTab).has(imageName)) checkbox.classList.add('checked');
-  checkbox.onclick = e => { e.stopPropagation(); toggleSelect(imageName, container); };
+  checkbox.onclick = e => { e.stopPropagation(); toggleSelect(imageName); };
   container.appendChild(checkbox);
 
   // Imagem
@@ -273,142 +204,68 @@ function createImageElement(imageName, imageBlob) {
   span.textContent = imageName.replace(/\.[^/.]+$/, "");
   container.appendChild(span);
 
-  // --- Eventos para seleção e drag ---
+  // Long press (mobile) ou mouse para seleção/drag
   let longPressTimeout = null;
   let dragActivated = false;
   let isDragging = false;
 
   // Mobile: long-press para seleção ou drag
-  container.addEventListener('touchstart', function(e) {
+  container.addEventListener('touchstart', function (e) {
     if (e.touches.length > 1) return;
     dragActivated = false;
     isDragging = false;
     longPressTimeout = setTimeout(() => {
-      if (!window.longPressUsed) {
-        window.isSelectionMode = true;
-        window.longPressUsed = true;
-        toggleSelect(imageName, container);
-      } else {
-        dragActivated = true;
-        isDragging = true;
-        container.classList.add('dragging');
-        window.dragStartIndex = Array.from(document.getElementById('image-list').children).indexOf(container);
-      }
+      isSelectionMode = true;
+      toggleSelect(imageName);
+      updateSelectionControls();
     }, 400);
-  }, {passive: true});
+  }, { passive: true });
 
-  container.addEventListener('touchmove', function(e) {
-    if (dragActivated && isDragging && e.touches.length === 1) {
-      // efeito visual opcional
-    } else {
-      clearTimeout(longPressTimeout);
-    }
-  }, {passive: true});
-
-  container.addEventListener('touchend', function(e) {
+  container.addEventListener('touchmove', function (e) {
     clearTimeout(longPressTimeout);
-    if (dragActivated && isDragging) {
-      container.classList.remove('dragging');
-      // Encontrar destino
-      const containers = Array.from(document.getElementById('image-list').children);
-      let toIndex = containers.indexOf(document.elementFromPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY));
-      if (toIndex === -1) toIndex = containers.length - 1;
-      reorderImages(window.dragStartIndex, toIndex);
-      // Limpa seleção após drag
-      selectedImagesByTab.get(currentTab).clear();
-      window.isSelectionMode = false;
-      window.longPressUsed = false;
-      renderImages();
-    } else if (!window.isSelectionMode && !window.longPressUsed) {
-      openFullscreen(objectURL, imageName);
-    } else if (window.isSelectionMode && window.longPressUsed) {
-      toggleSelect(imageName, container);
-    }
-  }, {passive: true});
+  }, { passive: true });
 
-  // Desktop: long-press com mouse para seleção ou drag
-  container.addEventListener('mousedown', function(e) {
+  container.addEventListener('touchend', function (e) {
+    clearTimeout(longPressTimeout);
+    if (!isSelectionMode) openFullscreen(img.src, imageName);
+  }, { passive: true });
+
+  // Desktop: long-press ou click para seleção
+  container.addEventListener('mousedown', function (e) {
     if (e.button !== 0) return;
-    dragActivated = false;
-    isDragging = false;
     longPressTimeout = setTimeout(() => {
-      if (!window.longPressUsed) {
-        window.isSelectionMode = true;
-        window.longPressUsed = true;
-        toggleSelect(imageName, container);
-      } else {
-        dragActivated = true;
-        isDragging = true;
-        container.classList.add('dragging');
-        window.dragStartIndex = Array.from(document.getElementById('image-list').children).indexOf(container);
-      }
+      isSelectionMode = true;
+      toggleSelect(imageName);
+      updateSelectionControls();
     }, 400);
   });
-  container.addEventListener('mousemove', function() {
+  container.addEventListener('mouseup', function () {
     clearTimeout(longPressTimeout);
+    if (!isSelectionMode) openFullscreen(img.src, imageName);
   });
-  container.addEventListener('mouseup', function(e) {
-    clearTimeout(longPressTimeout);
-    if (dragActivated && isDragging) {
-      container.classList.remove('dragging');
-      const containers = Array.from(document.getElementById('image-list').children);
-      let toIndex = containers.indexOf(document.elementFromPoint(e.clientX, e.clientY));
-      if (toIndex === -1) toIndex = containers.length - 1;
-      reorderImages(window.dragStartIndex, toIndex);
-      selectedImagesByTab.get(currentTab).clear();
-      window.isSelectionMode = false;
-      window.longPressUsed = false;
-      renderImages();
-    } else if (!window.isSelectionMode && !window.longPressUsed) {
-      openFullscreen(objectURL, imageName);
-    } else if (window.isSelectionMode && window.longPressUsed) {
-      toggleSelect(imageName, container);
-    }
-  });
-  container.addEventListener('mouseleave', function() {
+  container.addEventListener('mouseleave', function () {
     clearTimeout(longPressTimeout);
   });
 
   // Drag & drop HTML5 para desktop
-  container.addEventListener('dragstart', function(e) {
-    if (!window.isSelectionMode) {
-      window.isSelectionMode = true;
-      window.longPressUsed = true;
-      toggleSelect(imageName, container);
-    }
+  container.addEventListener('dragstart', function (e) {
+    dragStartIndex = Array.from(document.getElementById('image-list').children).indexOf(container);
+    isDragging = true;
     container.classList.add('dragging');
-    window.dragStartIndex = Array.from(document.getElementById('image-list').children).indexOf(container);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', imageName);
+  });
+
+  container.addEventListener('dragend', function () {
+    isDragging = false;
+    container.classList.remove('dragging');
   });
 
   return container;
 }
 
 // ================================
-// RENDERIZAÇÃO DAS IMAGENS (corrigido: busca chave composta, always updateSelectionControls)
+// DRAG & DROP CONTAINER LISTENERS
 // ================================
-async function renderImages() {
-  const list = document.getElementById('image-list');
-  list.innerHTML = "";
-  const names = imageGalleryByTab.get(currentTab) || [];
-  if (!names.length) {
-    list.innerHTML = `<p class="text-center text-gray-500 py-8">Nenhuma cifra adicionada.</p>`;
-  } else {
-    for (let name of names) {
-      const blob = await IndexedDB.getImage(`${currentTab}:${name}`);
-      if (!blob) continue;
-      const container = createImageElement(name, blob);
-      list.appendChild(container);
-    }
-  }
-  updateSelectionControls();
-}
-
-// ================================
-// DRAG & DROP CONTAINER LISTENERS (corrigido: seleção limpa após drag)
-// ================================
-document.getElementById('image-list').addEventListener('dragover', function(e) {
+document.getElementById('image-list').addEventListener('dragover', function (e) {
   e.preventDefault();
   const dragging = document.querySelector('.dragging');
   if (!dragging) return;
@@ -416,7 +273,7 @@ document.getElementById('image-list').addEventListener('dragover', function(e) {
   this.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
   if (after) after.classList.add('drag-over');
 });
-document.getElementById('image-list').addEventListener('drop', function(e) {
+document.getElementById('image-list').addEventListener('drop', function (e) {
   e.preventDefault();
   const dragging = document.querySelector('.dragging');
   if (!dragging) return;
@@ -429,8 +286,7 @@ document.getElementById('image-list').addEventListener('drop', function(e) {
   dragging.classList.remove('dragging');
   this.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
   selectedImagesByTab.get(currentTab).clear();
-  window.isSelectionMode = false;
-  window.longPressUsed = false;
+  isSelectionMode = false;
   renderImages();
 });
 function getDragAfterElement(container, y) {
@@ -438,9 +294,9 @@ function getDragAfterElement(container, y) {
   return els.reduce((closest, child) => {
     const box = child.getBoundingClientRect();
     const offset = y - box.top - box.height / 2;
-    if (offset < 0 && offset > closest.offset) return {offset, element: child};
+    if (offset < 0 && offset > closest.offset) return { offset, element: child };
     else return closest;
-  }, {offset: -Infinity, element: null}).element;
+  }, { offset: -Infinity, element: null }).element;
 }
 function reorderImages(fromIndex, toIndex) {
   const arr = imageGalleryByTab.get(currentTab) || [];
@@ -448,38 +304,33 @@ function reorderImages(fromIndex, toIndex) {
   const [item] = arr.splice(fromIndex, 1);
   arr.splice(toIndex, 0, item);
   imageGalleryByTab.set(currentTab, arr);
-  if (onlineMode) saveOnlineState();
-  else saveLocalState();
+  saveLocalState();
 }
 
 // ================================
-// SELEÇÃO (corrigido: sempre renderImages após alteração de seleção)
+// SELEÇÃO (selecionar, limpar, todas)
 // ================================
-function toggleSelect(name, container) {
+function toggleSelect(name) {
   const set = selectedImagesByTab.get(currentTab);
   if (set.has(name)) set.delete(name);
   else set.add(name);
   renderImages();
-  if (onlineMode) saveOnlineState();
-  else saveLocalState();
-  showSelectedPopup(set.size);
+  saveLocalState();
 }
 function clearSelection() {
   selectedImagesByTab.get(currentTab).clear();
+  isSelectionMode = false;
   renderImages();
-  if (onlineMode) saveOnlineState();
-  else saveLocalState();
-  showSelectedPopup(0);
+  saveLocalState();
 }
 function selectAll() {
   const set = selectedImagesByTab.get(currentTab);
   const names = imageGalleryByTab.get(currentTab) || [];
   if (set.size === names.length) set.clear();
   else names.forEach(name => set.add(name));
+  isSelectionMode = set.size > 0;
   renderImages();
-  if (onlineMode) saveOnlineState();
-  else saveLocalState();
-  showSelectedPopup(set.size);
+  saveLocalState();
 }
 function deleteSelected() {
   const set = selectedImagesByTab.get(currentTab);
@@ -492,39 +343,36 @@ function deleteSelected() {
       imageGalleryByTab.set(currentTab, imageGalleryByTab.get(currentTab).filter(name => !set.has(name)));
       set.clear();
       renderImages();
-      if (onlineMode) saveOnlineState();
-      else saveLocalState();
+      saveLocalState();
       showStatus("Cifras excluídas!");
-      showSelectedPopup(0);
     })
     .finally(() => showLoading(false));
 }
 
 // ================================
-// CONTROLES DE SELEÇÃO DINÂMICOS (corrigido: checa existência de elementos)
+// CONTROLES DE SELEÇÃO DINÂMICOS
 // ================================
 function updateSelectionControls() {
   const set = selectedImagesByTab.get(currentTab);
   const total = (imageGalleryByTab.get(currentTab) || []).length;
-  const selectionControls = document.getElementById('selection-controls');
+  if (!document.getElementById('selection-controls')) return;
+  showSelectionControls(set.size > 0);
   const selectAllBtn = document.getElementById('select-all-btn');
-  if (selectionControls) selectionControls.style.display = set.size > 0 ? "flex" : "none";
   if (selectAllBtn) {
-    selectAllBtn.style.display = (total > 1) ? "inline-flex" : "none";
+    if (total > 1) selectAllBtn.style.display = "inline-flex";
+    else selectAllBtn.style.display = "none";
     const span = selectAllBtn.querySelector('span');
-    const icon = selectAllBtn.querySelector('i');
     if (span) span.textContent = set.size === total ? 'Desselecionar todas' : 'Selecionar todas';
-    if (icon) icon.className = set.size === total ? 'far fa-square' : 'fas fa-check-square';
   }
 }
 
 // ================================
-// IMPORTAÇÃO LOCAL (corrigido: salva chave composta)
+// IMPORTAÇÃO LOCAL
 // ================================
 document.getElementById('open-file-dialog').onclick = () => {
   document.getElementById('file-input').click();
 };
-document.getElementById('file-input').onchange = async function(e) {
+document.getElementById('file-input').onchange = async function (e) {
   showLoading(true);
   const files = Array.from(e.target.files);
   for (let file of files) {
@@ -541,14 +389,13 @@ document.getElementById('file-input').onchange = async function(e) {
     });
   }
   renderImages();
-  if (onlineMode) saveOnlineState();
-  else saveLocalState();
+  saveLocalState();
   showLoading(false);
   showStatus(`${files.length} cifra(s) adicionada(s)!`);
 };
 
 // ================================
-// IMPORTAÇÃO DO ONEDRIVE (INALTERADO)
+// IMPORTAÇÃO DO ONEDRIVE
 // ================================
 document.getElementById('open-cloud-folder').onclick = () => {
   window.open("https://1drv.ms/f/c/a71268bf66931c02/EpYyUsypAQhGgpWC9YuvE54BD_o9NX9tRar0piSzq4V4Xg", "_blank");
@@ -556,7 +403,7 @@ document.getElementById('open-cloud-folder').onclick = () => {
 };
 
 // ================================
-// FULLSCREEN (INALTERADO)
+// FULLSCREEN
 // ================================
 function openFullscreen(src, alt) {
   const overlay = document.createElement('div');
@@ -568,12 +415,8 @@ function openFullscreen(src, alt) {
   img.src = src;
   img.alt = alt;
   overlay.appendChild(img);
-  overlay.onclick = () => {
-    if (document.fullscreenElement) document.exitFullscreen();
-    overlay.remove();
-  };
+  overlay.onclick = () => overlay.remove();
   document.body.appendChild(overlay);
-  if (overlay.requestFullscreen) overlay.requestFullscreen();
 }
 
 // ================================
@@ -586,7 +429,10 @@ document.getElementById('delete-selected-btn').onclick = deleteSelected;
 // ================================
 // INICIALIZAÇÃO
 // ================================
-(async function() {
-  // O modo inicial é controlado pelo switch, que chama setOnlineMode()
-  // Nada aqui!
-})();
+document.addEventListener('DOMContentLoaded', async () => {
+  tabs.forEach(tab => {
+    if (!imageGalleryByTab.has(tab)) imageGalleryByTab.set(tab, []);
+    if (!selectedImagesByTab.has(tab)) selectedImagesByTab.set(tab, new Set());
+  });
+  await loadLocalState();
+});
