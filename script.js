@@ -21,7 +21,7 @@ const ONLINE_COLLECTION = "cifras-selecionadas"; // Nome da coleção no Firesto
 const ONLINE_DOC = "unico"; // Você pode mudar para por categoria, se quiser
 
 // ================================
-// IndexedDB helpers (inalterado)
+// IndexedDB helpers (corrigidos para chave composta)
 // ================================
 const DB_NAME = 'CifrasDB', DB_VERSION = 1, STORE_IMAGES = 'images', STORE_STATE = 'state';
 const IndexedDB = {
@@ -192,7 +192,7 @@ async function loadLocalState() {
 }
 
 // ================================
-// RESTAURAÇÃO DE ESTADO (COMUM)
+// RESTAURAÇÃO DE ESTADO (COMUM, corrigido: sempre garante todos tabs)
 // ================================
 function restoreAppState(state) {
   if (!state) {
@@ -200,11 +200,12 @@ function restoreAppState(state) {
       imageGalleryByTab.set(tab, []);
       selectedImagesByTab.set(tab, new Set());
     });
+    currentTab = tabs[0];
     return;
   }
   tabs.forEach(tab => {
-    imageGalleryByTab.set(tab, state.imagesObj[tab] || []);
-    selectedImagesByTab.set(tab, new Set(state.selectedObj[tab] || []));
+    imageGalleryByTab.set(tab, Array.isArray(state.imagesObj?.[tab]) ? state.imagesObj[tab] : []);
+    selectedImagesByTab.set(tab, new Set(Array.isArray(state.selectedObj?.[tab]) ? state.selectedObj[tab] : []));
   });
   currentTab = state.currentTab || tabs[0];
 }
@@ -231,7 +232,7 @@ function renderTabs() {
 }
 
 // ================================
-// IMAGENS E SELEÇÃO (INALTERADO, MAS SALVA NO MODO CORRETO!)
+// IMAGENS E SELEÇÃO (corrigido: chave composta em getImage/putImage/deleteImage)
 // ================================
 function createImageElement(imageName, imageBlob) {
   const container = document.createElement('div');
@@ -376,7 +377,7 @@ function createImageElement(imageName, imageBlob) {
 }
 
 // ================================
-// RENDERIZAÇÃO DAS IMAGENS (QUANDO SEM IMAGENS, TEXTO ALTERADO!)
+// RENDERIZAÇÃO DAS IMAGENS (corrigido: busca chave composta, always updateSelectionControls)
 // ================================
 async function renderImages() {
   const list = document.getElementById('image-list');
@@ -396,7 +397,7 @@ async function renderImages() {
 }
 
 // ================================
-// DRAG & DROP CONTAINER LISTENERS
+// DRAG & DROP CONTAINER LISTENERS (corrigido: seleção limpa após drag)
 // ================================
 document.getElementById('image-list').addEventListener('dragover', function(e) {
   e.preventDefault();
@@ -443,7 +444,7 @@ function reorderImages(fromIndex, toIndex) {
 }
 
 // ================================
-// SELEÇÃO
+// SELEÇÃO (corrigido: sempre renderImages após alteração de seleção)
 // ================================
 function toggleSelect(name, container) {
   const set = selectedImagesByTab.get(currentTab);
@@ -464,7 +465,8 @@ function clearSelection() {
 function selectAll() {
   const set = selectedImagesByTab.get(currentTab);
   const names = imageGalleryByTab.get(currentTab) || [];
-  names.forEach(name => set.add(name));
+  if (set.size === names.length) set.clear();
+  else names.forEach(name => set.add(name));
   renderImages();
   if (onlineMode) saveOnlineState();
   else saveLocalState();
@@ -490,19 +492,25 @@ function deleteSelected() {
 }
 
 // ================================
-// CONTROLES DE SELEÇÃO DINÂMICOS
+// CONTROLES DE SELEÇÃO DINÂMICOS (corrigido: checa existência de elementos)
 // ================================
 function updateSelectionControls() {
   const set = selectedImagesByTab.get(currentTab);
   const total = (imageGalleryByTab.get(currentTab) || []).length;
   const selectionControls = document.getElementById('selection-controls');
   const selectAllBtn = document.getElementById('select-all-btn');
-  selectionControls.style.display = set.size > 0 ? "flex" : "none";
-  selectAllBtn.style.display = (total > 1 && set.size < total) ? "inline-flex" : "none";
+  if (selectionControls) selectionControls.style.display = set.size > 0 ? "flex" : "none";
+  if (selectAllBtn) {
+    selectAllBtn.style.display = (total > 1) ? "inline-flex" : "none";
+    const span = selectAllBtn.querySelector('span');
+    const icon = selectAllBtn.querySelector('i');
+    if (span) span.textContent = set.size === total ? 'Desselecionar todas' : 'Selecionar todas';
+    if (icon) icon.className = set.size === total ? 'far fa-square' : 'fas fa-check-square';
+  }
 }
 
 // ================================
-// IMPORTAÇÃO LOCAL
+// IMPORTAÇÃO LOCAL (corrigido: salva chave composta)
 // ================================
 document.getElementById('open-file-dialog').onclick = () => {
   document.getElementById('file-input').click();
