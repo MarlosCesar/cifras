@@ -3,7 +3,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyA10_i84FS8v2MmayKmbplHQwjQGnWGczY",
   authDomain: "cifrassite.firebaseapp.com",
   projectId: "cifrassite",
-  storageBucket: "cifrassite.firebasestorage.app",
+  storageBucket: "https://cifrassite.appspot.com",
   messagingSenderId: "478416827358",
   appId: "1:478416827358:web:7944033bddd8e877dc634f"
 };
@@ -84,7 +84,7 @@ const Utils = {
     return url;
   },
   // Função para sanitizar nomes de abas para usar como chaves no Firebase
-  sanitizeTabNameForFirebase: (tabName) => tabName.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_]/g, "), // Remove espaços e caracteres inválidos
+  sanitizeTabNameForFirebase: (tabName) => tabName.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_]/g, ""), // Remove espaços e caracteres inválidos
 };
 
 // IndexedDB (Mantido para modo offline)
