@@ -1,76 +1,25 @@
-// Configuração do Firebase (fornecida pelo usuário)
-const firebaseConfig = {
-  apiKey: "AIzaSyA10_i84FS8v2MmayKmbplHQwjQGnWGczY",
-  authDomain: "cifrassite.firebaseapp.com",
-  projectId: "cifrassite",
-  storageBucket: "https://cifrassite.appspot.com",
-  messagingSenderId: "478416827358",
-  appId: "1:478416827358:web:7944033bddd8e877dc634f"
-};
-
-// Inicializa o Firebase
-let firebaseApp, database, storage;
-try {
-    firebaseApp = firebase.initializeApp(firebaseConfig);
-    database = firebase.database(); // Referência ao Realtime Database
-    storage = firebase.storage();   // Referência ao Cloud Storage
-    console.log("Firebase inicializado com sucesso.");
-} catch (error) {
-    console.error("Erro ao inicializar Firebase:", error);
-    // A aplicação continuará, mas o modo online não funcionará.
-}
-
 // Cache de elementos DOM
 const DOM = {
-  tabsContainer: document.getElementById("tabs-container"),
-  imageList: document.getElementById("image-list"),
-  fileInput: document.getElementById("file-input"),
-  openFileDialogButton: document.getElementById("open-file-dialog"),
-  deleteSelectedBtn: document.getElementById("delete-selected-btn"),
-  clearSelectionBtn: document.getElementById("clear-selection-btn"),
-  selectAllBtn: document.getElementById("select-all-btn"),
-  floatControls: document.getElementById("float-controls"),
-  syncBtn: document.getElementById("sync-btn"),
-  settingsBtn: document.getElementById("settings-btn"),
-  loadingSpinner: document.getElementById("loading-spinner"),
-  statusMessage: document.getElementById("status-message"),
+  tabsContainer: document.getElementById('tabs-container'),
+  imageList: document.getElementById('image-list'),
+  fileInput: document.getElementById('file-input'),
+  openFileDialogButton: document.getElementById('open-file-dialog'),
+  openCloudFolderButton: document.getElementById('open-cloud-folder'),
+  deleteSelectedBtn: document.getElementById('delete-selected-btn'),
+  clearSelectionBtn: document.getElementById('clear-selection-btn'),
+  selectAllBtn: document.getElementById('select-all-btn'),
+  floatControls: document.getElementById('float-controls'),
+  syncBtn: document.getElementById('sync-btn'),
+  settingsBtn: document.getElementById('settings-btn'),
+  loadingSpinner: document.getElementById('loading-spinner'),
+  statusMessage: document.getElementById('status-message'),
   body: document.body,
-  onlineModeSwitch: document.getElementById("online-mode-switch"),
-  onlineModeLabel: document.getElementById("online-mode-label")
 };
-
-// Switch Online/Off-line
-const onlineSwitch = document.getElementById('online-switch');
-const onlineStatusLabel = document.getElementById('online-status-label');
-
-function setOnlineMode(active) {
-  isOnlineMode = active;
-  if (isOnlineMode) {
-    onlineStatusLabel.textContent = "Online";
-    onlineStatusLabel.classList.remove("text-gray-700");
-    onlineStatusLabel.classList.add("text-blue-600");
-    // Carrega estado online (Firebase)
-    StateManager.toggleOnlineMode();
-  } else {
-    onlineStatusLabel.textContent = "Off-line";
-    onlineStatusLabel.classList.remove("text-blue-600");
-    onlineStatusLabel.classList.add("text-gray-700");
-    // Carrega estado local (IndexedDB)
-    StateManager.toggleOnlineMode();
-  }
-}
-
-// Inicialização do Switch (define a posição inicial, se necessário)
-onlineSwitch.checked = isOnlineMode;
-setOnlineMode(isOnlineMode);
-
-onlineSwitch.addEventListener('change', function() {
-  setOnlineMode(this.checked);
-});
 
 const tabs = [
   "Domingo Manhã", "Domingo Noite", "Segunda", "Quarta", "Culto Jovem", "Santa Ceia", "Outros"
 ];
+const ONE_DRIVE_FOLDER_URL = "https://1drv.ms/f/c/a71268bf66931c02/EpYyUsypAQhGgpWC9YuvE54BD_o9NX9tRar0piSzq4V4Xg";
 
 // Estado
 let imageGalleryByTab = new Map();
@@ -78,7 +27,6 @@ let selectedImagesByTab = new Map();
 let currentTab = tabs[0];
 let isSelectionMode = false;
 let dragStartIndex = null;
-let isOnlineMode = false; // Começa offline por padrão
 
 tabs.forEach(tab => {
   imageGalleryByTab.set(tab, []);
@@ -88,10 +36,9 @@ tabs.forEach(tab => {
 const Utils = {
   removeFileExtension: filename => filename.replace(/\.[^/.]+$/, ""),
   showStatus: message => {
-    if (!DOM.statusMessage) return;
     DOM.statusMessage.textContent = message;
-    DOM.statusMessage.classList.add("show");
-    setTimeout(() => DOM.statusMessage.classList.remove("show"), 3000);
+    DOM.statusMessage.classList.add('show');
+    setTimeout(() => DOM.statusMessage.classList.remove('show'), 3000);
   },
   debounce: (func, timeout = 100) => {
     let timer;
@@ -102,7 +49,7 @@ const Utils = {
   },
   objectURLCache: new Map(),
   revokeObjectURL: (url) => {
-    if (url && url.startsWith("blob:") && Utils.objectURLCache.has(url)) {
+    if (Utils.objectURLCache.has(url)) {
       URL.revokeObjectURL(url);
       Utils.objectURLCache.delete(url);
     }
@@ -111,16 +58,14 @@ const Utils = {
     const url = URL.createObjectURL(blob);
     Utils.objectURLCache.set(url, true);
     return url;
-  },
-  // Função para sanitizar nomes de abas para usar como chaves no Firebase
-  sanitizeTabNameForFirebase: (tabName) => tabName.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_]/g, ""), // Remove espaços e caracteres inválidos
+  }
 };
 
-// IndexedDB (Mantido para modo offline)
-const DB_NAME = "ImageSelectorDB";
+// IndexedDB
+const DB_NAME = 'ImageSelectorDB';
 const DB_VERSION = 2;
-const STORE_IMAGES = "images";
-const STORE_METADATA = "metadata";
+const STORE_IMAGES = 'images';
+const STORE_METADATA = 'metadata';
 
 const IndexedDBManager = {
   db: null,
@@ -130,40 +75,30 @@ const IndexedDBManager = {
       resolve(IndexedDBManager.db);
       return;
     }
-    // Verifica se indexedDB é suportado
-    if (!window.indexedDB) {
-        console.warn("IndexedDB não é suportado neste navegador.");
-        return reject("IndexedDB not supported");
-    }
-    try {
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
-        request.onupgradeneeded = (event) => {
-          const db = event.target.result;
-          if (!db.objectStoreNames.contains(STORE_IMAGES)) {
-            db.createObjectStore(STORE_IMAGES, { keyPath: "name" });
-          }
-          if (!db.objectStoreNames.contains(STORE_METADATA)) {
-            db.createObjectStore(STORE_METADATA, { keyPath: "id" });
-          }
-        };
-        request.onsuccess = (event) => {
-          IndexedDBManager.db = event.target.result;
-          resolve(IndexedDBManager.db);
-        };
-        request.onerror = (event) => {
-          console.error("IndexedDB error:", event.target.error);
-          reject(event.target.error);
-        };
-    } catch (error) {
-        console.error("Falha ao iniciar IndexedDB:", error);
-        reject(error);
-    }
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(STORE_IMAGES)) {
+        db.createObjectStore(STORE_IMAGES, { keyPath: 'name' });
+      }
+      if (!db.objectStoreNames.contains(STORE_METADATA)) {
+        db.createObjectStore(STORE_METADATA, { keyPath: 'id' });
+      }
+    };
+    request.onsuccess = (event) => {
+      IndexedDBManager.db = event.target.result;
+      resolve(IndexedDBManager.db);
+    };
+    request.onerror = (event) => {
+      console.error('IndexedDB error:', event.target.errorCode);
+      reject(event.target.errorCode);
+    };
   }),
 
   addImageBlob: (imageName, blob) => new Promise(async (resolve, reject) => {
     try {
       const db = await IndexedDBManager.open();
-      const transaction = db.transaction([STORE_IMAGES], "readwrite");
+      const transaction = db.transaction([STORE_IMAGES], 'readwrite');
       const store = transaction.objectStore(STORE_IMAGES);
       const request = store.put({ name: imageName, blob: blob });
       request.onsuccess = () => resolve();
@@ -176,7 +111,7 @@ const IndexedDBManager = {
   getImageBlob: (imageName) => new Promise(async (resolve, reject) => {
     try {
       const db = await IndexedDBManager.open();
-      const transaction = db.transaction([STORE_IMAGES], "readonly");
+      const transaction = db.transaction([STORE_IMAGES], 'readonly');
       const store = transaction.objectStore(STORE_IMAGES);
       const request = store.get(imageName);
       request.onsuccess = (event) => resolve(event.target.result ? event.target.result.blob : null);
@@ -189,7 +124,7 @@ const IndexedDBManager = {
   deleteImageBlob: (imageName) => new Promise(async (resolve, reject) => {
     try {
       const db = await IndexedDBManager.open();
-      const transaction = db.transaction([STORE_IMAGES], "readwrite");
+      const transaction = db.transaction([STORE_IMAGES], 'readwrite');
       const store = transaction.objectStore(STORE_IMAGES);
       const request = store.delete(imageName);
       request.onsuccess = () => resolve();
@@ -200,21 +135,11 @@ const IndexedDBManager = {
   }),
 
   saveMetadata: (state) => new Promise(async (resolve, reject) => {
-    if (isOnlineMode) {
-        resolve();
-        return;
-    }
     try {
       const db = await IndexedDBManager.open();
-      const transaction = db.transaction([STORE_METADATA], "readwrite");
+      const transaction = db.transaction([STORE_METADATA], 'readwrite');
       const store = transaction.objectStore(STORE_METADATA);
-      // Salva apenas a ordem das imagens e a aba atual no IDB
-      const offlineState = {
-          images: Object.fromEntries(Array.from(state.images.entries())),
-          currentTab: state.currentTab
-          // Não salva seleção no IDB, é transitório
-      };
-      const request = store.put({ id: "appState", state: offlineState });
+      const request = store.put({ id: 'appState', state: state });
       request.onsuccess = () => resolve();
       request.onerror = (event) => reject(event.target.error);
     } catch (e) {
@@ -223,15 +148,11 @@ const IndexedDBManager = {
   }),
 
   loadMetadata: () => new Promise(async (resolve, reject) => {
-    if (isOnlineMode) {
-        resolve(null);
-        return;
-    }
     try {
       const db = await IndexedDBManager.open();
-      const transaction = db.transaction([STORE_METADATA], "readonly");
+      const transaction = db.transaction([STORE_METADATA], 'readonly');
       const store = transaction.objectStore(STORE_METADATA);
-      const request = store.get("appState");
+      const request = store.get('appState');
       request.onsuccess = (event) => resolve(event.target.result ? event.target.result.state : null);
       request.onerror = (event) => reject(event.target.error);
     } catch (e) {
@@ -240,124 +161,14 @@ const IndexedDBManager = {
   })
 };
 
-// Firebase Manager (Refinado)
-const FirebaseManager = {
-    // Verifica se o Firebase está disponível
-    isAvailable: () => typeof firebase !== "undefined" && database && storage,
-
-    // Obtém a lista de nomes de imagens de uma aba, ordenados
-    getImageNames: (tab) => new Promise((resolve, reject) => {
-        if (!FirebaseManager.isAvailable()) return reject("Firebase not initialized");
-        const safeTabName = Utils.sanitizeTabNameForFirebase(tab);
-        const dbRef = database.ref(`tabs/${safeTabName}/images`);
-        dbRef.orderByChild("order").once("value") // Ordena pelo campo 'order'
-            .then(snapshot => {
-                const imagesData = snapshot.val();
-                if (imagesData) {
-                    // snapshot.forEach preserva a ordem do orderByChild
-                    const orderedNames = [];
-                    snapshot.forEach(childSnapshot => {
-                        orderedNames.push(childSnapshot.key); // A chave é o nome da imagem
-                    });
-                    resolve(orderedNames);
-                } else {
-                    resolve([]);
-                }
-            })
-            .catch(error => {
-                console.error(`Firebase: Erro ao buscar nomes de imagens para ${tab}:`, error);
-                reject(error);
-            });
-    }),
-
-    // Obtém a URL de download de uma imagem
-    getImageUrl: (imageName) => {
-        if (!FirebaseManager.isAvailable()) return Promise.reject("Firebase not initialized");
-        const storageRef = storage.ref(`images/${imageName}`);
-        return storageRef.getDownloadURL();
-    },
-
-    // Salva a ordem de todas as imagens em uma aba
-    saveImageOrder: (tab, imageNames) => {
-        if (!FirebaseManager.isAvailable()) return Promise.reject("Firebase not initialized");
-        const safeTabName = Utils.sanitizeTabNameForFirebase(tab);
-        const updates = {};
-        imageNames.forEach((name, index) => {
-            // Codifica o nome da imagem para ser seguro como chave no Firebase
-            const safeImageName = encodeURIComponent(name).replace(/\./g, "%2E");
-            updates[`tabs/${safeTabName}/images/${safeImageName}/order`] = index;
-        });
-        // Se não houver imagens, garante que o nó da aba exista mas esteja vazio
-        if (imageNames.length === 0) {
-             updates[`tabs/${safeTabName}/images`] = null; // Remove o nó de imagens
-        }
-        return database.ref().update(updates);
-    },
-
-    // Faz upload do blob da imagem
-    uploadImageBlob: (imageName, blob) => {
-        if (!FirebaseManager.isAvailable()) return Promise.reject("Firebase not initialized");
-        // Codifica o nome do arquivo para o Storage
-        const safeImageName = encodeURIComponent(imageName).replace(/\./g, "%2E");
-        const storageRef = storage.ref(`images/${safeImageName}`);
-        return storageRef.put(blob); // Retorna UploadTask
-    },
-
-    // Exclui imagem (metadados e blob)
-    deleteImage: (tab, imageName) => {
-        if (!FirebaseManager.isAvailable()) return Promise.reject("Firebase not initialized");
-        const safeTabName = Utils.sanitizeTabNameForFirebase(tab);
-        const safeImageName = encodeURIComponent(imageName).replace(/\./g, "%2E");
-        const dbRef = database.ref(`tabs/${safeTabName}/images/${safeImageName}`);
-        const storageRef = storage.ref(`images/${safeImageName}`);
-
-        // Exclui metadados e depois o arquivo no storage
-        return dbRef.remove()
-            .then(() => storageRef.delete())
-            .catch(error => {
-                if (error.code === "storage/object-not-found") {
-                    console.warn(`Firebase Storage: Objeto ${imageName} não encontrado para exclusão (pode já ter sido removido).`);
-                    return; // Considera sucesso se o objeto já não existe
-                }
-                console.error(`Firebase: Erro ao excluir ${imageName}:`, error);
-                throw error;
-            });
-    },
-
-    // Salva estado geral (aba, modo)
-    saveGeneralState: (state) => {
-        try {
-            localStorage.setItem("appGeneralState", JSON.stringify({
-                currentTab: state.currentTab,
-                isOnlineMode: state.isOnlineMode
-            }));
-        } catch (e) {
-            console.warn("Não foi possível salvar o estado geral no localStorage:", e);
-        }
-    },
-
-    // Carrega estado geral
-    loadGeneralState: () => {
-        try {
-            const savedState = localStorage.getItem("appGeneralState");
-            return savedState ? JSON.parse(savedState) : null;
-        } catch (e) {
-            console.warn("Não foi possível carregar o estado geral do localStorage:", e);
-            return null;
-        }
-    }
-};
-
-
-// ImageProcessor (Mantido como está)
 const ImageProcessor = {
   processImageFile: file => new Promise((resolve, reject) => {
     const img = new Image();
     const url = Utils.createObjectURL(file);
 
     img.onload = () => {
-      const canvas = document.createElement("canvas");
-      const MAX_SIZE = 800; // Reduzir um pouco para economizar armazenamento/banda
+      const canvas = document.createElement('canvas');
+      const MAX_SIZE = 800;
       let width = img.width;
       let height = img.height;
 
@@ -375,7 +186,7 @@ const ImageProcessor = {
 
       canvas.width = width;
       canvas.height = height;
-      const ctx = canvas.getContext("2d");
+      const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
 
       canvas.toBlob(blob => {
@@ -383,107 +194,54 @@ const ImageProcessor = {
         if (blob) {
           resolve({ name: file.name, blob: blob });
         } else {
-          reject(new Error("Falha ao criar Blob da imagem."));
+          reject(new Error('Falha ao criar Blob da imagem.'));
         }
-      }, "image/webp", 0.70); // Qualidade ligeiramente menor para WebP
+      }, 'image/webp', 0.75);
     };
 
-    img.onerror = (err) => {
+    img.onerror = () => {
       Utils.revokeObjectURL(url);
-      console.error("Erro ao carregar imagem para processamento:", err);
-      reject(new Error("Erro ao carregar a imagem para processamento."));
+      reject(new Error('Erro ao carregar a imagem para processamento.'));
     };
 
     img.src = url;
   })
 };
 
-// StateManager (Refinado)
 const StateManager = {
-  // Salva o estado atual (ordem das imagens e estado geral)
   saveState: Utils.debounce(async () => {
     const state = {
-      images: imageGalleryByTab, // Passa o Map diretamente
+      images: Object.fromEntries(Array.from(imageGalleryByTab.entries()).map(([tab, names]) => [tab, Array.from(names)])),
+      selected: Object.fromEntries(Array.from(selectedImagesByTab.entries()).map(([tab, set]) => [tab, Array.from(set)])),
       currentTab,
-      isOnlineMode
     };
     try {
-      if (isOnlineMode && FirebaseManager.isAvailable()) {
-        // Salva a ordem das imagens da aba atual no Firebase DB
-        const currentImages = imageGalleryByTab.get(currentTab) || [];
-        await FirebaseManager.saveImageOrder(currentTab, currentImages);
-        // Salva estado geral (aba, modo) no localStorage
-        FirebaseManager.saveGeneralState(state);
-      } else if (!isOnlineMode) {
-        // Salva metadados (ordem das imagens por aba, aba atual) no IndexedDB
-        await IndexedDBManager.saveMetadata(state);
-        // Salva estado geral (para lembrar o modo offline)
-        FirebaseManager.saveGeneralState(state);
-      }
+      await IndexedDBManager.saveMetadata(state);
     } catch (e) {
-      console.error("Erro ao salvar estado:", e);
-      Utils.showStatus("Erro ao salvar dados.");
+      console.error('Erro ao salvar estado no IndexedDB:', e);
+      Utils.showStatus('Erro ao salvar dados.');
     }
   }, 500),
 
-  // Carrega o estado inicial da aplicação
   loadState: async () => {
     try {
-      // Carrega estado geral (modo online, aba) do localStorage
-      const generalState = FirebaseManager.loadGeneralState();
-      if (generalState) {
-          // Só entra online se Firebase estiver disponível
-          isOnlineMode = generalState.isOnlineMode && FirebaseManager.isAvailable();
-          currentTab = generalState.currentTab && tabs.includes(generalState.currentTab) ? generalState.currentTab : tabs[0];
-      } else {
-          isOnlineMode = false; // Começa offline se não houver estado salvo
-          currentTab = tabs[0];
-      }
-      UI.updateOnlineModeSwitch();
-
-      StateManager.initEmptyState(); // Limpa dados locais antes de carregar
-
-      if (isOnlineMode) {
-        UI.showLoading();
-        console.log("Carregando metadados do Firebase para todas as abas...");
-        const promises = tabs.map(async (tab) => {
-            try {
-                const names = await FirebaseManager.getImageNames(tab);
-                imageGalleryByTab.set(tab, names);
-            } catch (error) {
-                console.error(`Erro ao carregar dados da aba ${tab} do Firebase:`, error);
-                imageGalleryByTab.set(tab, []); // Define como vazio em caso de erro
-                // Poderia tentar carregar do IDB como fallback?
-            }
-        });
-        await Promise.all(promises);
-        console.log("Metadados do Firebase carregados.");
-        UI.hideLoading();
-      } else {
-        // Carrega metadados do IndexedDB
-        const state = await IndexedDBManager.loadMetadata();
-        if (state && state.images) {
-          imageGalleryByTab = new Map(Object.entries(state.images));
-          // Garante que todas as abas definidas existam no map
-          tabs.forEach(tab => {
-              if (!imageGalleryByTab.has(tab)) imageGalleryByTab.set(tab, []);
-          });
-          currentTab = state.currentTab && tabs.includes(state.currentTab) ? state.currentTab : tabs[0];
-        } else {
-          StateManager.initEmptyState(); // Se não há nada no IDB
+      const state = await IndexedDBManager.loadMetadata();
+      if (state) {
+        imageGalleryByTab = new Map(Object.entries(state.images || {}));
+        selectedImagesByTab = new Map();
+        for (const tab of tabs) {
+          selectedImagesByTab.set(tab, new Set(state.selected?.[tab] || []));
         }
+        currentTab = state.currentTab || tabs[0];
+      } else {
+        StateManager.initEmptyState();
       }
     } catch (e) {
-      console.error("Erro crítico ao carregar estado:", e);
-      Utils.showStatus("Erro ao carregar dados. Iniciando offline.");
+      console.error('Erro ao carregar estado do IndexedDB:', e);
       StateManager.initEmptyState();
-      isOnlineMode = false;
-      currentTab = tabs[0];
-      UI.updateOnlineModeSwitch();
     }
   },
 
-  // Limpa os dados em memória
   initEmptyState: () => {
     imageGalleryByTab = new Map();
     selectedImagesByTab = new Map();
@@ -491,362 +249,220 @@ const StateManager = {
       imageGalleryByTab.set(tab, []);
       selectedImagesByTab.set(tab, new Set());
     });
-  },
-
-  // Alterna entre modo online e offline
-  toggleOnlineMode: async () => {
-      const previousMode = isOnlineMode;
-      const newMode = !isOnlineMode;
-
-      // Não permite ir online se o Firebase não estiver disponível
-      if (newMode && !FirebaseManager.isAvailable()) {
-          Utils.showStatus("Erro: Não foi possível conectar ao serviço online.");
-          UI.updateOnlineModeSwitch(); // Reverte o switch visualmente
-          return;
-      }
-
-      isOnlineMode = newMode;
-      FirebaseManager.saveGeneralState({ currentTab, isOnlineMode });
-      UI.updateOnlineModeSwitch();
-      Utils.showStatus(`Mudando para modo ${isOnlineMode ? "Online" : "Offline"}...`);
-      UI.showLoading();
-
-      try {
-          // Limpa estado e seleção atuais
-          StateManager.initEmptyState();
-          if (isSelectionMode) ImageManager.exitSelectionModeInstantly();
-
-          // Recarrega o estado da nova fonte
-          await StateManager.loadState(); // loadState agora lida com ambos os modos
-
-          // Renderiza as imagens da nova fonte
-          await UI.renderImages();
-          Utils.showStatus(`Modo ${isOnlineMode ? "Online" : "Offline"} ativado.`);
-      } catch (error) {
-          console.error("Erro ao alternar modo:", error);
-          Utils.showStatus("Erro ao mudar de modo. Revertendo.");
-          // Reverte em caso de erro
-          isOnlineMode = previousMode;
-          FirebaseManager.saveGeneralState({ currentTab, isOnlineMode });
-          UI.updateOnlineModeSwitch();
-          // Tenta recarregar o estado anterior
-          await StateManager.loadState();
-          await UI.renderImages();
-      } finally {
-          UI.hideLoading();
-      }
   }
 };
 
-// UI (Refinado)
 const UI = {
-  showLoading: () => DOM.loadingSpinner?.classList.add("active"),
-  hideLoading: () => DOM.loadingSpinner?.classList.remove("active"),
+  showLoading: () => DOM.loadingSpinner.classList.add('active'),
+  hideLoading: () => DOM.loadingSpinner.classList.remove('active'),
 
   createTabs: () => {
-    if (!DOM.tabsContainer) return;
-    DOM.tabsContainer.innerHTML = "";
+    DOM.tabsContainer.innerHTML = '';
     const fragment = document.createDocumentFragment();
+
     tabs.forEach((tab, index) => {
-      const tabBtn = document.createElement("button");
-      tabBtn.className = "tab";
-      tabBtn.setAttribute("role", "tab");
-      tabBtn.setAttribute("tabindex", index === 0 ? "0" : "-1");
-      tabBtn.setAttribute("aria-selected", "false");
-      tabBtn.id = `tab-${Utils.sanitizeTabNameForFirebase(tab)}`; // Usa nome sanitizado para ID
+      const tabBtn = document.createElement('button');
+      tabBtn.className = 'tab';
+      tabBtn.setAttribute('role', 'tab');
+      tabBtn.setAttribute('tabindex', index === 0 ? '0' : '-1');
+      tabBtn.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
+      tabBtn.id = `tab-${tab.replace(/\s+/g, '-').toLowerCase()}`;
       tabBtn.textContent = tab;
-      tabBtn.addEventListener("click", () => TabManager.switchTab(tab));
-      tabBtn.addEventListener("keydown", (e) => {
+
+      tabBtn.addEventListener('click', () => TabManager.switchTab(tab));
+      tabBtn.addEventListener('keydown', (e) => {
         const currentActiveIndex = tabs.indexOf(currentTab);
         let nextIndex = currentActiveIndex;
-        if (e.key === "ArrowRight") nextIndex = (currentActiveIndex + 1) % tabs.length;
-        else if (e.key === "ArrowLeft") nextIndex = (currentActiveIndex - 1 + tabs.length) % tabs.length;
-        else if (e.key === "Home") nextIndex = 0;
-        else if (e.key === "End") nextIndex = tabs.length - 1;
+
+        if (e.key === 'ArrowRight') nextIndex = (currentActiveIndex + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') nextIndex = (currentActiveIndex - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') nextIndex = 0;
+        else if (e.key === 'End') nextIndex = tabs.length - 1;
+
         if (nextIndex !== currentActiveIndex) {
           e.preventDefault();
           TabManager.switchTab(tabs[nextIndex]);
-          DOM.tabsContainer.querySelector(`#tab-${Utils.sanitizeTabNameForFirebase(tabs[nextIndex])}`)?.focus();
-        } else if (e.key === "Enter" || e.key === " ") {
+          DOM.tabsContainer.querySelector(`#tab-${tabs[nextIndex].replace(/\s+/g, '-').toLowerCase()}`).focus();
+        } else if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           TabManager.switchTab(tab);
         }
       });
+
       fragment.appendChild(tabBtn);
     });
+
     DOM.tabsContainer.appendChild(fragment);
   },
 
   updateTabsUI: () => {
-    if (!DOM.tabsContainer) return;
-    const buttons = DOM.tabsContainer.querySelectorAll(".tab");
+    const buttons = DOM.tabsContainer.querySelectorAll('.tab');
     buttons.forEach(btn => {
       const isActive = btn.textContent === currentTab;
-      btn.classList.toggle("active", isActive);
-      btn.setAttribute("aria-selected", isActive);
-      btn.setAttribute("tabindex", isActive ? "0" : "-1");
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-selected', isActive);
+      btn.setAttribute('tabindex', isActive ? '0' : '-1');
     });
   },
 
-  //updateOnlineModeSwitch: () => {
-    //  if (DOM.onlineModeSwitch) {
-    //      DOM.onlineModeSwitch.checked = isOnlineMode;
-          // Desabilita o switch se o Firebase não estiver disponível
-   //       DOM.onlineModeSwitch.disabled = !FirebaseManager.isAvailable();
-  //    }
-  //    if (DOM.onlineModeLabel) {
-  //        DOM.onlineModeLabel.textContent = isOnlineMode ? "On-line" : "Off-line";
-    //      if (!FirebaseManager.isAvailable()) {
-    //          DOM.onlineModeLabel.textContent += " (Indisponível)";
-     //     }
-   //   }
-  //    DOM.body.classList.toggle("online-mode-active", isOnlineMode);
- //     DOM.imageList?.classList.toggle("no-drag", isOnlineMode);
-//  },
-
   renderImages: async () => {
-    if (!DOM.imageList) return;
-    // Limpa Object URLs antigos
-    DOM.imageList.querySelectorAll("img[data-object-url]").forEach(img => {
+    DOM.imageList.querySelectorAll('img[data-object-url]').forEach(img => {
       Utils.revokeObjectURL(img.dataset.objectUrl);
     });
-    DOM.imageList.innerHTML = "";
-    UI.showLoading();
 
     const imageNames = imageGalleryByTab.get(currentTab) || [];
     const fragment = document.createDocumentFragment();
 
     if (imageNames.length === 0) {
-      const p = document.createElement("p");
-      p.className = "text-center text-gray-500 py-8";
-      p.textContent = `Nenhuma cifra encontrada em ${currentTab} (${isOnlineMode ? "Online" : "Offline"}).`;
+      const p = document.createElement('p');
+      p.className = 'text-center text-gray-500 py-8';
+      p.textContent = 'Nenhuma imagem encontrada nesta categoria.';
       fragment.appendChild(p);
-      DOM.imageList.appendChild(fragment);
     } else {
-      // Cria todos os containers primeiro
-      imageNames.forEach(name => {
-          const container = UI.createImageContainer(name);
-          fragment.appendChild(container);
+      const imagesToRender = [];
+      for (const imageName of imageNames) {
+        const blob = await IndexedDBManager.getImageBlob(imageName);
+        if (blob) {
+          imagesToRender.push({ name: imageName, blob: blob });
+        } else {
+          imageGalleryByTab.set(currentTab, imageNames.filter(name => name !== imageName));
+          selectedImagesByTab.get(currentTab).delete(imageName);
+        }
+      }
+      imagesToRender.forEach(({ name, blob }) => {
+        const container = UI.createImageElement(name, blob);
+        fragment.appendChild(container);
       });
-      DOM.imageList.appendChild(fragment);
-
-      // Carrega as imagens de forma assíncrona
-      const containers = Array.from(DOM.imageList.querySelectorAll(".image-container"));
-      const loadPromises = containers.map(async (container) => {
-          const imageName = container.dataset.name;
-          const imgElement = container.querySelector("img");
-          const loadingIndicator = container.querySelector(".img-loading-indicator");
-          try {
-              let data = null;
-              if (isOnlineMode) {
-                  data = await FirebaseManager.getImageUrl(imageName);
-              } else {
-                  data = await IndexedDBManager.getImageBlob(imageName);
-              }
-
-              if (data) {
-                  UI.updateImageElement(imgElement, data);
-              } else {
-                  throw new Error("Dado não encontrado");
-              }
-          } catch (error) {
-              console.error(`Erro ao carregar ${imageName}:`, error);
-              container.classList.add("load-error");
-              if(imgElement) imgElement.alt = `${Utils.removeFileExtension(imageName)} (Erro)`;
-          } finally {
-              if(loadingIndicator) loadingIndicator.style.display = "none";
-          }
-      });
-      await Promise.allSettled(loadPromises); // Espera todas carregarem ou falharem
     }
-
+    DOM.imageList.innerHTML = '';
+    DOM.imageList.appendChild(fragment);
     UI.updateSelectionUI();
-    UI.hideLoading();
   },
 
-  createImageContainer: (imageName) => {
-    const container = document.createElement("div");
-    container.className = "image-container";
-    container.setAttribute("draggable", !isOnlineMode);
-    container.setAttribute("tabindex", "0");
-    container.setAttribute("role", "checkbox");
+  createImageElement: (imageName, imageBlob) => {
+    const container = document.createElement('div');
+    container.className = 'image-container';
+    container.setAttribute('draggable', 'true');
+    container.setAttribute('tabindex', '0');
+    container.setAttribute('role', 'checkbox');
+    container.setAttribute('aria-checked', selectedImagesByTab.get(currentTab).has(imageName));
     container.dataset.name = imageName;
 
-    const selectedSet = selectedImagesByTab.get(currentTab) || new Set();
-    const isSelected = selectedSet.has(imageName);
-    container.classList.toggle("selected", isSelected);
-    container.setAttribute("aria-checked", isSelected);
+    if (selectedImagesByTab.get(currentTab).has(imageName)) {
+      container.classList.add('selected');
+    }
 
-    const checkbox = document.createElement("div");
-    checkbox.className = "image-checkbox";
-    checkbox.classList.toggle("checked", isSelected);
-    checkbox.addEventListener("click", (e) => {
+    const checkbox = document.createElement('div');
+    checkbox.className = 'image-checkbox';
+    if (selectedImagesByTab.get(currentTab).has(imageName)) {
+      checkbox.classList.add('checked');
+    }
+    checkbox.addEventListener('click', (e) => {
       e.stopPropagation();
       ImageManager.toggleSelectImage(imageName, container);
     });
 
-    const img = document.createElement("img");
+    const img = document.createElement('img');
+    const objectURL = Utils.createObjectURL(imageBlob);
+    img.src = objectURL;
+    img.dataset.objectUrl = objectURL;
     img.alt = Utils.removeFileExtension(imageName);
-    img.loading = "lazy";
 
-    const loadingIndicator = document.createElement("div");
-    loadingIndicator.className = "img-loading-indicator";
-    // Pode adicionar um spinner SVG ou CSS aqui
-    loadingIndicator.innerHTML = 
-        `<svg viewBox="0 0 50 50" class="spinner"><circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle></svg>`;
-
-    const nameSpan = document.createElement("span");
-    nameSpan.className = "image-name";
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'image-name';
     nameSpan.textContent = Utils.removeFileExtension(imageName);
 
     container.appendChild(checkbox);
-    container.appendChild(loadingIndicator);
     container.appendChild(img);
     container.appendChild(nameSpan);
 
-    UI.addImageEventListeners(container, imageName, img);
+    // Duplo clique/Double tap para abrir fullscreen
+    container.addEventListener('dblclick', () => {
+      if (!isSelectionMode) {
+        const objectURL = Utils.createObjectURL(imageBlob);
+        UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
+      }
+    });
+
+    let lastTapTime = 0;
+    let tapTimeout = null;
+    container.addEventListener('touchend', (e) => {
+      if (e.touches && e.touches.length > 1) return; // ignore multi-touch
+      const currentTime = new Date().getTime();
+      if (currentTime - lastTapTime < 400) {
+        clearTimeout(tapTimeout);
+        if (!isSelectionMode) {
+          const objectURL = Utils.createObjectURL(imageBlob);
+          UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
+        }
+      }
+      lastTapTime = currentTime;
+      tapTimeout = setTimeout(() => { lastTapTime = 0; }, 450);
+    });
+
+    // Seleção e drag and drop
+    let pressTimer;
+    let isLongPress = false;
+    container.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      pressTimer = setTimeout(() => {
+        isLongPress = true;
+        if (!isSelectionMode) {
+          ImageManager.enterSelectionMode();
+        }
+        ImageManager.toggleSelectImage(imageName, container);
+      }, 500);
+    });
+    container.addEventListener('mousemove', () => { clearTimeout(pressTimer); });
+    container.addEventListener('mouseup', () => { clearTimeout(pressTimer); isLongPress = false; });
+    container.addEventListener('mouseleave', () => { clearTimeout(pressTimer); isLongPress = false; });
+
+    container.addEventListener('dragstart', (e) => {
+      if (!isSelectionMode) {
+        ImageManager.enterSelectionMode();
+        ImageManager.toggleSelectImage(imageName, container);
+      }
+      container.classList.add('dragging');
+      dragStartIndex = Array.from(DOM.imageList.children).indexOf(container);
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', imageName);
+    });
+
     return container;
   },
 
-  updateImageElement: (imgElement, blobOrUrl) => {
-      let displayUrl;
-      if (typeof blobOrUrl === "string") {
-          displayUrl = blobOrUrl;
-          imgElement.crossOrigin = "anonymous";
-      } else {
-          displayUrl = Utils.createObjectURL(blobOrUrl);
-          imgElement.dataset.objectUrl = displayUrl;
-      }
-      imgElement.src = displayUrl;
-      imgElement.onload = () => { // Garante que a imagem foi carregada antes de interagir
-          imgElement.style.opacity = 1; // Mostra a imagem suavemente
-      };
-      imgElement.onerror = () => {
-          imgElement.alt += " (Erro ao exibir)";
-          imgElement.parentElement?.classList.add("load-error");
-      };
-  },
-
-  addImageEventListeners: (container, imageName, imgElement) => {
-      container.addEventListener("dblclick", () => {
-        if (!isSelectionMode && imgElement.src && !imgElement.parentElement?.classList.contains("load-error")) {
-          UI.openFullscreen(imgElement.src, Utils.removeFileExtension(imageName));
-        }
-      });
-
-      let lastTapTime = 0;
-      let tapTimeout = null;
-      container.addEventListener("touchend", (e) => {
-        if (e.touches && e.touches.length > 1) return;
-        const currentTime = new Date().getTime();
-        if (currentTime - lastTapTime < 400) {
-          clearTimeout(tapTimeout);
-          if (!isSelectionMode && imgElement.src && !imgElement.parentElement?.classList.contains("load-error")) {
-            UI.openFullscreen(imgElement.src, Utils.removeFileExtension(imageName));
-          }
-        }
-        lastTapTime = currentTime;
-        tapTimeout = setTimeout(() => { lastTapTime = 0; }, 450);
-      });
-
-      if (!isOnlineMode) {
-          let pressTimer;
-          container.addEventListener("mousedown", (e) => {
-            if (e.button !== 0) return;
-            pressTimer = setTimeout(() => {
-              if (!isSelectionMode) ImageManager.enterSelectionMode();
-              ImageManager.toggleSelectImage(imageName, container);
-            }, 500);
-          });
-          container.addEventListener("mousemove", () => clearTimeout(pressTimer));
-          container.addEventListener("mouseup", () => clearTimeout(pressTimer));
-          container.addEventListener("mouseleave", () => clearTimeout(pressTimer));
-
-          container.addEventListener("dragstart", (e) => {
-            if (!isSelectionMode) {
-              ImageManager.enterSelectionMode();
-              ImageManager.toggleSelectImage(imageName, container);
-            }
-            container.classList.add("dragging");
-            dragStartIndex = Array.from(DOM.imageList.children).indexOf(container);
-            try {
-                e.dataTransfer.effectAllowed = "move";
-                e.dataTransfer.setData("text/plain", imageName);
-            } catch (err) {
-                console.error("Erro ao iniciar drag:", err);
-            }
-          });
-      } else {
-          container.addEventListener("click", () => {
-              if (isSelectionMode) {
-                  ImageManager.toggleSelectImage(imageName, container);
-              }
-          });
-          let pressTimer;
-          container.addEventListener("touchstart", (e) => {
-              if (e.touches.length > 1) return;
-              pressTimer = setTimeout(() => {
-                  if (!isSelectionMode) ImageManager.enterSelectionMode();
-                  ImageManager.toggleSelectImage(imageName, container);
-              }, 700);
-          }, { passive: true });
-          container.addEventListener("touchend", () => clearTimeout(pressTimer));
-          container.addEventListener("touchmove", () => clearTimeout(pressTimer));
-           container.addEventListener("contextmenu", (e) => {
-                e.preventDefault();
-                if (!isSelectionMode) ImageManager.enterSelectionMode();
-                ImageManager.toggleSelectImage(imageName, container);
-           });
-      }
-  },
-
   updateSelectionUI: () => {
-    if (!DOM.floatControls) return;
-    const selectedSet = selectedImagesByTab.get(currentTab);
-    const selectedCount = selectedSet ? selectedSet.size : 0;
-    const imageList = imageGalleryByTab.get(currentTab);
-    const totalImages = imageList ? imageList.length : 0;
-
-    if (isSelectionMode || selectedCount > 0) {
-        DOM.floatControls.classList.add("show");
-        const allSelected = totalImages > 0 && selectedCount === totalImages;
-        if (DOM.selectAllBtn) {
-            DOM.selectAllBtn.querySelector("span").textContent = allSelected ? "Desselecionar todas" : "Selecionar todas";
-            DOM.selectAllBtn.querySelector("i").className = allSelected ? "far fa-square" : "fas fa-check-square";
-            DOM.selectAllBtn.style.display = totalImages > 0 ? "flex" : "none";
-        }
-        if (DOM.deleteSelectedBtn) DOM.deleteSelectedBtn.disabled = selectedCount === 0;
-        if (DOM.clearSelectionBtn) DOM.clearSelectionBtn.disabled = selectedCount === 0 && !isSelectionMode;
-
-        if (selectedCount > 0) {
-            Utils.showStatus(`${selectedCount} ${selectedCount === 1 ? "cifra selecionada" : "cifras selecionadas"}`);
-        } else if (isSelectionMode) {
-             Utils.showStatus("Modo de seleção ativo. Toque longo ou clique com o botão direito para selecionar.");
-        }
+    const selectedCount = selectedImagesByTab.get(currentTab).size;
+    const totalImages = imageGalleryByTab.get(currentTab).length;
+    if (selectedCount > 0) {
+      DOM.floatControls.classList.add('show');
+      const allSelected = selectedCount === totalImages;
+      DOM.selectAllBtn.querySelector('span').textContent = allSelected ? 'Desselecionar todas' : 'Selecionar todas';
+      DOM.selectAllBtn.querySelector('i').className = allSelected ? 'far fa-square' : 'fas fa-check-square';
+      Utils.showStatus(`${selectedCount} ${selectedCount === 1 ? 'cifra selecionada' : 'cifras selecionadas'}`);
     } else {
-        DOM.floatControls.classList.remove("show");
+      DOM.floatControls.classList.remove('show');
+    }
+    if (totalImages <= 1) {
+      DOM.selectAllBtn.style.display = 'none';
+    } else {
+      DOM.selectAllBtn.style.display = 'flex';
     }
   },
 
   openFullscreen: (src, alt) => {
-    const existingOverlay = document.querySelector(".fullscreen-image");
-    if (existingOverlay) document.body.removeChild(existingOverlay);
+    const overlay = document.createElement('div');
+    overlay.className = 'fullscreen-image';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', `Visualização da imagem ${alt}`);
 
-    const overlay = document.createElement("div");
-    overlay.className = "fullscreen-image";
-    overlay.setAttribute("role", "dialog");
-    overlay.setAttribute("aria-modal", "true");
-    overlay.setAttribute("aria-label", `Visualização da imagem ${alt}`);
-
-    const img = document.createElement("img");
+    const img = document.createElement('img');
     img.src = src;
     img.alt = alt;
     img.tabIndex = 0;
-    if (src.startsWith("blob:")) {
-        img.dataset.objectUrl = src; // Marca para revogar blob URL ao fechar
-    }
 
-    // Lógica de zoom e pan (mantida)
+    // Centro da imagem para zoom
     let scale = 1;
     let translateX = 0, translateY = 0;
     let originX = 0.5, originY = 0.5;
@@ -861,443 +477,291 @@ const UI = {
       img.style.transform = `scale(${scale}) translate(${translateX}px, ${translateY}px)`;
     }
 
-    img.addEventListener("wheel", (e) => {
+    // Desktop: ZOOM centralizado no mouse e arrastar imagem
+    img.addEventListener('wheel', (e) => {
       e.preventDefault();
       const rect = img.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
       originX = mouseX / rect.width;
       originY = mouseY / rect.height;
+
       const prevScale = scale;
       if (-e.deltaY > 0) scale = Math.min(scale * 1.1, 5);
       else scale = Math.max(scale / 1.1, 1);
+
+      // Corrige a posição para manter o ponto sob o cursor
       if (scale !== prevScale) {
         translateX = (translateX - (originX - 0.5) * rect.width) * (scale / prevScale) + (originX - 0.5) * rect.width;
         translateY = (translateY - (originY - 0.5) * rect.height) * (scale / prevScale) + (originY - 0.5) * rect.height;
       }
+
       if (scale === 1) {
-        translateX = 0; translateY = 0; originX = 0.5; originY = 0.5;
+        translateX = 0;
+        translateY = 0;
+        originX = 0.5;
+        originY = 0.5;
       }
       updateTransform();
-    }, { passive: false });
-    img.addEventListener("mousedown", (e) => {
-      if (scale === 1 || e.button !== 0) return;
+    });
+
+    img.addEventListener('mousedown', (e) => {
+      if (scale === 1) return;
       isDragging = true;
       dragStart = { x: e.clientX, y: e.clientY };
       imgStart = { x: translateX, y: translateY };
-      img.style.cursor = "grabbing";
+      document.body.style.cursor = 'grabbing';
     });
-    overlay.addEventListener("mousemove", (e) => {
+
+    overlay.addEventListener('mousemove', (e) => {
       if (!isDragging) return;
       translateX = imgStart.x + (e.clientX - dragStart.x);
       translateY = imgStart.y + (e.clientY - dragStart.y);
       updateTransform();
     });
-    const stopDragging = () => {
-        if(isDragging) {
-            isDragging = false;
-            img.style.cursor = scale > 1 ? "grab" : "default";
-        }
-    };
-    overlay.addEventListener("mouseup", stopDragging);
-    overlay.addEventListener("mouseleave", stopDragging);
-    img.addEventListener("touchstart", (e) => {
+    overlay.addEventListener('mouseup', () => {
+      isDragging = false;
+      document.body.style.cursor = '';
+    });
+    overlay.addEventListener('mouseleave', () => {
+      isDragging = false;
+      document.body.style.cursor = '';
+    });
+
+    // Mobile: pinch/drag, impede fechar ao pinçar
+    let lastTapTime = 0;
+    let tapTimeout = null;
+    img.addEventListener('touchstart', (e) => {
       if (e.touches.length === 2) {
-        initialPinchDistance = Math.hypot(e.touches[1].pageX - e.touches[0].pageX, e.touches[1].pageY - e.touches[0].pageY);
+        initialPinchDistance = Math.hypot(
+          e.touches[1].pageX - e.touches[0].pageX,
+          e.touches[1].pageY - e.touches[0].pageY
+        );
         lastScale = scale;
+        // calcula centro inicial do pinch
         const rect = img.getBoundingClientRect();
         const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
         const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
-        originX = centerX / rect.width; originY = centerY / rect.height;
-      } else if (e.touches.length === 1 && scale > 1) {
+        originX = centerX / rect.width;
+        originY = centerY / rect.height;
+      } else if (e.touches.length === 1) {
         isDragging = true;
         dragStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
         imgStart = { x: translateX, y: translateY };
       }
-      // e.preventDefault(); // Evita scroll da página, mas pode interferir em outros gestos
-    }, { passive: true }); // Use passive: true se não precisar prevenir default sempre
-    img.addEventListener("touchmove", (e) => {
+      e.preventDefault();
+    }, { passive: false });
+
+    img.addEventListener('touchmove', (e) => {
       if (e.touches.length === 2 && initialPinchDistance) {
-        e.preventDefault(); // Previne scroll SÓ durante pinch zoom
-        const currentPinchDistance = Math.hypot(e.touches[1].pageX - e.touches[0].pageX, e.touches[1].pageY - e.touches[0].pageY);
+        // pinch zoom
+        const currentPinchDistance = Math.hypot(
+          e.touches[1].pageX - e.touches[0].pageX,
+          e.touches[1].pageY - e.touches[0].pageY
+        );
         let newScale = lastScale * (currentPinchDistance / initialPinchDistance);
         newScale = Math.max(1, Math.min(newScale, 5));
         scale = newScale;
-        if (scale === 1) { translateX = 0; translateY = 0; originX = 0.5; originY = 0.5; }
         updateTransform();
+        e.preventDefault();
       } else if (e.touches.length === 1 && isDragging) {
-        e.preventDefault(); // Previne scroll SÓ durante drag
+        // arrastar
         translateX = imgStart.x + (e.touches[0].clientX - dragStart.x);
         translateY = imgStart.y + (e.touches[0].clientY - dragStart.y);
         updateTransform();
+        e.preventDefault();
       }
     }, { passive: false });
-    img.addEventListener("touchend", (e) => {
-      if (e.touches.length < 2) initialPinchDistance = null;
-      if (e.touches.length < 1) isDragging = false;
+
+    img.addEventListener('touchend', (e) => {
+      if (e.touches.length === 0) {
+        isDragging = false;
+        initialPinchDistance = null;
+      }
     });
 
-    // Fechar fullscreen
-    const closeFullscreen = () => {
-        if (img.dataset.objectUrl) {
-            Utils.revokeObjectURL(img.dataset.objectUrl);
-        }
-        document.removeEventListener("keydown", handleEscKey);
+    // Fechar fullscreen: duplo clique ou double tap no overlay (não na imagem!)
+    overlay.addEventListener('dblclick', (e) => {
+      if (e.target === overlay) {
         document.body.removeChild(overlay);
-    };
-    const handleEscKey = (e) => {
-        if (e.key === "Escape") {
-            closeFullscreen();
-        }
-    };
-    document.addEventListener("keydown", handleEscKey);
-
-    overlay.addEventListener("click", (e) => {
-      if (e.target === overlay) closeFullscreen();
+        Utils.revokeObjectURL(img.src);
+      }
     });
-    let lastOverlayTapTime = 0;
-    let overlayTapTimeout = null;
-    overlay.addEventListener("touchend", (e) => {
+    overlay.addEventListener('touchend', (e) => {
       if (e.target !== overlay) return;
       const currentTime = new Date().getTime();
-      if (currentTime - lastOverlayTapTime < 400) {
-        clearTimeout(overlayTapTimeout);
-        closeFullscreen();
+      if (currentTime - lastTapTime < 400) {
+        clearTimeout(tapTimeout);
+        document.body.removeChild(overlay);
+        Utils.revokeObjectURL(img.src);
       }
-      lastOverlayTapTime = currentTime;
-      overlayTapTimeout = setTimeout(() => { lastOverlayTapTime = 0; }, 450);
+      lastTapTime = currentTime;
+      tapTimeout = setTimeout(() => { lastTapTime = 0; }, 450);
     });
-    const closeButton = document.createElement("button");
-    closeButton.className = "close-fullscreen-btn";
-    closeButton.innerHTML = "&times;";
-    closeButton.setAttribute("aria-label", "Fechar visualização");
-    closeButton.onclick = closeFullscreen;
-    overlay.appendChild(closeButton);
 
     overlay.appendChild(img);
     document.body.appendChild(overlay);
     img.focus();
-    if(scale > 1) img.style.cursor = "grab";
   }
 };
 
-// TabManager (Refinado)
 const TabManager = {
   switchTab: async tabName => {
     if (currentTab === tabName) return;
     currentTab = tabName;
     UI.updateTabsUI();
-
-    // Limpa seleção da aba anterior
-    const previousSelectedSet = selectedImagesByTab.get(currentTab);
-    if (previousSelectedSet) previousSelectedSet.clear();
-    if (isSelectionMode) ImageManager.exitSelectionModeInstantly(); // Sai do modo sem re-renderizar ainda
-
-    await UI.renderImages(); // Renderiza imagens da nova aba
-    StateManager.saveState(); // Salva o estado (nova aba ativa)
+    await UI.renderImages();
+    StateManager.saveState();
   }
 };
 
-// ImageManager (Refinado)
 const ImageManager = {
   enterSelectionMode: () => {
-    if(isSelectionMode) return;
     isSelectionMode = true;
-    DOM.body.classList.add("selection-mode");
-    UI.updateSelectionUI();
+    DOM.body.classList.add('selection-mode');
   },
-  // Sai do modo de seleção e re-renderiza
   exitSelectionMode: () => {
-    if(!isSelectionMode) return;
     isSelectionMode = false;
-    DOM.body.classList.remove("selection-mode");
-    const selectedSet = selectedImagesByTab.get(currentTab);
-    if (selectedSet) selectedSet.clear();
-    UI.renderImages(); // Re-renderiza para limpar visualmente
-  },
-  // Sai do modo instantaneamente, sem re-renderizar (útil antes de trocar aba/modo)
-  exitSelectionModeInstantly: () => {
-      if (!isSelectionMode) return;
-      isSelectionMode = false;
-      DOM.body.classList.remove("selection-mode");
-      const selectedSet = selectedImagesByTab.get(currentTab);
-      if (selectedSet) selectedSet.clear();
-      UI.updateSelectionUI(); // Apenas atualiza os botões
+    DOM.body.classList.remove('selection-mode');
   },
   toggleSelectImage: (imageName, container) => {
     const selectedSet = selectedImagesByTab.get(currentTab);
-    if (!selectedSet) return;
-    const isSelected = selectedSet.has(imageName);
-
-    if (isSelected) {
+    if (selectedSet.has(imageName)) {
       selectedSet.delete(imageName);
+      container.classList.remove('selected');
+      container.setAttribute('aria-checked', 'false');
+      container.querySelector('.image-checkbox').classList.remove('checked');
     } else {
       selectedSet.add(imageName);
+      container.classList.add('selected');
+      container.setAttribute('aria-checked', 'true');
+      container.querySelector('.image-checkbox').classList.add('checked');
     }
-    container.classList.toggle("selected", !isSelected);
-    container.setAttribute("aria-checked", !isSelected);
-    container.querySelector(".image-checkbox")?.classList.toggle("checked", !isSelected);
-
     UI.updateSelectionUI();
+    StateManager.saveState();
   },
   deleteImage: async imageName => {
-    if (!confirm(`Tem certeza que deseja excluir a cifra "${Utils.removeFileExtension(imageName)}"? Esta ação não pode ser desfeita.`)) return;
+    if (!confirm(`Tem certeza que deseja excluir "${Utils.removeFileExtension(imageName)}"?`)) return;
     UI.showLoading();
     try {
-      const currentImages = Array.from(imageGalleryByTab.get(currentTab) || []);
-      const indexToRemove = currentImages.indexOf(imageName);
-      if (indexToRemove === -1) throw new Error("Imagem não encontrada na lista local.");
-
-      // Remove da lista local primeiro para UI responder rápido
-      currentImages.splice(indexToRemove, 1);
-      imageGalleryByTab.set(currentTab, currentImages);
-      selectedImagesByTab.get(currentTab)?.delete(imageName);
-
-      // Atualiza a UI imediatamente
+      await IndexedDBManager.deleteImageBlob(imageName);
+      const images = imageGalleryByTab.get(currentTab).filter(name => name !== imageName);
+      imageGalleryByTab.set(currentTab, images);
+      selectedImagesByTab.get(currentTab).delete(imageName);
       await UI.renderImages();
-
-      // Tenta excluir do backend (Firebase ou IDB)
-      if (isOnlineMode) {
-        await FirebaseManager.deleteImage(currentTab, imageName);
-        // Salva a nova ordem no Firebase
-        await FirebaseManager.saveImageOrder(currentTab, currentImages);
-      } else {
-        await IndexedDBManager.deleteImageBlob(imageName);
-        // Salva metadados atualizados no IDB
-        StateManager.saveState();
-      }
-
-      Utils.showStatus("Cifra excluída com sucesso!");
+      StateManager.saveState();
+      Utils.showStatus('Imagem excluída com sucesso!');
     } catch (error) {
-      console.error("Erro ao excluir cifra:", error);
-      Utils.showStatus("Erro ao excluir cifra. Recarregando...");
-      // Recarrega o estado em caso de erro para garantir consistência
-      await StateManager.loadState();
-      await UI.renderImages();
+      Utils.showStatus('Erro ao excluir imagem.');
     } finally {
       UI.hideLoading();
     }
   },
   reorderImages: async (fromIndex, toIndex) => {
-    if (isOnlineMode) {
-        Utils.showStatus("Reordenação manual indisponível no modo Online.");
-        return;
-    }
     const images = imageGalleryByTab.get(currentTab) || [];
-    if (fromIndex < 0 || fromIndex >= images.length || toIndex < 0 || toIndex >= images.length) return;
-
     const movedImageName = images.splice(fromIndex, 1)[0];
     images.splice(toIndex, 0, movedImageName);
     imageGalleryByTab.set(currentTab, images);
-
-    selectedImagesByTab.get(currentTab)?.clear();
-    if (isSelectionMode) ImageManager.exitSelectionModeInstantly();
-
-    await UI.renderImages(); // Re-renderiza com a nova ordem
-    StateManager.saveState(); // Salva a nova ordem no IDB
+    selectedImagesByTab.get(currentTab).clear();
+    ImageManager.exitSelectionMode();
+    await UI.renderImages();
+    StateManager.saveState();
   },
   deleteSelected: async () => {
-    const selectedSet = selectedImagesByTab.get(currentTab);
-    if (!selectedSet || selectedSet.size === 0) return;
-    const selectedNames = Array.from(selectedSet);
+    const selectedNames = Array.from(selectedImagesByTab.get(currentTab));
     const count = selectedNames.length;
-
-    if (!confirm(`Excluir ${count} cifra(s) selecionada(s)? Esta ação não pode ser desfeita.`)) return;
+    if (!count || !confirm(`Excluir ${count} imagem(ns) selecionada(s)?`)) return;
     UI.showLoading();
-    let errors = 0;
-
-    // Remove da lista local primeiro
-    let currentImages = imageGalleryByTab.get(currentTab) || [];
-    const remainingImages = currentImages.filter(name => !selectedSet.has(name));
-    imageGalleryByTab.set(currentTab, remainingImages);
-    selectedSet.clear();
-    const originalSelectionMode = isSelectionMode;
-    if (isSelectionMode) ImageManager.exitSelectionModeInstantly();
-
-    // Atualiza UI
-    await UI.renderImages();
-
     try {
-        // Tenta excluir do backend
-        const deletePromises = selectedNames.map(name => {
-            if (isOnlineMode) {
-                return FirebaseManager.deleteImage(currentTab, name).catch(err => { errors++; console.error(`Erro Firebase delete ${name}:`, err); });
-            } else {
-                return IndexedDBManager.deleteImageBlob(name).catch(err => { errors++; console.error(`Erro IDB delete ${name}:`, err); });
-            }
-        });
-        await Promise.allSettled(deletePromises);
-
-        // Salva o estado final (nova ordem / metadados)
-        if (isOnlineMode) {
-            await FirebaseManager.saveImageOrder(currentTab, remainingImages);
-        } else {
-            StateManager.saveState();
-        }
-
-        if (errors > 0) {
-            Utils.showStatus(`${count - errors} de ${count} cifras excluídas. ${errors} falharam.`);
-            // Se houve erros, recarrega para garantir consistência
-            throw new Error("Falha ao excluir algumas cifras do backend.");
-        } else {
-            Utils.showStatus(`${count} cifra(s) excluída(s) com sucesso.`);
-        }
-    } catch (error) {
-      console.error("Erro ao excluir selecionados:", error);
-      Utils.showStatus("Erro ao excluir cifras. Recarregando...");
-      await StateManager.loadState();
+      for (const name of selectedNames) await IndexedDBManager.deleteImageBlob(name);
+      const images = imageGalleryByTab.get(currentTab).filter(name => !selectedImagesByTab.get(currentTab).has(name));
+      imageGalleryByTab.set(currentTab, images);
+      selectedImagesByTab.get(currentTab).clear();
+      ImageManager.exitSelectionMode();
       await UI.renderImages();
+      StateManager.saveState();
+      Utils.showStatus(`${count} imagens excluídas.`);
+    } catch (error) {
+      Utils.showStatus('Erro ao excluir imagens.');
     } finally {
       UI.hideLoading();
     }
   },
   clearSelection: () => {
-    const selectedSet = selectedImagesByTab.get(currentTab);
-    if (selectedSet && selectedSet.size > 0) {
-        selectedSet.clear();
-        if (isSelectionMode) ImageManager.exitSelectionMode();
-        else UI.renderImages(); // Apenas re-renderiza se não estava em modo de seleção
-        Utils.showStatus("Seleção limpa.");
-    } else if (isSelectionMode) {
-        ImageManager.exitSelectionMode();
-    }
+    selectedImagesByTab.get(currentTab).clear();
+    ImageManager.exitSelectionMode();
+    UI.renderImages();
+    StateManager.saveState();
+    Utils.showStatus('Seleção limpa.');
   },
   toggleSelectAll: () => {
     const allNames = imageGalleryByTab.get(currentTab) || [];
     const selectedSet = selectedImagesByTab.get(currentTab);
-    if (!selectedSet || allNames.length === 0) return;
-
-    const allSelected = selectedSet.size === allNames.length;
-    if (allSelected) {
-        selectedSet.clear();
-    } else {
-        allNames.forEach(name => selectedSet.add(name));
-        if (!isSelectionMode) ImageManager.enterSelectionMode();
-    }
+    if (selectedSet.size === allNames.length) selectedSet.clear();
+    else allNames.forEach(name => selectedSet.add(name));
     UI.renderImages();
+    StateManager.saveState();
   },
   handleFileSelection: async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
     UI.showLoading();
-
-    if (!imageGalleryByTab.has(currentTab)) imageGalleryByTab.set(currentTab, []);
-
-    const currentImageNames = imageGalleryByTab.get(currentTab) || [];
-    const currentImageNamesLower = new Set(currentImageNames.map(n => n.toLowerCase()));
+    if (!imageGalleryByTab.get(currentTab)) imageGalleryByTab.set(currentTab, []);
+    if (!selectedImagesByTab.get(currentTab)) selectedImagesByTab.set(currentTab, new Set());
+    const currentImageNamesInTab = new Set(imageGalleryByTab.get(currentTab));
     let loadedCount = 0;
-    let skippedCount = 0;
-    let errors = 0;
-    const newImageNames = []; // Para adicionar ao final no modo online
-
     try {
-        const processAndSavePromises = files.map(async (file) => {
-            if (!file.type.startsWith("image/")) return;
-
-            // Verifica duplicatas (case-insensitive)
-            if (currentImageNamesLower.has(file.name.toLowerCase())) {
-                console.warn(`Cifra "${file.name}" já existe nesta aba. Pulando.`);
-                skippedCount++;
-                return;
-            }
-
-            try {
-                const processed = await ImageProcessor.processImageFile(file);
-                if (!processed) return;
-
-                if (isOnlineMode) {
-                    await FirebaseManager.uploadImageBlob(processed.name, processed.blob);
-                    newImageNames.push(processed.name); // Adiciona à lista para salvar ordem depois
-                } else {
-                    await IndexedDBManager.addImageBlob(processed.name, processed.blob);
-                    // Adiciona diretamente na lista local offline
-                    currentImageNames.push(processed.name);
-                    currentImageNamesLower.add(processed.name.toLowerCase());
-                }
-                loadedCount++;
-            } catch (error) {
-                errors++;
-                console.error(`Erro ao processar/salvar ${file.name}:`, error);
-                Utils.showStatus(`Erro ao carregar ${file.name}`);
-            }
-        });
-
-        await Promise.allSettled(processAndSavePromises);
-
-        // Se online, atualiza a lista local e salva a nova ordem no Firebase
-        if (isOnlineMode && newImageNames.length > 0) {
-            const finalNames = [...currentImageNames, ...newImageNames];
-            imageGalleryByTab.set(currentTab, finalNames);
-            await FirebaseManager.saveImageOrder(currentTab, finalNames);
+      for (const file of files) {
+        if (!file.type.startsWith('image/')) continue;
+        try {
+          const processed = await ImageProcessor.processImageFile(file);
+          if (!processed) continue;
+          await IndexedDBManager.addImageBlob(processed.name, processed.blob);
+          if (!currentImageNamesInTab.has(processed.name)) {
+            imageGalleryByTab.get(currentTab).push(processed.name);
+            currentImageNamesInTab.add(processed.name);
+          }
+          loadedCount++;
+        } catch (error) {
+          Utils.showStatus(`Erro ao carregar ${file.name}`);
         }
-
-        await UI.renderImages();
-
-        // Salva estado do IDB se offline
-        if (!isOnlineMode) {
-            StateManager.saveState();
-        }
-
-        // Monta mensagem de status final
-        let statusMsg = "";
-        if (loadedCount > 0) statusMsg += `${loadedCount} cifra(s) carregada(s). `;
-        if (skippedCount > 0) statusMsg += `${skippedCount} duplicada(s) ignorada(s). `;
-        if (errors > 0) statusMsg += `${errors} falharam.`;
-        if (statusMsg === "") statusMsg = "Nenhuma cifra nova para carregar.";
-        Utils.showStatus(statusMsg.trim());
-
+      }
+      await UI.renderImages();
+      StateManager.saveState();
+      Utils.showStatus(`${loadedCount} imagem(ns) carregada(s) com sucesso!`);
     } catch (error) {
-      console.error("Erro geral ao carregar arquivos:", error);
-      Utils.showStatus("Erro ao carregar cifras.");
+      Utils.showStatus('Erro ao carregar imagens.');
     } finally {
       UI.hideLoading();
-      DOM.fileInput.value = ""; // Limpa input para permitir selecionar mesmo arquivo
     }
   }
 };
 
-// EventManager (Refinado)
 const EventManager = {
   setup: () => {
-    // Drag and Drop (Só offline)
-    DOM.imageList?.addEventListener("dragover", (e) => {
-      if (isOnlineMode) return;
+    DOM.imageList.addEventListener('dragover', (e) => {
       e.preventDefault();
       const afterElement = getDragAfterElement(DOM.imageList, e.clientY);
-      const draggable = DOM.imageList.querySelector(".dragging");
+      const draggable = document.querySelector('.dragging');
       if (!draggable) return;
-      DOM.imageList.querySelectorAll(".drag-over").forEach(el => el.classList.remove("drag-over"));
-      if (afterElement) afterElement.classList.add("drag-over");
-      else { // Adiciona ao final se não houver elemento depois
-          const lastElement = DOM.imageList.querySelector(".image-container:last-child:not(.dragging)");
-          if(lastElement) lastElement.classList.add("drag-over-end");
-      }
+      DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+      if (afterElement) afterElement.classList.add('drag-over');
     });
-    DOM.imageList?.addEventListener("dragleave", (e) => {
-        // Remove highlights ao sair da lista
-        DOM.imageList.querySelectorAll(".drag-over, .drag-over-end").forEach(el => el.classList.remove("drag-over", "drag-over-end"));
-    });
-    DOM.imageList?.addEventListener("drop", (e) => {
-      if (isOnlineMode) return;
+    DOM.imageList.addEventListener('drop', (e) => {
       e.preventDefault();
-      const draggable = DOM.imageList.querySelector(".dragging");
-      DOM.imageList.querySelectorAll(".drag-over, .drag-over-end").forEach(el => el.classList.remove("drag-over", "drag-over-end"));
+      const draggable = document.querySelector('.dragging');
       if (!draggable) return;
-      draggable.classList.remove("dragging");
-
       const afterElement = getDragAfterElement(DOM.imageList, e.clientY);
       const containers = Array.from(DOM.imageList.children);
       const fromIndex = containers.indexOf(draggable);
-      let toIndex = afterElement ? containers.indexOf(afterElement) : containers.length; // Se não houver afterElement, vai para o fim
-
-      if (fromIndex < toIndex) toIndex--; // Ajuste se movendo para baixo
-
-      if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
-          ImageManager.reorderImages(fromIndex, toIndex);
-      }
+      let toIndex = afterElement ? containers.indexOf(afterElement) : containers.length - 1;
+      if (fromIndex < toIndex) toIndex--;
+      if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) ImageManager.reorderImages(fromIndex, toIndex);
+      draggable.classList.remove('dragging');
+      DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
     });
     function getDragAfterElement(container, y) {
-      const draggableElements = [...container.querySelectorAll(".image-container:not(.dragging)")];
+      const draggableElements = [...container.querySelectorAll('.image-container:not(.dragging)')];
       return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
         const offset = y - box.top - box.height / 2;
@@ -1305,102 +769,43 @@ const EventManager = {
         else return closest;
       }, { offset: -Infinity, element: null }).element;
     }
+    DOM.clearSelectionBtn.addEventListener('click', ImageManager.clearSelection);
+    DOM.deleteSelectedBtn.addEventListener('click', ImageManager.deleteSelected);
+    DOM.selectAllBtn.addEventListener('click', ImageManager.toggleSelectAll);
 
-    // Botões flutuantes
-    DOM.clearSelectionBtn?.addEventListener("click", ImageManager.clearSelection);
-    DOM.deleteSelectedBtn?.addEventListener("click", ImageManager.deleteSelected);
-    DOM.selectAllBtn?.addEventListener("click", ImageManager.toggleSelectAll);
-
-    // Upload
-    DOM.openFileDialogButton?.addEventListener("click", () => {
-      DOM.fileInput.value = "";
-      DOM.fileInput?.click();
+    DOM.openFileDialogButton.addEventListener('click', () => {
+      DOM.fileInput.value = '';
+      DOM.fileInput.click();
     });
-    DOM.fileInput?.addEventListener("change", ImageManager.handleFileSelection);
+    DOM.fileInput.addEventListener('change', ImageManager.handleFileSelection);
 
-    // Sync/Settings (Placeholders)
-    DOM.syncBtn?.addEventListener("click", async () => {
-        if (isOnlineMode) {
-            Utils.showStatus("Forçando sincronização com nuvem...");
-            UI.showLoading();
-            await StateManager.loadState(); // Recarrega do Firebase
-            await UI.renderImages();
-            UI.hideLoading();
-            Utils.showStatus("Sincronização concluída.");
-        } else {
-            Utils.showStatus("Sincronização só disponível no modo Online.");
-        }
+    DOM.openCloudFolderButton.addEventListener('click', () => {
+      window.open(ONE_DRIVE_FOLDER_URL, '_blank');
+      Utils.showStatus('Abrindo pasta do OneDrive em uma nova aba.');
     });
-    DOM.settingsBtn?.addEventListener("click", () => {
-      Utils.showStatus("Funcionalidade de Configurações em desenvolvimento...");
+    DOM.syncBtn.addEventListener('click', () => {
+      Utils.showStatus('Funcionalidade de Sincronização em desenvolvimento...');
     });
-
-    // Switch Online/Offline
-    if (DOM.onlineModeSwitch) {
-        DOM.onlineModeSwitch.addEventListener("change", StateManager.toggleOnlineMode);
-    }
-
-    // Tecla ESC para sair do modo de seleção
-    document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && isSelectionMode) {
-            ImageManager.clearSelection();
-        }
+    DOM.settingsBtn.addEventListener('click', () => {
+      Utils.showStatus('Funcionalidade de Configurações em desenvolvimento...');
     });
   }
 };
 
-// Função de inicialização (Final)
 async function init() {
   UI.showLoading();
-  console.log("Iniciando aplicação Cifras...");
   try {
-    // Tenta abrir IndexedDB
-    try {
-        await IndexedDBManager.open();
-        console.log("IndexedDB pronto.");
-    } catch (idbError) {
-        console.warn("IndexedDB indisponível:", idbError);
-        Utils.showStatus("Aviso: Armazenamento local (offline) indisponível.");
-    }
-
-    // Carrega o estado (define modo, aba e dados iniciais)
-    console.log("Carregando estado...");
+    await IndexedDBManager.open();
     await StateManager.loadState();
-    console.log(`Estado carregado. Modo: ${isOnlineMode ? "Online" : "Offline"}, Aba: ${currentTab}`);
-
-    // Configura a UI inicial
-    console.log("Configurando UI...");
     UI.createTabs();
     UI.updateTabsUI();
-    UI.updateOnlineModeSwitch();
-
-    // Renderiza as imagens iniciais
-    console.log("Renderizando imagens...");
     await UI.renderImages();
-    console.log("Imagens renderizadas.");
-
-    // Configura os event listeners
-    console.log("Configurando eventos...");
     EventManager.setup();
-    console.log("Eventos configurados.");
-
-    console.log("Aplicação Cifras inicializada com sucesso.");
-
   } catch (e) {
-    console.error("Erro fatal na inicialização:", e);
-    UI.hideLoading();
-    document.body.innerHTML = 
-        `<div style="padding: 20px; text-align: center; color: red;">
-            <h1>Erro Crítico</h1>
-            <p>Ocorreu um erro inesperado ao iniciar a aplicação.</p>
-            <p>Verifique o console do navegador para mais detalhes (F12) e tente recarregar a página.</p>
-            <p>Se o problema persistir, o serviço online pode estar temporariamente indisponível.</p>
-        </div>`;
+    Utils.showStatus("Erro ao iniciar o aplicativo. Tente recarregar a página.");
   } finally {
-     // Garante que o loading suma mesmo se houver erro antes de UI.hideLoading ser chamado
-     UI.hideLoading();
+    UI.hideLoading();
   }
 }
 
-// Inicia a aplicação quando o DOM estiver pronto
-document.addEventListener("DOMContentLoaded", init);
+document.addEventListener('DOMContentLoaded', init);
