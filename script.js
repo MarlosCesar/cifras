@@ -128,9 +128,11 @@ const IndexedDBManager = {
 };
 
 // ======= Estado do App =======
-const tabs = [
-  "Domingo Manhã", "Domingo Noite", "Segunda", "Quarta", "Culto Jovem", "Santa Ceia", "Outros"
-];
+let tabs = [
+  "Domingo Manhã", "Domingo Noite", "Segunda", "Quarta", "Culto Jovem", "Santa Ceia"
+]; // NÃO inclui "Outros" nem "+"
+let userTabs = []; // abas criadas pelo usuário
+
 let imageGalleryByTab = new Map();
 let selectedImagesByTab = new Map();
 let currentTab = tabs[0];
@@ -154,121 +156,114 @@ const DOM = {
   body: document.body
 };
 
-// ====== Estado Persistente =====
-const StateManager = {
-  saveState: Utils.debounce(async () => {
-    const state = {
-      images: Object.fromEntries(Array.from(imageGalleryByTab.entries()).map(([tab, names]) => [tab, Array.from(names)])),
-      selected: Object.fromEntries(Array.from(selectedImagesByTab.entries()).map(([tab, set]) => [tab, Array.from(set)])),
-      currentTab,
-    };
-    try {
-      await IndexedDBManager.saveMetadata(state);
-    } catch (e) {
-      console.error('Erro ao salvar estado:', e);
-      Utils.showStatus('Erro ao salvar dados.');
-    }
-  }, 500),
+// ====== Tabs Dinâmicas com "+" e Remoção ======
+function getAllTabs() {
+  return [...tabs, ...userTabs, "+"];
+}
 
-  loadState: async () => {
-    try {
-      const state = await IndexedDBManager.loadMetadata();
-      if (state) {
-        imageGalleryByTab = new Map(Object.entries(state.images || {}));
-        selectedImagesByTab = new Map();
-        for (const tab of tabs) {
-          selectedImagesByTab.set(tab, new Set(state.selected?.[tab] || []));
-        }
-        currentTab = state.currentTab || tabs[0];
-      } else {
-        StateManager.initEmptyState();
-      }
-    } catch {
-      StateManager.initEmptyState();
-    }
-  },
-
-  initEmptyState: () => {
-    imageGalleryByTab = new Map();
-    selectedImagesByTab = new Map();
-    tabs.forEach(tab => {
-      imageGalleryByTab.set(tab, []);
-      selectedImagesByTab.set(tab, new Set());
-    });
-  }
-};
-
-// ====== Processamento de Imagens =====
-const ImageProcessor = {
-  processImageFile: file => new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = Utils.createObjectURL(file);
-
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const MAX_SIZE = 800;
-      let width = img.width, height = img.height;
-
-      if (width > height && width > MAX_SIZE) {
-        height *= MAX_SIZE / width;
-        width = MAX_SIZE;
-      } else if (height > MAX_SIZE) {
-        width *= MAX_SIZE / height;
-        height = MAX_SIZE;
-      }
-
-      canvas.width = width;
-      canvas.height = height;
-      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-
-      canvas.toBlob(blob => {
-        Utils.revokeObjectURL(url);
-        if (blob) resolve({ name: file.name, blob });
-        else reject('Falha ao criar Blob');
-      }, 'image/webp', 0.80);
-    };
-
-    img.onerror = () => {
-      Utils.revokeObjectURL(url);
-      reject('Erro ao carregar imagem');
-    };
-
-    img.src = url;
-  })
-};
-
-// ====== UI =======
 const UI = {
   showLoading: () => DOM.loadingSpinner.classList.add('active'),
   hideLoading: () => DOM.loadingSpinner.classList.remove('active'),
 
-  createTabs: () => {
+  createTabs: function () {
     DOM.tabsContainer.innerHTML = '';
-    tabs.forEach((tab, idx) => {
+    const allTabs = getAllTabs();
+
+    allTabs.forEach((tab, idx) => {
+      const isPlus = (tab === "+");
+      const isUserTab = userTabs.includes(tab);
+
       const btn = document.createElement('button');
       btn.className = 'tab';
       btn.setAttribute('role', 'tab');
       btn.setAttribute('tabindex', idx === 0 ? '0' : '-1');
-      btn.setAttribute('aria-selected', idx === 0 ? 'true' : 'false');
+      btn.setAttribute('aria-selected', currentTab === tab);
       btn.id = `tab-${tab.replace(/\s+/g, '-').toLowerCase()}`;
       btn.textContent = tab;
-      btn.onclick = () => TabManager.switchTab(tab);
-      btn.onkeydown = (e) => TabManager.keyNav(e, tab, idx);
+
+      if (isPlus) {
+        btn.onclick = () => {
+          let name = prompt("Nome da nova aba:");
+          if (name) {
+            name = name.trim();
+            if (
+              name.length > 0 &&
+              !tabs.includes(name) &&
+              !userTabs.includes(name) &&
+              name !== "+"
+            ) {
+              userTabs.push(name);
+              imageGalleryByTab.set(name, []);
+              selectedImagesByTab.set(name, new Set());
+              currentTab = name;
+              UI.createTabs();
+              UI.updateTabsUI();
+              UI.renderImages();
+              StateManager.saveState();
+            } else {
+              Utils.showStatus("Nome de aba inválido ou já existente.");
+            }
+          }
+        };
+      } else {
+        btn.onclick = () => TabManager.switchTab(tab);
+        btn.onkeydown = (e) => TabManager.keyNav(e, tab, idx);
+
+        // Abas de usuário: adiciona botão X
+        if (isUserTab) {
+          btn.style.position = "relative";
+          const closeBtn = document.createElement('span');
+          closeBtn.textContent = "×";
+          closeBtn.title = "Remover aba";
+          closeBtn.style.position = "absolute";
+          closeBtn.style.right = "6px";
+          closeBtn.style.top = "4px";
+          closeBtn.style.color = "#ef4444";
+          closeBtn.style.fontWeight = "bold";
+          closeBtn.style.cursor = "pointer";
+          closeBtn.style.display = "none";
+          closeBtn.className = "close-tab-btn";
+          closeBtn.onclick = (e) => {
+            e.stopPropagation();
+            imageGalleryByTab.delete(tab);
+            selectedImagesByTab.delete(tab);
+            userTabs = userTabs.filter(t => t !== tab);
+            if (currentTab === tab) currentTab = tabs[0];
+            UI.createTabs();
+            UI.updateTabsUI();
+            UI.renderImages();
+            StateManager.saveState();
+          };
+          btn.appendChild(closeBtn);
+
+          btn.onmouseenter = () => (closeBtn.style.display = "block");
+          btn.onmouseleave = () => (closeBtn.style.display = "none");
+          btn.onfocus = () => (closeBtn.style.display = "block");
+          btn.onblur = () => (closeBtn.style.display = "none");
+        }
+      }
+
       DOM.tabsContainer.appendChild(btn);
     });
   },
 
-  updateTabsUI: () => {
+  updateTabsUI: function () {
+    const allTabs = getAllTabs();
     const buttons = DOM.tabsContainer.querySelectorAll('.tab');
-    buttons.forEach(btn => {
-      const isActive = btn.textContent === currentTab;
+    buttons.forEach((btn, idx) => {
+      const tab = allTabs[idx];
+      const isActive = (tab === currentTab);
       btn.classList.toggle('active', isActive);
       btn.setAttribute('aria-selected', isActive);
       btn.setAttribute('tabindex', isActive ? '0' : '-1');
+      const closeBtn = btn.querySelector('.close-tab-btn');
+      if (closeBtn) {
+        closeBtn.style.display = isActive ? "block" : "none";
+      }
     });
   },
 
-  renderImages: async () => {
+  renderImages: async function () {
     DOM.imageList.innerHTML = '';
     DOM.imageList.querySelectorAll('img[data-object-url]').forEach(img => {
       Utils.revokeObjectURL(img.dataset.objectUrl);
@@ -384,10 +379,18 @@ const UI = {
 
     document.body.appendChild(overlay);
     img.focus();
+  },
+
+  // Suporte para navegação por teclado, ignorando "+"
+  _getValidTabIndex: function(idx, dir) {
+    const allTabs = getAllTabs();
+    do {
+      idx = (idx + dir + allTabs.length) % allTabs.length;
+    } while (allTabs[idx] === "+");
+    return idx;
   }
 };
 
-// ====== Tabs ======
 const TabManager = {
   switchTab: async (tabName) => {
     if (currentTab === tabName) return;
@@ -397,17 +400,114 @@ const TabManager = {
     StateManager.saveState();
   },
   keyNav: (e, tab, idx) => {
-    let nextIdx = idx;
-    if (e.key === 'ArrowRight') nextIdx = (idx + 1) % tabs.length;
-    else if (e.key === 'ArrowLeft') nextIdx = (idx - 1 + tabs.length) % tabs.length;
-    else if (e.key === 'Home') nextIdx = 0;
-    else if (e.key === 'End') nextIdx = tabs.length - 1;
-    if (nextIdx !== idx) {
-      e.preventDefault();
-      TabManager.switchTab(tabs[nextIdx]);
+    if (e.key === 'ArrowRight') {
+      let nextIdx = UI._getValidTabIndex(idx, +1);
+      TabManager.switchTab(getAllTabs()[nextIdx]);
       DOM.tabsContainer.children[nextIdx].focus();
+      e.preventDefault();
+    } else if (e.key === 'ArrowLeft') {
+      let prevIdx = UI._getValidTabIndex(idx, -1);
+      TabManager.switchTab(getAllTabs()[prevIdx]);
+      DOM.tabsContainer.children[prevIdx].focus();
+      e.preventDefault();
+    } else if (e.key === 'Home') {
+      TabManager.switchTab(getAllTabs()[0]);
+      DOM.tabsContainer.children[0].focus();
+      e.preventDefault();
+    } else if (e.key === 'End') {
+      let allTabs = getAllTabs();
+      let lastIdx = allTabs.length - 2; // penúltima (antes do "+")
+      TabManager.switchTab(allTabs[lastIdx]);
+      DOM.tabsContainer.children[lastIdx].focus();
+      e.preventDefault();
     }
   }
+};
+
+// ====== Estado Persistente =====
+const StateManager = {
+  saveState: Utils.debounce(async () => {
+    const state = {
+      images: Object.fromEntries(Array.from(imageGalleryByTab.entries()).map(([tab, names]) => [tab, Array.from(names)])),
+      selected: Object.fromEntries(Array.from(selectedImagesByTab.entries()).map(([tab, set]) => [tab, Array.from(set)])),
+      currentTab,
+      userTabs // Salva abas dinâmicas
+    };
+    try {
+      await IndexedDBManager.saveMetadata(state);
+    } catch (e) {
+      console.error('Erro ao salvar estado:', e);
+      Utils.showStatus('Erro ao salvar dados.');
+    }
+  }, 500),
+
+  loadState: async () => {
+    try {
+      const state = await IndexedDBManager.loadMetadata();
+      if (state) {
+        imageGalleryByTab = new Map(Object.entries(state.images || {}));
+        selectedImagesByTab = new Map();
+        for (const tab of [...tabs, ...(state.userTabs || [])]) {
+          selectedImagesByTab.set(tab, new Set(state.selected?.[tab] || []));
+        }
+        currentTab = state.currentTab || tabs[0];
+        userTabs = state.userTabs || [];
+      } else {
+        StateManager.initEmptyState();
+      }
+    } catch {
+      StateManager.initEmptyState();
+    }
+  },
+
+  initEmptyState: () => {
+    imageGalleryByTab = new Map();
+    selectedImagesByTab = new Map();
+    tabs.forEach(tab => {
+      imageGalleryByTab.set(tab, []);
+      selectedImagesByTab.set(tab, new Set());
+    });
+    userTabs = [];
+  }
+};
+
+// ====== Processamento de Imagens =====
+const ImageProcessor = {
+  processImageFile: file => new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = Utils.createObjectURL(file);
+
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const MAX_SIZE = 800;
+      let width = img.width, height = img.height;
+
+      if (width > height && width > MAX_SIZE) {
+        height *= MAX_SIZE / width;
+        width = MAX_SIZE;
+      } else if (height > MAX_SIZE) {
+        width *= MAX_SIZE / height;
+        height = MAX_SIZE;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(blob => {
+        Utils.revokeObjectURL(url);
+        if (blob) resolve({ name: file.name, blob });
+        else reject('Falha ao criar Blob');
+      }, 'image/webp', 0.80);
+    };
+
+    img.onerror = () => {
+      Utils.revokeObjectURL(url);
+      reject('Erro ao carregar imagem');
+    };
+
+    img.src = url;
+  })
 };
 
 // ====== Imagens ======
@@ -523,7 +623,6 @@ const EventManager = {
     };
     DOM.fileInput.onchange = ImageManager.handleFileSelection;
 
-    // "Buscar em Nuvem" - agora só mostra uma mensagem (pode personalizar)
     DOM.openCloudFolderButton.onclick = () => {
       Utils.showStatus('Funcionalidade de busca em nuvem ainda não implementada.');
     };
