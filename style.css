@@ -16,6 +16,24 @@
   --header-hover: #2D3748;
 }
 
+/* Modo escuro */
+.dark {
+  --primary-color: #60a5fa;
+  --primary-dark: #3b82f6;
+  --primary-hover: #1e293b;
+  --danger-color: #f87171;
+  --danger-dark: #ef4444;
+  --gray-light: #18181b;
+  --gray-medium: #27272a;
+  --text-color-dark: #e5e7eb;
+  --text-color-light: #a1a1aa;
+  --shadow-base: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.15);
+  --shadow-primary: 0 0 12px rgba(96, 165, 250, 0.3);
+  --header-bg: #18181b;
+  --header-text: #e5e7eb;
+  --header-hover: #27272a;
+}
+
 html, body {
   overflow-x: hidden; 
   overflow-y: auto;
