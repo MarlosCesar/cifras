@@ -358,14 +358,24 @@ const UI = {
     DOM.selectAllBtn.style.display = totalImages <= 1 ? 'none' : 'flex';
   },
 
-  // MELHORADO: Fullscreen de verdade com API Fullscreen
+  // FULLSCREEN APRIMORADO
   openFullscreen: (src, alt) => {
     const overlay = document.createElement('div');
     overlay.className = 'fullscreen-image';
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
     overlay.setAttribute('aria-label', `Visualização da imagem ${alt}`);
-    overlay.style.backgroundColor = "rgba(0, 0, 0, 1)"; // Preencher preto total
+    overlay.style.backgroundColor = "rgba(0,0,0,1)";
+    overlay.style.position = "fixed";
+    overlay.style.left = "0";
+    overlay.style.top = "0";
+    overlay.style.width = "100vw";
+    overlay.style.height = "100vh";
+    overlay.style.zIndex = "9999";
+    overlay.style.overflow = "hidden";
+
+    // Zoom state
+    let scale = 1, startX = 0, startY = 0, posX = 0, posY = 0, dragging = false, lastTouchDist = null;
 
     const img = document.createElement('img');
     img.src = src;
@@ -381,9 +391,47 @@ const UI = {
     img.style.bottom = "0";
     img.style.left = "0";
     img.style.right = "0";
+    img.style.transition = "transform 0.1s";
+    img.style.cursor = "zoom-in";
 
     overlay.appendChild(img);
 
+    // Botão X para fechar
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '&times;';
+    closeBtn.setAttribute('aria-label', 'Fechar imagem em tela cheia');
+    closeBtn.style.position = 'absolute';
+    closeBtn.style.top = '18px';
+    closeBtn.style.right = '24px';
+    closeBtn.style.fontSize = '2.2rem';
+    closeBtn.style.background = 'rgba(0,0,0,0.5)';
+    closeBtn.style.color = '#fff';
+    closeBtn.style.border = 'none';
+    closeBtn.style.borderRadius = '8px';
+    closeBtn.style.cursor = 'pointer';
+    closeBtn.style.zIndex = '10001';
+    closeBtn.style.padding = '2px 16px 6px 16px';
+    closeBtn.style.display = 'none';
+    closeBtn.style.transition = 'opacity 0.2s';
+
+    function showCloseBtn() {
+      closeBtn.style.display = 'block';
+      closeBtn.style.opacity = '1';
+      setTimeout(() => {
+        if (closeBtn.style.display === 'block') {
+          closeBtn.style.opacity = '0.7';
+        }
+      }, 1200);
+    }
+
+    function hideCloseBtn() {
+      closeBtn.style.opacity = '0';
+      setTimeout(() => { closeBtn.style.display = 'none'; }, 200);
+    }
+
+    overlay.appendChild(closeBtn);
+
+    // Fecha overlay
     function closeOverlay() {
       if (document.fullscreenElement) {
         document.exitFullscreen();
@@ -395,19 +443,101 @@ const UI = {
       document.removeEventListener("keydown", escListener);
     }
 
-    overlay.addEventListener("click", (e) => {
-      if (e.target === overlay) closeOverlay();
-    });
+    closeBtn.onclick = closeOverlay;
 
+    // Clique/tap mostra ou oculta o X
+    let btnVisible = false;
+    function toggleCloseBtn() {
+      btnVisible = !btnVisible;
+      if (btnVisible) showCloseBtn();
+      else hideCloseBtn();
+    }
+    img.addEventListener('click', toggleCloseBtn);
+    img.addEventListener('touchend', toggleCloseBtn);
+
+    // ESC fecha
     function escListener(e) {
       if (e.key === "Escape") closeOverlay();
     }
     document.addEventListener("keydown", escListener);
 
     overlay.addEventListener("fullscreenchange", () => {
-      if (!document.fullscreenElement) {
-        closeOverlay();
+      if (!document.fullscreenElement) closeOverlay();
+    });
+
+    // Fecha ao clicar fora da imagem (mas não no X)
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) closeOverlay();
+    });
+
+    // --- ZOOM & PAN: Mouse (desktop) ---
+    overlay.addEventListener('wheel', function(e) {
+      e.preventDefault();
+      let delta = e.deltaY > 0 ? -0.15 : 0.15;
+      scale = Math.min(6, Math.max(1, scale + delta));
+      img.style.transform = `scale(${scale}) translate(${posX / scale}px,${posY / scale}px)`;
+      img.style.cursor = scale > 1 ? "grab" : "zoom-in";
+    }, { passive: false });
+
+    img.addEventListener('mousedown', function(e) {
+      if (scale === 1) return;
+      dragging = true;
+      startX = e.clientX - posX;
+      startY = e.clientY - posY;
+      img.style.cursor = "grabbing";
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', function(e) {
+      if (!dragging) return;
+      posX = e.clientX - startX;
+      posY = e.clientY - startY;
+      img.style.transform = `scale(${scale}) translate(${posX / scale}px,${posY / scale}px)`;
+    });
+    window.addEventListener('mouseup', function(e) {
+      if (dragging) {
+        dragging = false;
+        img.style.cursor = scale > 1 ? "grab" : "zoom-in";
       }
+    });
+
+    // --- ZOOM & PAN: Touch (mobile) ---
+    img.addEventListener('touchstart', function(e) {
+      if (e.touches.length === 2) {
+        lastTouchDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+      } else if (e.touches.length === 1 && scale > 1) {
+        dragging = true;
+        startX = e.touches[0].clientX - posX;
+        startY = e.touches[0].clientY - posY;
+      }
+    }, { passive: false });
+
+    img.addEventListener('touchmove', function(e) {
+      if (e.touches.length === 2 && lastTouchDist !== null) {
+        const newDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        let delta = (newDist - lastTouchDist) * 0.012;
+        scale = Math.min(6, Math.max(1, scale + delta));
+        lastTouchDist = newDist;
+        img.style.transform = `scale(${scale}) translate(${posX / scale}px,${posY / scale}px)`;
+        img.style.cursor = scale > 1 ? "grab" : "zoom-in";
+        e.preventDefault();
+      } else if (e.touches.length === 1 && dragging) {
+        posX = e.touches[0].clientX - startX;
+        posY = e.touches[0].clientY - startY;
+        img.style.transform = `scale(${scale}) translate(${posX / scale}px,${posY / scale}px)`;
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    img.addEventListener('touchend', function(e) {
+      dragging = false;
+      if (e.touches.length < 2) lastTouchDist = null;
+      img.style.cursor = scale > 1 ? "grab" : "zoom-in";
     });
 
     document.body.appendChild(overlay);
@@ -654,50 +784,52 @@ const ImageManager = {
 // ====== Eventos ======
 const EventManager = {
   setup: () => {
-    DOM.clearSelectionBtn.onclick = ImageManager.clearSelection;
-    DOM.deleteSelectedBtn.onclick = ImageManager.deleteSelected;
-    DOM.selectAllBtn.onclick = ImageManager.toggleSelectAll;
+    if (DOM.clearSelectionBtn) DOM.clearSelectionBtn.onclick = ImageManager.clearSelection;
+    if (DOM.deleteSelectedBtn) DOM.deleteSelectedBtn.onclick = ImageManager.deleteSelected;
+    if (DOM.selectAllBtn) DOM.selectAllBtn.onclick = ImageManager.toggleSelectAll;
 
-    DOM.openFileDialogButton.onclick = () => {
+    if (DOM.openFileDialogButton) DOM.openFileDialogButton.onclick = () => {
       DOM.fileInput.value = '';
       DOM.fileInput.click();
     };
-    DOM.fileInput.onchange = ImageManager.handleFileSelection;
+    if (DOM.fileInput) DOM.fileInput.onchange = ImageManager.handleFileSelection;
 
-    DOM.openCloudFolderButton.onclick = () => {
+    if (DOM.openCloudFolderButton) DOM.openCloudFolderButton.onclick = () => {
       Utils.showStatus('Funcionalidade de busca em nuvem ainda não implementada.');
     };
-    DOM.syncBtn.onclick = () => Utils.showStatus('Funcionalidade de Sincronização em desenvolvimento...');
-    //DOM.settingsBtn.onclick = () => Utils.showStatus('Funcionalidade de Configurações em desenvolvimento...');
+    if (DOM.syncBtn) DOM.syncBtn.onclick = () => Utils.showStatus('Funcionalidade de Sincronização em desenvolvimento...');
+    if (DOM.settingsBtn) DOM.settingsBtn.onclick = () => Utils.showStatus('Funcionalidade de Configurações em desenvolvimento...');
 
-    DOM.darkModeToggle && (DOM.darkModeToggle.onclick = () => {
+    if (DOM.darkModeToggle) DOM.darkModeToggle.onclick = () => {
       const isDark = document.documentElement.classList.contains('dark');
       setDarkMode(!isDark);
-    });
+    };
 
-    DOM.imageList.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      const afterElement = getDragAfterElement(DOM.imageList, e.clientY);
-      const dragging = document.querySelector('.dragging');
-      if (!dragging) return;
-      DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-      if (afterElement) afterElement.classList.add('drag-over');
-    });
-    DOM.imageList.addEventListener('drop', (e) => {
-      e.preventDefault();
-      const dragging = document.querySelector('.dragging');
-      if (!dragging) return;
-      const afterElement = getDragAfterElement(DOM.imageList, e.clientY);
-      const containers = Array.from(DOM.imageList.children);
-      const fromIndex = containers.indexOf(dragging);
-      let toIndex = afterElement ? containers.indexOf(afterElement) : containers.length - 1;
-      if (fromIndex < toIndex) toIndex--;
-      if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
-        ImageManager.reorderImages(fromIndex, toIndex);
-      }
-      dragging.classList.remove('dragging');
-      DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-    });
+    if (DOM.imageList) {
+      DOM.imageList.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const afterElement = getDragAfterElement(DOM.imageList, e.clientY);
+        const dragging = document.querySelector('.dragging');
+        if (!dragging) return;
+        DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+        if (afterElement) afterElement.classList.add('drag-over');
+      });
+      DOM.imageList.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const dragging = document.querySelector('.dragging');
+        if (!dragging) return;
+        const afterElement = getDragAfterElement(DOM.imageList, e.clientY);
+        const containers = Array.from(DOM.imageList.children);
+        const fromIndex = containers.indexOf(dragging);
+        let toIndex = afterElement ? containers.indexOf(afterElement) : containers.length - 1;
+        if (fromIndex < toIndex) toIndex--;
+        if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
+          ImageManager.reorderImages(fromIndex, toIndex);
+        }
+        dragging.classList.remove('dragging');
+        DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+      });
+    }
 
     function getDragAfterElement(container, y) {
       const draggableElements = [...container.querySelectorAll('.image-container:not(.dragging)')];
@@ -741,7 +873,6 @@ function detectDarkMode() {
 
 // ====== Inicialização ======
 async function init() {
-  // Modo escuro ao iniciar
   setDarkMode(detectDarkMode());
 
   UI.showLoading();
