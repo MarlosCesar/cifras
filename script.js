@@ -39,6 +39,35 @@ const DOM = {
   onlineModeLabel: document.getElementById("online-mode-label")
 };
 
+// Switch Online/Off-line
+const onlineSwitch = document.getElementById('online-switch');
+const onlineStatusLabel = document.getElementById('online-status-label');
+
+function setOnlineMode(active) {
+  isOnlineMode = active;
+  if (isOnlineMode) {
+    onlineStatusLabel.textContent = "Online";
+    onlineStatusLabel.classList.remove("text-gray-700");
+    onlineStatusLabel.classList.add("text-blue-600");
+    // Carrega estado online (Firebase)
+    StateManager.toggleOnlineMode();
+  } else {
+    onlineStatusLabel.textContent = "Off-line";
+    onlineStatusLabel.classList.remove("text-blue-600");
+    onlineStatusLabel.classList.add("text-gray-700");
+    // Carrega estado local (IndexedDB)
+    StateManager.toggleOnlineMode();
+  }
+}
+
+// Inicialização do Switch (define a posição inicial, se necessário)
+onlineSwitch.checked = isOnlineMode;
+setOnlineMode(isOnlineMode);
+
+onlineSwitch.addEventListener('change', function() {
+  setOnlineMode(this.checked);
+});
+
 const tabs = [
   "Domingo Manhã", "Domingo Noite", "Segunda", "Quarta", "Culto Jovem", "Santa Ceia", "Outros"
 ];
