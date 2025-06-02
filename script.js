@@ -270,7 +270,6 @@ const UI = {
 
   renderImages: async () => {
     DOM.imageList.innerHTML = '';
-    // Limpar objectURLs antigos
     DOM.imageList.querySelectorAll('img[data-object-url]').forEach(img => {
       Utils.revokeObjectURL(img.dataset.objectUrl);
     });
@@ -333,14 +332,17 @@ const UI = {
       }
     };
 
-    // Drag & Drop
-    container.ondragstart = (e) => {
-      if (!isSelectionMode) ImageManager.enterSelectionMode();
-      ImageManager.toggleSelectImage(imageName, container);
+    // DRAG & DROP PARA REORDENAR
+    container.addEventListener('dragstart', (e) => {
       container.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', imageName);
-    };
+    });
+
+    container.addEventListener('dragend', () => {
+      container.classList.remove('dragging');
+      DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    });
 
     return container;
   },
@@ -495,6 +497,16 @@ const ImageManager = {
     } finally {
       UI.hideLoading();
     }
+  },
+  reorderImages: async (fromIndex, toIndex) => {
+    const images = imageGalleryByTab.get(currentTab) || [];
+    if (fromIndex < 0 || fromIndex >= images.length || toIndex < 0 || toIndex >= images.length) return;
+    const [moved] = images.splice(fromIndex, 1);
+    images.splice(toIndex, 0, moved);
+    imageGalleryByTab.set(currentTab, images);
+    selectedImagesByTab.get(currentTab).clear();
+    await UI.renderImages();
+    StateManager.saveState();
   }
 };
 
@@ -511,12 +523,50 @@ const EventManager = {
     };
     DOM.fileInput.onchange = ImageManager.handleFileSelection;
 
+    // "Buscar em Nuvem" - agora só mostra uma mensagem (pode personalizar)
     DOM.openCloudFolderButton.onclick = () => {
-      window.open("https://1drv.ms/f/c/a71268bf66931c02/EpYyUsypAQhGgpWC9YuvE54BD_o9NX9tRar0piSzq4V4Xg", '_blank');
-      Utils.showStatus('Abrindo pasta do OneDrive em nova aba.');
+      Utils.showStatus('Funcionalidade de busca em nuvem ainda não implementada.');
     };
     DOM.syncBtn.onclick = () => Utils.showStatus('Funcionalidade de Sincronização em desenvolvimento...');
     DOM.settingsBtn.onclick = () => Utils.showStatus('Funcionalidade de Configurações em desenvolvimento...');
+
+    // Drag & Drop para reorganização
+    DOM.imageList.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      const afterElement = getDragAfterElement(DOM.imageList, e.clientY);
+      const dragging = document.querySelector('.dragging');
+      if (!dragging) return;
+      DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+      if (afterElement) afterElement.classList.add('drag-over');
+    });
+    DOM.imageList.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const dragging = document.querySelector('.dragging');
+      if (!dragging) return;
+      const afterElement = getDragAfterElement(DOM.imageList, e.clientY);
+      const containers = Array.from(DOM.imageList.children);
+      const fromIndex = containers.indexOf(dragging);
+      let toIndex = afterElement ? containers.indexOf(afterElement) : containers.length - 1;
+      if (fromIndex < toIndex) toIndex--;
+      if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
+        ImageManager.reorderImages(fromIndex, toIndex);
+      }
+      dragging.classList.remove('dragging');
+      DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    });
+
+    function getDragAfterElement(container, y) {
+      const draggableElements = [...container.querySelectorAll('.image-container:not(.dragging)')];
+      return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+          return { offset: offset, element: child };
+        } else {
+          return closest;
+        }
+      }, { offset: -Infinity, element: null }).element;
+    }
   }
 };
 
