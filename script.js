@@ -588,21 +588,21 @@ const UI = {
     });
   },
 
-  updateOnlineModeSwitch: () => {
-      if (DOM.onlineModeSwitch) {
-          DOM.onlineModeSwitch.checked = isOnlineMode;
+  //updateOnlineModeSwitch: () => {
+    //  if (DOM.onlineModeSwitch) {
+    //      DOM.onlineModeSwitch.checked = isOnlineMode;
           // Desabilita o switch se o Firebase não estiver disponível
-          DOM.onlineModeSwitch.disabled = !FirebaseManager.isAvailable();
-      }
-      if (DOM.onlineModeLabel) {
-          DOM.onlineModeLabel.textContent = isOnlineMode ? "On-line" : "Off-line";
-          if (!FirebaseManager.isAvailable()) {
-              DOM.onlineModeLabel.textContent += " (Indisponível)";
-          }
-      }
-      DOM.body.classList.toggle("online-mode-active", isOnlineMode);
-      DOM.imageList?.classList.toggle("no-drag", isOnlineMode);
-  },
+   //       DOM.onlineModeSwitch.disabled = !FirebaseManager.isAvailable();
+  //    }
+  //    if (DOM.onlineModeLabel) {
+  //        DOM.onlineModeLabel.textContent = isOnlineMode ? "On-line" : "Off-line";
+    //      if (!FirebaseManager.isAvailable()) {
+    //          DOM.onlineModeLabel.textContent += " (Indisponível)";
+     //     }
+   //   }
+  //    DOM.body.classList.toggle("online-mode-active", isOnlineMode);
+ //     DOM.imageList?.classList.toggle("no-drag", isOnlineMode);
+//  },
 
   renderImages: async () => {
     if (!DOM.imageList) return;
