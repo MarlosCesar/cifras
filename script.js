@@ -668,7 +668,7 @@ const EventManager = {
       Utils.showStatus('Funcionalidade de busca em nuvem ainda não implementada.');
     };
     DOM.syncBtn.onclick = () => Utils.showStatus('Funcionalidade de Sincronização em desenvolvimento...');
-    DOM.settingsBtn.onclick = () => Utils.showStatus('Funcionalidade de Configurações em desenvolvimento...');
+    //DOM.settingsBtn.onclick = () => Utils.showStatus('Funcionalidade de Configurações em desenvolvimento...');
 
     DOM.darkModeToggle && (DOM.darkModeToggle.onclick = () => {
       const isDark = document.documentElement.classList.contains('dark');
