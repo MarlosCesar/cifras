@@ -357,27 +357,73 @@ const UI = {
     DOM.selectAllBtn.style.display = totalImages <= 1 ? 'none' : 'flex';
   },
 
+  // MELHORADO: Fullscreen de verdade com API Fullscreen
   openFullscreen: (src, alt) => {
     const overlay = document.createElement('div');
     overlay.className = 'fullscreen-image';
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
     overlay.setAttribute('aria-label', `Visualização da imagem ${alt}`);
+    overlay.style.backgroundColor = "rgba(0, 0, 0, 1)"; // Preencher preto total
 
     const img = document.createElement('img');
     img.src = src;
     img.alt = alt;
     img.tabIndex = 0;
+    img.style.maxWidth = "100vw";
+    img.style.maxHeight = "100vh";
+    img.style.objectFit = "contain";
+    img.style.display = "block";
+    img.style.margin = "auto";
+    img.style.position = "absolute";
+    img.style.top = "0";
+    img.style.bottom = "0";
+    img.style.left = "0";
+    img.style.right = "0";
 
     overlay.appendChild(img);
-    overlay.ondblclick = (e) => {
-      if (e.target === overlay) {
-        document.body.removeChild(overlay);
-        Utils.revokeObjectURL(img.src);
+
+    // Permitir sair clicando fora da imagem ou com ESC
+    function closeOverlay() {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
       }
-    };
+      if (overlay.parentNode) {
+        overlay.parentNode.removeChild(overlay);
+      }
+      Utils.revokeObjectURL(img.src);
+      document.removeEventListener("keydown", escListener);
+    }
+
+    // Fecha ao clicar fora da imagem
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) closeOverlay();
+    });
+
+    // Fecha ao pressionar ESC
+    function escListener(e) {
+      if (e.key === "Escape") closeOverlay();
+    }
+    document.addEventListener("keydown", escListener);
+
+    // Ao sair do fullscreen, remove overlay
+    overlay.addEventListener("fullscreenchange", () => {
+      if (!document.fullscreenElement) {
+        closeOverlay();
+      }
+    });
 
     document.body.appendChild(overlay);
+
+    // API Fullscreen real
+    if (overlay.requestFullscreen) {
+      overlay.requestFullscreen();
+    } else if (overlay.webkitRequestFullscreen) {
+      overlay.webkitRequestFullscreen();
+    } else if (overlay.msRequestFullscreen) {
+      overlay.msRequestFullscreen();
+    }
+
     img.focus();
   },
 
