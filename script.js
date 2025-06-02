@@ -735,7 +735,8 @@ function detectDarkMode() {
   const saved = localStorage.getItem('darkMode');
   if (saved === 'on') return true;
   if (saved === 'off') return false;
-  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  // Padrão: modo claro
+  return false;
 }
 
 // ====== Inicialização ======
