@@ -153,6 +153,7 @@ const DOM = {
   settingsBtn: document.getElementById('settings-btn'),
   loadingSpinner: document.getElementById('loading-spinner'),
   statusMessage: document.getElementById('status-message'),
+  darkModeToggle: document.getElementById('dark-mode-toggle'),
   body: document.body
 };
 
@@ -383,7 +384,6 @@ const UI = {
 
     overlay.appendChild(img);
 
-    // Permitir sair clicando fora da imagem ou com ESC
     function closeOverlay() {
       if (document.fullscreenElement) {
         document.exitFullscreen();
@@ -395,18 +395,15 @@ const UI = {
       document.removeEventListener("keydown", escListener);
     }
 
-    // Fecha ao clicar fora da imagem
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) closeOverlay();
     });
 
-    // Fecha ao pressionar ESC
     function escListener(e) {
       if (e.key === "Escape") closeOverlay();
     }
     document.addEventListener("keydown", escListener);
 
-    // Ao sair do fullscreen, remove overlay
     overlay.addEventListener("fullscreenchange", () => {
       if (!document.fullscreenElement) {
         closeOverlay();
@@ -415,7 +412,6 @@ const UI = {
 
     document.body.appendChild(overlay);
 
-    // API Fullscreen real
     if (overlay.requestFullscreen) {
       overlay.requestFullscreen();
     } else if (overlay.webkitRequestFullscreen) {
@@ -427,7 +423,6 @@ const UI = {
     img.focus();
   },
 
-  // Suporte para navegação por teclado, ignorando "+"
   _getValidTabIndex: function(idx, dir) {
     const allTabs = getAllTabs();
     do {
@@ -462,7 +457,7 @@ const TabManager = {
       e.preventDefault();
     } else if (e.key === 'End') {
       let allTabs = getAllTabs();
-      let lastIdx = allTabs.length - 2; // penúltima (antes do "+")
+      let lastIdx = allTabs.length - 2;
       TabManager.switchTab(allTabs[lastIdx]);
       DOM.tabsContainer.children[lastIdx].focus();
       e.preventDefault();
@@ -477,7 +472,7 @@ const StateManager = {
       images: Object.fromEntries(Array.from(imageGalleryByTab.entries()).map(([tab, names]) => [tab, Array.from(names)])),
       selected: Object.fromEntries(Array.from(selectedImagesByTab.entries()).map(([tab, set]) => [tab, Array.from(set)])),
       currentTab,
-      userTabs // Salva abas dinâmicas
+      userTabs
     };
     try {
       await IndexedDBManager.saveMetadata(state);
@@ -675,7 +670,11 @@ const EventManager = {
     DOM.syncBtn.onclick = () => Utils.showStatus('Funcionalidade de Sincronização em desenvolvimento...');
     DOM.settingsBtn.onclick = () => Utils.showStatus('Funcionalidade de Configurações em desenvolvimento...');
 
-    // Drag & Drop para reorganização
+    DOM.darkModeToggle && (DOM.darkModeToggle.onclick = () => {
+      const isDark = document.documentElement.classList.contains('dark');
+      setDarkMode(!isDark);
+    });
+
     DOM.imageList.addEventListener('dragover', (e) => {
       e.preventDefault();
       const afterElement = getDragAfterElement(DOM.imageList, e.clientY);
@@ -715,8 +714,35 @@ const EventManager = {
   }
 };
 
+// ====== Dark Mode ======
+function setDarkMode(on) {
+  if (on) {
+    document.documentElement.classList.add('dark');
+    localStorage.setItem('darkMode', 'on');
+    if (DOM.darkModeToggle) {
+      DOM.darkModeToggle.querySelector('i').className = 'fas fa-sun';
+    }
+  } else {
+    document.documentElement.classList.remove('dark');
+    localStorage.setItem('darkMode', 'off');
+    if (DOM.darkModeToggle) {
+      DOM.darkModeToggle.querySelector('i').className = 'fas fa-moon';
+    }
+  }
+}
+
+function detectDarkMode() {
+  const saved = localStorage.getItem('darkMode');
+  if (saved === 'on') return true;
+  if (saved === 'off') return false;
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
 // ====== Inicialização ======
 async function init() {
+  // Modo escuro ao iniciar
+  setDarkMode(detectDarkMode());
+
   UI.showLoading();
   try {
     await IndexedDBManager.open();
