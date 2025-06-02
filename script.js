@@ -287,61 +287,114 @@ const UI = {
     UI.updateSelectionUI();
   },
 
-  createImageElement: (imageName, imageBlob) => {
-    const container = document.createElement('div');
-    container.className = 'image-container';
-    container.setAttribute('draggable', 'true');
-    container.setAttribute('tabindex', '0');
-    container.setAttribute('role', 'checkbox');
-    container.setAttribute('aria-checked', selectedImagesByTab.get(currentTab).has(imageName));
-    container.dataset.name = imageName;
+createImageElement: (imageName, imageBlob) => {
+  const container = document.createElement('div');
+  container.className = 'image-container';
+  container.setAttribute('draggable', 'true');
+  container.setAttribute('tabindex', '0');
+  container.setAttribute('role', 'checkbox');
+  container.setAttribute('aria-checked', selectedImagesByTab.get(currentTab).has(imageName));
+  container.dataset.name = imageName;
 
-    if (selectedImagesByTab.get(currentTab).has(imageName)) {
-      container.classList.add('selected');
-    }
+  if (selectedImagesByTab.get(currentTab).has(imageName)) {
+    container.classList.add('selected');
+  }
 
-    const checkbox = document.createElement('div');
-    checkbox.className = 'image-checkbox';
-    if (selectedImagesByTab.get(currentTab).has(imageName)) {
-      checkbox.classList.add('checked');
-    }
-    checkbox.onclick = (e) => {
-      e.stopPropagation();
-      ImageManager.toggleSelectImage(imageName, container);
-    };
+  const checkbox = document.createElement('div');
+  checkbox.className = 'image-checkbox';
+  if (selectedImagesByTab.get(currentTab).has(imageName)) {
+    checkbox.classList.add('checked');
+  }
+  checkbox.onclick = (e) => {
+    e.stopPropagation();
+    ImageManager.toggleSelectImage(imageName, container);
+  };
 
-    const img = document.createElement('img');
-    const objectURL = Utils.createObjectURL(imageBlob);
-    img.src = objectURL;
-    img.dataset.objectUrl = objectURL;
-    img.alt = Utils.removeFileExtension(imageName);
+  const img = document.createElement('img');
+  const objectURL = Utils.createObjectURL(imageBlob);
+  img.src = objectURL;
+  img.dataset.objectUrl = objectURL;
+  img.alt = Utils.removeFileExtension(imageName);
 
-    const nameSpan = document.createElement('span');
-    nameSpan.className = 'image-name';
-    nameSpan.textContent = Utils.removeFileExtension(imageName);
+  const nameSpan = document.createElement('span');
+  nameSpan.className = 'image-name';
+  nameSpan.textContent = Utils.removeFileExtension(imageName);
 
-    container.append(checkbox, img, nameSpan);
+  container.append(checkbox, img, nameSpan);
 
-    container.ondblclick = () => {
+  // --- LÓGICA DE SELEÇÃO WHATSAPP ---
+  let longPressTimer = null;
+  let longPressed = false;
+
+  // desktop: botão esquerdo do mouse
+  container.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    longPressed = false;
+    longPressTimer = setTimeout(() => {
+      longPressed = true;
       if (!isSelectionMode) {
-        UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
+        ImageManager.enterSelectionMode();
+        ImageManager.toggleSelectImage(imageName, container);
       }
-    };
+    }, 400);
+  });
 
-    // DRAG & DROP PARA REORDENAR
-    container.addEventListener('dragstart', (e) => {
-      container.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', imageName);
-    });
+  container.addEventListener('mouseup', (e) => {
+    clearTimeout(longPressTimer);
+    // Se estava em modo seleção e não foi long, faz seleção/deseleção
+    if (isSelectionMode && !longPressed && e.button === 0) {
+      ImageManager.toggleSelectImage(imageName, container);
+    }
+    longPressed = false;
+  });
 
-    container.addEventListener('dragend', () => {
-      container.classList.remove('dragging');
-      DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-    });
+  container.addEventListener('mouseleave', () => {
+    clearTimeout(longPressTimer);
+    longPressed = false;
+  });
 
-    return container;
-  },
+  // mobile: touch
+  container.addEventListener('touchstart', (e) => {
+    longPressed = false;
+    longPressTimer = setTimeout(() => {
+      longPressed = true;
+      if (!isSelectionMode) {
+        ImageManager.enterSelectionMode();
+        ImageManager.toggleSelectImage(imageName, container);
+      }
+    }, 400);
+  });
+
+  container.addEventListener('touchend', (e) => {
+    clearTimeout(longPressTimer);
+    // Se estava em modo seleção e não foi long, faz seleção/deseleção
+    if (isSelectionMode && !longPressed) {
+      ImageManager.toggleSelectImage(imageName, container);
+    }
+    longPressed = false;
+  });
+
+  // Clique duplo abre tela cheia só se não estiver em seleção
+  container.ondblclick = () => {
+    if (!isSelectionMode) {
+      UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
+    }
+  };
+
+  // DRAG & DROP PARA REORDENAR (mantém igual)
+  container.addEventListener('dragstart', (e) => {
+    container.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', imageName);
+  });
+
+  container.addEventListener('dragend', () => {
+    container.classList.remove('dragging');
+    DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+  });
+
+  return container;
+},
 
   updateSelectionUI: () => {
     const selectedCount = selectedImagesByTab.get(currentTab).size;
