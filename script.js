@@ -1,46 +1,13 @@
-// Cache de elementos DOM
-const DOM = {
-  tabsContainer: document.getElementById('tabs-container'),
-  imageList: document.getElementById('image-list'),
-  fileInput: document.getElementById('file-input'),
-  openFileDialogButton: document.getElementById('open-file-dialog'),
-  openCloudFolderButton: document.getElementById('open-cloud-folder'),
-  deleteSelectedBtn: document.getElementById('delete-selected-btn'),
-  clearSelectionBtn: document.getElementById('clear-selection-btn'),
-  selectAllBtn: document.getElementById('select-all-btn'),
-  floatControls: document.getElementById('float-controls'),
-  syncBtn: document.getElementById('sync-btn'),
-  settingsBtn: document.getElementById('settings-btn'),
-  loadingSpinner: document.getElementById('loading-spinner'),
-  statusMessage: document.getElementById('status-message'),
-  body: document.body,
-};
-
-const tabs = [
-  "Domingo Manhã", "Domingo Noite", "Segunda", "Quarta", "Culto Jovem", "Santa Ceia", "Outros"
-];
-const ONE_DRIVE_FOLDER_URL = "https://1drv.ms/f/c/a71268bf66931c02/EpYyUsypAQhGgpWC9YuvE54BD_o9NX9tRar0piSzq4V4Xg";
-
-// Estado
-let imageGalleryByTab = new Map();
-let selectedImagesByTab = new Map();
-let currentTab = tabs[0];
-let isSelectionMode = false;
-let dragStartIndex = null;
-
-tabs.forEach(tab => {
-  imageGalleryByTab.set(tab, []);
-  selectedImagesByTab.set(tab, new Set());
-});
-
+// ======== Utilitários ========
 const Utils = {
   removeFileExtension: filename => filename.replace(/\.[^/.]+$/, ""),
-  showStatus: message => {
-    DOM.statusMessage.textContent = message;
-    DOM.statusMessage.classList.add('show');
-    setTimeout(() => DOM.statusMessage.classList.remove('show'), 3000);
+  showStatus: (message) => {
+    const el = document.getElementById('status-message');
+    el.textContent = message;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 3000);
   },
-  debounce: (func, timeout = 100) => {
+  debounce: (func, timeout = 300) => {
     let timer;
     return (...args) => {
       clearTimeout(timer);
@@ -61,7 +28,7 @@ const Utils = {
   }
 };
 
-// IndexedDB
+// ======== IndexedDB =========
 const DB_NAME = 'ImageSelectorDB';
 const DB_VERSION = 2;
 const STORE_IMAGES = 'images';
@@ -100,9 +67,8 @@ const IndexedDBManager = {
       const db = await IndexedDBManager.open();
       const transaction = db.transaction([STORE_IMAGES], 'readwrite');
       const store = transaction.objectStore(STORE_IMAGES);
-      const request = store.put({ name: imageName, blob: blob });
-      request.onsuccess = () => resolve();
-      request.onerror = (event) => reject(event.target.error);
+      store.put({ name: imageName, blob: blob }).onsuccess = resolve;
+      store.put({ name: imageName, blob: blob }).onerror = (event) => reject(event.target.error);
     } catch (e) {
       reject(e);
     }
@@ -127,7 +93,7 @@ const IndexedDBManager = {
       const transaction = db.transaction([STORE_IMAGES], 'readwrite');
       const store = transaction.objectStore(STORE_IMAGES);
       const request = store.delete(imageName);
-      request.onsuccess = () => resolve();
+      request.onsuccess = resolve;
       request.onerror = (event) => reject(event.target.error);
     } catch (e) {
       reject(e);
@@ -140,7 +106,7 @@ const IndexedDBManager = {
       const transaction = db.transaction([STORE_METADATA], 'readwrite');
       const store = transaction.objectStore(STORE_METADATA);
       const request = store.put({ id: 'appState', state: state });
-      request.onsuccess = () => resolve();
+      request.onsuccess = resolve;
       request.onerror = (event) => reject(event.target.error);
     } catch (e) {
       reject(e);
@@ -161,53 +127,34 @@ const IndexedDBManager = {
   })
 };
 
-const ImageProcessor = {
-  processImageFile: file => new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = Utils.createObjectURL(file);
+// ======= Estado do App =======
+const tabs = [
+  "Domingo Manhã", "Domingo Noite", "Segunda", "Quarta", "Culto Jovem", "Santa Ceia", "Outros"
+];
+let imageGalleryByTab = new Map();
+let selectedImagesByTab = new Map();
+let currentTab = tabs[0];
+let isSelectionMode = false;
 
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const MAX_SIZE = 800;
-      let width = img.width;
-      let height = img.height;
-
-      if (width > height) {
-        if (width > MAX_SIZE) {
-          height *= MAX_SIZE / width;
-          width = MAX_SIZE;
-        }
-      } else {
-        if (height > MAX_SIZE) {
-          width *= MAX_SIZE / height;
-          height = MAX_SIZE;
-        }
-      }
-
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
-
-      canvas.toBlob(blob => {
-        Utils.revokeObjectURL(url);
-        if (blob) {
-          resolve({ name: file.name, blob: blob });
-        } else {
-          reject(new Error('Falha ao criar Blob da imagem.'));
-        }
-      }, 'image/webp', 0.75);
-    };
-
-    img.onerror = () => {
-      Utils.revokeObjectURL(url);
-      reject(new Error('Erro ao carregar a imagem para processamento.'));
-    };
-
-    img.src = url;
-  })
+// ======= UI DOM =======
+const DOM = {
+  tabsContainer: document.getElementById('tabs-container'),
+  imageList: document.getElementById('image-list'),
+  fileInput: document.getElementById('file-input'),
+  openFileDialogButton: document.getElementById('open-file-dialog'),
+  openCloudFolderButton: document.getElementById('open-cloud-folder'),
+  deleteSelectedBtn: document.getElementById('delete-selected-btn'),
+  clearSelectionBtn: document.getElementById('clear-selection-btn'),
+  selectAllBtn: document.getElementById('select-all-btn'),
+  floatControls: document.getElementById('float-controls'),
+  syncBtn: document.getElementById('sync-btn'),
+  settingsBtn: document.getElementById('settings-btn'),
+  loadingSpinner: document.getElementById('loading-spinner'),
+  statusMessage: document.getElementById('status-message'),
+  body: document.body
 };
 
+// ====== Estado Persistente =====
 const StateManager = {
   saveState: Utils.debounce(async () => {
     const state = {
@@ -218,7 +165,7 @@ const StateManager = {
     try {
       await IndexedDBManager.saveMetadata(state);
     } catch (e) {
-      console.error('Erro ao salvar estado no IndexedDB:', e);
+      console.error('Erro ao salvar estado:', e);
       Utils.showStatus('Erro ao salvar dados.');
     }
   }, 500),
@@ -236,8 +183,7 @@ const StateManager = {
       } else {
         StateManager.initEmptyState();
       }
-    } catch (e) {
-      console.error('Erro ao carregar estado do IndexedDB:', e);
+    } catch {
       StateManager.initEmptyState();
     }
   },
@@ -252,47 +198,64 @@ const StateManager = {
   }
 };
 
+// ====== Processamento de Imagens =====
+const ImageProcessor = {
+  processImageFile: file => new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = Utils.createObjectURL(file);
+
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const MAX_SIZE = 800;
+      let width = img.width, height = img.height;
+
+      if (width > height && width > MAX_SIZE) {
+        height *= MAX_SIZE / width;
+        width = MAX_SIZE;
+      } else if (height > MAX_SIZE) {
+        width *= MAX_SIZE / height;
+        height = MAX_SIZE;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(blob => {
+        Utils.revokeObjectURL(url);
+        if (blob) resolve({ name: file.name, blob });
+        else reject('Falha ao criar Blob');
+      }, 'image/webp', 0.80);
+    };
+
+    img.onerror = () => {
+      Utils.revokeObjectURL(url);
+      reject('Erro ao carregar imagem');
+    };
+
+    img.src = url;
+  })
+};
+
+// ====== UI =======
 const UI = {
   showLoading: () => DOM.loadingSpinner.classList.add('active'),
   hideLoading: () => DOM.loadingSpinner.classList.remove('active'),
 
   createTabs: () => {
     DOM.tabsContainer.innerHTML = '';
-    const fragment = document.createDocumentFragment();
-
-    tabs.forEach((tab, index) => {
-      const tabBtn = document.createElement('button');
-      tabBtn.className = 'tab';
-      tabBtn.setAttribute('role', 'tab');
-      tabBtn.setAttribute('tabindex', index === 0 ? '0' : '-1');
-      tabBtn.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
-      tabBtn.id = `tab-${tab.replace(/\s+/g, '-').toLowerCase()}`;
-      tabBtn.textContent = tab;
-
-      tabBtn.addEventListener('click', () => TabManager.switchTab(tab));
-      tabBtn.addEventListener('keydown', (e) => {
-        const currentActiveIndex = tabs.indexOf(currentTab);
-        let nextIndex = currentActiveIndex;
-
-        if (e.key === 'ArrowRight') nextIndex = (currentActiveIndex + 1) % tabs.length;
-        else if (e.key === 'ArrowLeft') nextIndex = (currentActiveIndex - 1 + tabs.length) % tabs.length;
-        else if (e.key === 'Home') nextIndex = 0;
-        else if (e.key === 'End') nextIndex = tabs.length - 1;
-
-        if (nextIndex !== currentActiveIndex) {
-          e.preventDefault();
-          TabManager.switchTab(tabs[nextIndex]);
-          DOM.tabsContainer.querySelector(`#tab-${tabs[nextIndex].replace(/\s+/g, '-').toLowerCase()}`).focus();
-        } else if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          TabManager.switchTab(tab);
-        }
-      });
-
-      fragment.appendChild(tabBtn);
+    tabs.forEach((tab, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'tab';
+      btn.setAttribute('role', 'tab');
+      btn.setAttribute('tabindex', idx === 0 ? '0' : '-1');
+      btn.setAttribute('aria-selected', idx === 0 ? 'true' : 'false');
+      btn.id = `tab-${tab.replace(/\s+/g, '-').toLowerCase()}`;
+      btn.textContent = tab;
+      btn.onclick = () => TabManager.switchTab(tab);
+      btn.onkeydown = (e) => TabManager.keyNav(e, tab, idx);
+      DOM.tabsContainer.appendChild(btn);
     });
-
-    DOM.tabsContainer.appendChild(fragment);
   },
 
   updateTabsUI: () => {
@@ -306,36 +269,26 @@ const UI = {
   },
 
   renderImages: async () => {
+    DOM.imageList.innerHTML = '';
+    // Limpar objectURLs antigos
     DOM.imageList.querySelectorAll('img[data-object-url]').forEach(img => {
       Utils.revokeObjectURL(img.dataset.objectUrl);
     });
 
     const imageNames = imageGalleryByTab.get(currentTab) || [];
-    const fragment = document.createDocumentFragment();
-
     if (imageNames.length === 0) {
       const p = document.createElement('p');
       p.className = 'text-center text-gray-500 py-8';
-      p.textContent = 'Nenhuma imagem encontrada nesta categoria.';
-      fragment.appendChild(p);
+      p.textContent = 'Nenhuma cifra adicionada.';
+      DOM.imageList.appendChild(p);
     } else {
-      const imagesToRender = [];
-      for (const imageName of imageNames) {
-        const blob = await IndexedDBManager.getImageBlob(imageName);
+      for (const name of imageNames) {
+        const blob = await IndexedDBManager.getImageBlob(name);
         if (blob) {
-          imagesToRender.push({ name: imageName, blob: blob });
-        } else {
-          imageGalleryByTab.set(currentTab, imageNames.filter(name => name !== imageName));
-          selectedImagesByTab.get(currentTab).delete(imageName);
+          DOM.imageList.appendChild(UI.createImageElement(name, blob));
         }
       }
-      imagesToRender.forEach(({ name, blob }) => {
-        const container = UI.createImageElement(name, blob);
-        fragment.appendChild(container);
-      });
     }
-    DOM.imageList.innerHTML = '';
-    DOM.imageList.appendChild(fragment);
     UI.updateSelectionUI();
   },
 
@@ -357,10 +310,10 @@ const UI = {
     if (selectedImagesByTab.get(currentTab).has(imageName)) {
       checkbox.classList.add('checked');
     }
-    checkbox.addEventListener('click', (e) => {
+    checkbox.onclick = (e) => {
       e.stopPropagation();
       ImageManager.toggleSelectImage(imageName, container);
-    });
+    };
 
     const img = document.createElement('img');
     const objectURL = Utils.createObjectURL(imageBlob);
@@ -372,61 +325,22 @@ const UI = {
     nameSpan.className = 'image-name';
     nameSpan.textContent = Utils.removeFileExtension(imageName);
 
-    container.appendChild(checkbox);
-    container.appendChild(img);
-    container.appendChild(nameSpan);
+    container.append(checkbox, img, nameSpan);
 
-    // Duplo clique/Double tap para abrir fullscreen
-    container.addEventListener('dblclick', () => {
+    container.ondblclick = () => {
       if (!isSelectionMode) {
-        const objectURL = Utils.createObjectURL(imageBlob);
         UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
       }
-    });
+    };
 
-    let lastTapTime = 0;
-    let tapTimeout = null;
-    container.addEventListener('touchend', (e) => {
-      if (e.touches && e.touches.length > 1) return; // ignore multi-touch
-      const currentTime = new Date().getTime();
-      if (currentTime - lastTapTime < 400) {
-        clearTimeout(tapTimeout);
-        if (!isSelectionMode) {
-          const objectURL = Utils.createObjectURL(imageBlob);
-          UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
-        }
-      }
-      lastTapTime = currentTime;
-      tapTimeout = setTimeout(() => { lastTapTime = 0; }, 450);
-    });
-
-    // Seleção e drag and drop
-    let pressTimer;
-    let isLongPress = false;
-    container.addEventListener('mousedown', (e) => {
-      if (e.button !== 0) return;
-      pressTimer = setTimeout(() => {
-        isLongPress = true;
-        if (!isSelectionMode) {
-          ImageManager.enterSelectionMode();
-        }
-        ImageManager.toggleSelectImage(imageName, container);
-      }, 500);
-    });
-    container.addEventListener('mousemove', () => { clearTimeout(pressTimer); });
-    container.addEventListener('mouseup', () => { clearTimeout(pressTimer); isLongPress = false; });
-    container.addEventListener('mouseleave', () => { clearTimeout(pressTimer); isLongPress = false; });
-
-    container.addEventListener('dragstart', (e) => {
-      if (!isSelectionMode) {
-        ImageManager.enterSelectionMode();
-        ImageManager.toggleSelectImage(imageName, container);
-      }
+    // Drag & Drop
+    container.ondragstart = (e) => {
+      if (!isSelectionMode) ImageManager.enterSelectionMode();
+      ImageManager.toggleSelectImage(imageName, container);
       container.classList.add('dragging');
-      dragStartIndex = Array.from(DOM.imageList.children).indexOf(container);
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', imageName);
-    });
+    };
 
     return container;
   },
@@ -443,11 +357,7 @@ const UI = {
     } else {
       DOM.floatControls.classList.remove('show');
     }
-    if (totalImages <= 1) {
-      DOM.selectAllBtn.style.display = 'none';
-    } else {
-      DOM.selectAllBtn.style.display = 'flex';
-    }
+    DOM.selectAllBtn.style.display = totalImages <= 1 ? 'none' : 'flex';
   },
 
   openFullscreen: (src, alt) => {
@@ -462,159 +372,43 @@ const UI = {
     img.alt = alt;
     img.tabIndex = 0;
 
-    // Centro da imagem para zoom
-    let scale = 1;
-    let translateX = 0, translateY = 0;
-    let originX = 0.5, originY = 0.5;
-    let isDragging = false;
-    let dragStart = { x: 0, y: 0 };
-    let imgStart = { x: 0, y: 0 };
-    let initialPinchDistance = null;
-    let lastScale = 1;
-
-    function updateTransform() {
-      img.style.transformOrigin = `${originX * 100}% ${originY * 100}%`;
-      img.style.transform = `scale(${scale}) translate(${translateX}px, ${translateY}px)`;
-    }
-
-    // Desktop: ZOOM centralizado no mouse e arrastar imagem
-    img.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      const rect = img.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-      originX = mouseX / rect.width;
-      originY = mouseY / rect.height;
-
-      const prevScale = scale;
-      if (-e.deltaY > 0) scale = Math.min(scale * 1.1, 5);
-      else scale = Math.max(scale / 1.1, 1);
-
-      // Corrige a posição para manter o ponto sob o cursor
-      if (scale !== prevScale) {
-        translateX = (translateX - (originX - 0.5) * rect.width) * (scale / prevScale) + (originX - 0.5) * rect.width;
-        translateY = (translateY - (originY - 0.5) * rect.height) * (scale / prevScale) + (originY - 0.5) * rect.height;
-      }
-
-      if (scale === 1) {
-        translateX = 0;
-        translateY = 0;
-        originX = 0.5;
-        originY = 0.5;
-      }
-      updateTransform();
-    });
-
-    img.addEventListener('mousedown', (e) => {
-      if (scale === 1) return;
-      isDragging = true;
-      dragStart = { x: e.clientX, y: e.clientY };
-      imgStart = { x: translateX, y: translateY };
-      document.body.style.cursor = 'grabbing';
-    });
-
-    overlay.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
-      translateX = imgStart.x + (e.clientX - dragStart.x);
-      translateY = imgStart.y + (e.clientY - dragStart.y);
-      updateTransform();
-    });
-    overlay.addEventListener('mouseup', () => {
-      isDragging = false;
-      document.body.style.cursor = '';
-    });
-    overlay.addEventListener('mouseleave', () => {
-      isDragging = false;
-      document.body.style.cursor = '';
-    });
-
-    // Mobile: pinch/drag, impede fechar ao pinçar
-    let lastTapTime = 0;
-    let tapTimeout = null;
-    img.addEventListener('touchstart', (e) => {
-      if (e.touches.length === 2) {
-        initialPinchDistance = Math.hypot(
-          e.touches[1].pageX - e.touches[0].pageX,
-          e.touches[1].pageY - e.touches[0].pageY
-        );
-        lastScale = scale;
-        // calcula centro inicial do pinch
-        const rect = img.getBoundingClientRect();
-        const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-        const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
-        originX = centerX / rect.width;
-        originY = centerY / rect.height;
-      } else if (e.touches.length === 1) {
-        isDragging = true;
-        dragStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-        imgStart = { x: translateX, y: translateY };
-      }
-      e.preventDefault();
-    }, { passive: false });
-
-    img.addEventListener('touchmove', (e) => {
-      if (e.touches.length === 2 && initialPinchDistance) {
-        // pinch zoom
-        const currentPinchDistance = Math.hypot(
-          e.touches[1].pageX - e.touches[0].pageX,
-          e.touches[1].pageY - e.touches[0].pageY
-        );
-        let newScale = lastScale * (currentPinchDistance / initialPinchDistance);
-        newScale = Math.max(1, Math.min(newScale, 5));
-        scale = newScale;
-        updateTransform();
-        e.preventDefault();
-      } else if (e.touches.length === 1 && isDragging) {
-        // arrastar
-        translateX = imgStart.x + (e.touches[0].clientX - dragStart.x);
-        translateY = imgStart.y + (e.touches[0].clientY - dragStart.y);
-        updateTransform();
-        e.preventDefault();
-      }
-    }, { passive: false });
-
-    img.addEventListener('touchend', (e) => {
-      if (e.touches.length === 0) {
-        isDragging = false;
-        initialPinchDistance = null;
-      }
-    });
-
-    // Fechar fullscreen: duplo clique ou double tap no overlay (não na imagem!)
-    overlay.addEventListener('dblclick', (e) => {
+    overlay.appendChild(img);
+    overlay.ondblclick = (e) => {
       if (e.target === overlay) {
         document.body.removeChild(overlay);
         Utils.revokeObjectURL(img.src);
       }
-    });
-    overlay.addEventListener('touchend', (e) => {
-      if (e.target !== overlay) return;
-      const currentTime = new Date().getTime();
-      if (currentTime - lastTapTime < 400) {
-        clearTimeout(tapTimeout);
-        document.body.removeChild(overlay);
-        Utils.revokeObjectURL(img.src);
-      }
-      lastTapTime = currentTime;
-      tapTimeout = setTimeout(() => { lastTapTime = 0; }, 450);
-    });
+    };
 
-    overlay.appendChild(img);
     document.body.appendChild(overlay);
     img.focus();
   }
 };
 
+// ====== Tabs ======
 const TabManager = {
-  switchTab: async tabName => {
+  switchTab: async (tabName) => {
     if (currentTab === tabName) return;
     currentTab = tabName;
     UI.updateTabsUI();
     await UI.renderImages();
     StateManager.saveState();
+  },
+  keyNav: (e, tab, idx) => {
+    let nextIdx = idx;
+    if (e.key === 'ArrowRight') nextIdx = (idx + 1) % tabs.length;
+    else if (e.key === 'ArrowLeft') nextIdx = (idx - 1 + tabs.length) % tabs.length;
+    else if (e.key === 'Home') nextIdx = 0;
+    else if (e.key === 'End') nextIdx = tabs.length - 1;
+    if (nextIdx !== idx) {
+      e.preventDefault();
+      TabManager.switchTab(tabs[nextIdx]);
+      DOM.tabsContainer.children[nextIdx].focus();
+    }
   }
 };
 
+// ====== Imagens ======
 const ImageManager = {
   enterSelectionMode: () => {
     isSelectionMode = true;
@@ -640,37 +434,9 @@ const ImageManager = {
     UI.updateSelectionUI();
     StateManager.saveState();
   },
-  deleteImage: async imageName => {
-    if (!confirm(`Tem certeza que deseja excluir "${Utils.removeFileExtension(imageName)}"?`)) return;
-    UI.showLoading();
-    try {
-      await IndexedDBManager.deleteImageBlob(imageName);
-      const images = imageGalleryByTab.get(currentTab).filter(name => name !== imageName);
-      imageGalleryByTab.set(currentTab, images);
-      selectedImagesByTab.get(currentTab).delete(imageName);
-      await UI.renderImages();
-      StateManager.saveState();
-      Utils.showStatus('Imagem excluída com sucesso!');
-    } catch (error) {
-      Utils.showStatus('Erro ao excluir imagem.');
-    } finally {
-      UI.hideLoading();
-    }
-  },
-  reorderImages: async (fromIndex, toIndex) => {
-    const images = imageGalleryByTab.get(currentTab) || [];
-    const movedImageName = images.splice(fromIndex, 1)[0];
-    images.splice(toIndex, 0, movedImageName);
-    imageGalleryByTab.set(currentTab, images);
-    selectedImagesByTab.get(currentTab).clear();
-    ImageManager.exitSelectionMode();
-    await UI.renderImages();
-    StateManager.saveState();
-  },
   deleteSelected: async () => {
     const selectedNames = Array.from(selectedImagesByTab.get(currentTab));
-    const count = selectedNames.length;
-    if (!count || !confirm(`Excluir ${count} imagem(ns) selecionada(s)?`)) return;
+    if (!selectedNames.length || !confirm(`Excluir ${selectedNames.length} imagem(ns) selecionada(s)?`)) return;
     UI.showLoading();
     try {
       for (const name of selectedNames) await IndexedDBManager.deleteImageBlob(name);
@@ -680,7 +446,7 @@ const ImageManager = {
       ImageManager.exitSelectionMode();
       await UI.renderImages();
       StateManager.saveState();
-      Utils.showStatus(`${count} imagens excluídas.`);
+      Utils.showStatus(`${selectedNames.length} imagens excluídas.`);
     } catch (error) {
       Utils.showStatus('Erro ao excluir imagens.');
     } finally {
@@ -706,30 +472,25 @@ const ImageManager = {
     const files = Array.from(e.target.files);
     if (!files.length) return;
     UI.showLoading();
-    if (!imageGalleryByTab.get(currentTab)) imageGalleryByTab.set(currentTab, []);
-    if (!selectedImagesByTab.get(currentTab)) selectedImagesByTab.set(currentTab, new Set());
-    const currentImageNamesInTab = new Set(imageGalleryByTab.get(currentTab));
     let loadedCount = 0;
     try {
       for (const file of files) {
         if (!file.type.startsWith('image/')) continue;
         try {
           const processed = await ImageProcessor.processImageFile(file);
-          if (!processed) continue;
           await IndexedDBManager.addImageBlob(processed.name, processed.blob);
-          if (!currentImageNamesInTab.has(processed.name)) {
+          if (!imageGalleryByTab.get(currentTab).includes(processed.name)) {
             imageGalleryByTab.get(currentTab).push(processed.name);
-            currentImageNamesInTab.add(processed.name);
           }
           loadedCount++;
-        } catch (error) {
+        } catch {
           Utils.showStatus(`Erro ao carregar ${file.name}`);
         }
       }
       await UI.renderImages();
       StateManager.saveState();
       Utils.showStatus(`${loadedCount} imagem(ns) carregada(s) com sucesso!`);
-    } catch (error) {
+    } catch {
       Utils.showStatus('Erro ao carregar imagens.');
     } finally {
       UI.hideLoading();
@@ -737,61 +498,29 @@ const ImageManager = {
   }
 };
 
+// ====== Eventos ======
 const EventManager = {
   setup: () => {
-    DOM.imageList.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      const afterElement = getDragAfterElement(DOM.imageList, e.clientY);
-      const draggable = document.querySelector('.dragging');
-      if (!draggable) return;
-      DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-      if (afterElement) afterElement.classList.add('drag-over');
-    });
-    DOM.imageList.addEventListener('drop', (e) => {
-      e.preventDefault();
-      const draggable = document.querySelector('.dragging');
-      if (!draggable) return;
-      const afterElement = getDragAfterElement(DOM.imageList, e.clientY);
-      const containers = Array.from(DOM.imageList.children);
-      const fromIndex = containers.indexOf(draggable);
-      let toIndex = afterElement ? containers.indexOf(afterElement) : containers.length - 1;
-      if (fromIndex < toIndex) toIndex--;
-      if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) ImageManager.reorderImages(fromIndex, toIndex);
-      draggable.classList.remove('dragging');
-      DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-    });
-    function getDragAfterElement(container, y) {
-      const draggableElements = [...container.querySelectorAll('.image-container:not(.dragging)')];
-      return draggableElements.reduce((closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
-        else return closest;
-      }, { offset: -Infinity, element: null }).element;
-    }
-    DOM.clearSelectionBtn.addEventListener('click', ImageManager.clearSelection);
-    DOM.deleteSelectedBtn.addEventListener('click', ImageManager.deleteSelected);
-    DOM.selectAllBtn.addEventListener('click', ImageManager.toggleSelectAll);
+    DOM.clearSelectionBtn.onclick = ImageManager.clearSelection;
+    DOM.deleteSelectedBtn.onclick = ImageManager.deleteSelected;
+    DOM.selectAllBtn.onclick = ImageManager.toggleSelectAll;
 
-    DOM.openFileDialogButton.addEventListener('click', () => {
+    DOM.openFileDialogButton.onclick = () => {
       DOM.fileInput.value = '';
       DOM.fileInput.click();
-    });
-    DOM.fileInput.addEventListener('change', ImageManager.handleFileSelection);
+    };
+    DOM.fileInput.onchange = ImageManager.handleFileSelection;
 
-    DOM.openCloudFolderButton.addEventListener('click', () => {
-      window.open(ONE_DRIVE_FOLDER_URL, '_blank');
-      Utils.showStatus('Abrindo pasta do OneDrive em uma nova aba.');
-    });
-    DOM.syncBtn.addEventListener('click', () => {
-      Utils.showStatus('Funcionalidade de Sincronização em desenvolvimento...');
-    });
-    DOM.settingsBtn.addEventListener('click', () => {
-      Utils.showStatus('Funcionalidade de Configurações em desenvolvimento...');
-    });
+    DOM.openCloudFolderButton.onclick = () => {
+      window.open("https://1drv.ms/f/c/a71268bf66931c02/EpYyUsypAQhGgpWC9YuvE54BD_o9NX9tRar0piSzq4V4Xg", '_blank');
+      Utils.showStatus('Abrindo pasta do OneDrive em nova aba.');
+    };
+    DOM.syncBtn.onclick = () => Utils.showStatus('Funcionalidade de Sincronização em desenvolvimento...');
+    DOM.settingsBtn.onclick = () => Utils.showStatus('Funcionalidade de Configurações em desenvolvimento...');
   }
 };
 
+// ====== Inicialização ======
 async function init() {
   UI.showLoading();
   try {
@@ -803,6 +532,7 @@ async function init() {
     EventManager.setup();
   } catch (e) {
     Utils.showStatus("Erro ao iniciar o aplicativo. Tente recarregar a página.");
+    console.error(e);
   } finally {
     UI.hideLoading();
   }
