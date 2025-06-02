@@ -790,6 +790,7 @@ const ImageManager = {
     const allNames = imageGalleryByTab.get(currentTab) || [];
     const selectedSet = selectedImagesByTab.get(currentTab);
     if (selectedSet.size === allNames.length) selectedSet.clear();
+      ImageManager.exitSelectionMode();
     else allNames.forEach(name => selectedSet.add(name));
     UI.renderImages();
     StateManager.saveState();
