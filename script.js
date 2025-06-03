@@ -585,8 +585,10 @@ const UIManager = {
   },
   
   // Renderizar imagens
-  renderImages: async function() {
-    this.elements.imageList.innerHTML = '';
+ renderImages: async function() {
+  this.elements.imageList.innerHTML = '';
+  const images = AppState.getFilteredImages();
+  console.log('renderImages - imagens para renderizar:', images);
     
     // Limpar URLs de objetos antigos
     this.elements.imageList.querySelectorAll('img[data-object-url]').forEach(img => {
@@ -644,12 +646,12 @@ const UIManager = {
   
   // Renderizar imagens offline
   renderOfflineImages: async function(images) {
-    const selected = AppState.current.selectedImages.get(AppState.current.currentTab);
-    
-    for (const image of images) {
-  try {
-    const blob = await IndexedDBManager.getImageBlob(image.name);
-    if (!blob || !(blob instanceof Blob)) continue;
+  const selected = AppState.current.selectedImages.get(AppState.current.currentTab);
+  for (const image of images) {
+    try {
+      const blob = await IndexedDBManager.getImageBlob(image.name);
+      console.log('offline render', image.name, 'blob:', blob);
+      if (!blob || !(blob instanceof Blob)) continue;
         const url = Utils.createObjectURL(blob);
         const container = this.createImageElement({
           id: image.name,
