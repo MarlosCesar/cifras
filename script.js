@@ -290,24 +290,24 @@ const AppState = {
   },
   
   // Salvar estado
-  saveState: Utils.debounce(async function() {
-    const state = {
-      images: Object.fromEntries(this.current.imageGallery),
-      selected: Object.fromEntries(
-        Array.from(this.current.selectedImages.entries())
-          .map(([tab, set]) => [tab, Array.from(set)])
-      ),
-      currentTab: this.current.currentTab,
-      userTabs: this.current.userTabs
-    };
-    
-    try {
-      await IndexedDBManager.saveMetadata(state, this.current.isOnline);
-    } catch (error) {
-      console.error('Erro ao salvar estado:', error);
-      Utils.showStatus('Erro ao salvar configurações');
-    }
-  }, 500),
+  saveState: Utils.debounce(async () => {
+  const state = {
+    images: Object.fromEntries(AppState.current.imageGallery),
+    selected: Object.fromEntries(
+      Array.from(AppState.current.selectedImages.entries())
+        .map(([tab, set]) => [tab, Array.from(set)])
+    ),
+    currentTab: AppState.current.currentTab,
+    userTabs: AppState.current.userTabs
+  };
+
+  try {
+    await IndexedDBManager.saveMetadata(state, AppState.current.isOnline);
+  } catch (error) {
+    console.error('Erro ao salvar estado:', error);
+    Utils.showStatus('Erro ao salvar configurações');
+  }
+}, 500),
   
   // Resetar estado
   resetState: function() {
