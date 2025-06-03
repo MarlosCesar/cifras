@@ -136,20 +136,26 @@ const IndexedDBManager = {
   ),
 
   clearOldCache: (maxAge = 30 * 24 * 60 * 60 * 1000) => IndexedDBManager._performTransaction(
-    STORE_ONLINE,
-    'readwrite',
-    store => {
-      const threshold = Date.now() - maxAge;
-      const index = store.index('tab');
-      return index.openCursor().then(function deleteOld(cursor) {
-        if (!cursor) return;
+  STORE_ONLINE,
+  'readwrite',
+  store => {
+    const threshold = Date.now() - maxAge;
+    const index = store.index('tab');
+    const request = index.openCursor();
+    request.onsuccess = function(event) {
+      const cursor = event.target.result;
+      if (cursor) {
         if (cursor.value.lastCached < threshold) {
           cursor.delete();
         }
-        return cursor.continue().then(deleteOld);
-      });
-    }
-  ),
+        cursor.continue();
+      }
+    };
+    request.onerror = function(event) {
+      console.error("Erro ao abrir cursor:", event.target.error);
+    };
+  }
+),
 
   // Método auxiliar para transações
   _performTransaction: (storeName, mode, operation) => new Promise(async (resolve, reject) => {
