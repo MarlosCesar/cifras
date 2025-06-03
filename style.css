@@ -14,7 +14,6 @@
   --header-bg: #1A202C;
   --header-text: #E2E8F0;
   --header-hover: #2D3748;
-  --online-indicator: #10b981;
 }
 
 /* Modo escuro */
@@ -33,7 +32,6 @@
   --header-bg: #18181b;
   --header-text: #e5e7eb;
   --header-hover: #27272a;
-  --online-indicator: #34d399;
 }
 
 /* Estilos base */
@@ -71,31 +69,6 @@ html, body {
 
 .header-professional button:active {
   transform: scale(0.95);
-}
-
-/* Online Switch */
-#online-switch-bar {
-  background-color: var(--gray-light);
-  padding: 8px 16px;
-  border-radius: 0 0 8px 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  display: flex;
-  justify-content: flex-end;
-  transition: all 0.3s ease;
-}
-
-#online-status-label {
-  color: var(--text-color-light);
-  font-size: 0.9rem;
-  transition: color 0.3s ease;
-}
-
-#online-status-label.online {
-  color: var(--online-indicator);
-  font-weight: 600;
 }
 
 /* Tabs */
