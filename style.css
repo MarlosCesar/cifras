@@ -552,3 +552,17 @@ html, body {
 body, .image-container, .tab, .float-controls {
   transition: background-color 0.3s ease, border-color 0.3s ease;
 }
+
+.modal-nuvem {
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.27); display: flex; align-items: center; justify-content: center; z-index: 10000;
+}
+.modal-nuvem.hidden { display: none; }
+.modal-content { background: #fff; border-radius: 14px; padding: 30px 24px; width: 370px; max-width: 98vw; display: flex; flex-direction: column; gap: 18px; position: relative; }
+.close-modal { position: absolute; right: 14px; top: 10px; font-size: 1.6rem; color: #555; cursor: pointer; }
+.filtro-cifra { padding: 7px 12px; width: 100%; border: 1px solid #e5e7eb; border-radius: 6px; }
+.lista-cifras { max-height: 320px; overflow-y: auto; margin-top: 6px; display: flex; flex-direction: column; gap: 8px; }
+.cifra-checkbox { display: flex; align-items: center; gap: 9px; }
+.incluir-cifras-btn { align-self: flex-end; background: #2563eb; color: #fff; padding: 7px 18px; border: none; border-radius: 8px; font-size: 1.1rem; cursor: pointer; }
+.incluir-cifras-btn:disabled { background: #ccc; color: #888; cursor: not-allowed; }
