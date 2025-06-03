@@ -839,12 +839,6 @@ const EventManager = {
     };
     DOM.fileInput.onchange = ImageManager.handleFileSelection;
 
-    // Dark mode toggle
-    DOM.darkModeToggle.onclick = () => {
-      const isDark = document.documentElement.classList.contains('dark');
-      setDarkMode(!isDark);
-    };
-
     // Drag and drop for reordering
     if (DOM.imageList) {
       DOM.imageList.addEventListener('dragover', (e) => {
