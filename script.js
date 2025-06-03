@@ -28,23 +28,9 @@ const Utils = {
   }
 };
 
-// ======== Firebase Config ========
-const firebaseConfig = {
-  apiKey: "AIzaSyA10_i84FS8v2MmayKmbplHQwjQGnWGczY",
-  authDomain: "cifrassite.firebaseapp.com",
-  projectId: "cifrassite",
-  storageBucket: "cifrassite.appspot.com",
-  messagingSenderId: "478416827358",
-  appId: "1:478416827358:web:7944033bddd8e877dc634f"
-};
-
-// Initialize Firebase
-const firebaseApp = firebase.initializeApp(firebaseConfig);
-const storage = firebase.storage();
-
 // ======== IndexedDB =========
 const DB_NAME = 'ImageSelectorDB';
-const DB_VERSION = 3; // Incrementado para nova estrutura
+const DB_VERSION = 2;
 const STORE_IMAGES = 'images';
 const STORE_METADATA = 'metadata';
 
@@ -63,8 +49,7 @@ const IndexedDBManager = {
         db.createObjectStore(STORE_IMAGES, { keyPath: 'name' });
       }
       if (!db.objectStoreNames.contains(STORE_METADATA)) {
-        const store = db.createObjectStore(STORE_METADATA, { keyPath: 'id' });
-        store.createIndex('syncStatus', 'syncStatus', { unique: false });
+        db.createObjectStore(STORE_METADATA, { keyPath: 'id' });
       }
     };
     request.onsuccess = (event) => {
@@ -77,21 +62,13 @@ const IndexedDBManager = {
     };
   }),
 
-  addImageBlob: (imageName, blob, isSynced = false) => new Promise(async (resolve, reject) => {
+  addImageBlob: (imageName, blob) => new Promise(async (resolve, reject) => {
     try {
       const db = await IndexedDBManager.open();
       const transaction = db.transaction([STORE_IMAGES], 'readwrite');
       const store = transaction.objectStore(STORE_IMAGES);
-      
-      const record = { 
-        name: imageName, 
-        blob: blob,
-        lastModified: new Date().getTime(),
-        syncStatus: isSynced ? 'synced' : 'local'
-      };
-      
-      store.put(record).onsuccess = resolve;
-      store.put(record).onerror = (event) => reject(event.target.error);
+      store.put({ name: imageName, blob: blob }).onsuccess = resolve;
+      store.put({ name: imageName, blob: blob }).onerror = (event) => reject(event.target.error);
     } catch (e) {
       reject(e);
     }
@@ -128,11 +105,7 @@ const IndexedDBManager = {
       const db = await IndexedDBManager.open();
       const transaction = db.transaction([STORE_METADATA], 'readwrite');
       const store = transaction.objectStore(STORE_METADATA);
-      const request = store.put({ 
-        id: 'appState', 
-        state: state,
-        lastSync: new Date().getTime()
-      });
+      const request = store.put({ id: 'appState', state: state });
       request.onsuccess = resolve;
       request.onerror = (event) => reject(event.target.error);
     } catch (e) {
@@ -151,144 +124,7 @@ const IndexedDBManager = {
     } catch (e) {
       reject(e);
     }
-  }),
-
-  getUnsyncedImages: () => new Promise(async (resolve, reject) => {
-    try {
-      const db = await IndexedDBManager.open();
-      const transaction = db.transaction([STORE_IMAGES], 'readonly');
-      const store = transaction.objectStore(STORE_IMAGES);
-      const request = store.getAll();
-      request.onsuccess = (event) => {
-        const unsynced = event.target.result.filter(img => img.syncStatus !== 'synced');
-        resolve(unsynced);
-      };
-      request.onerror = (event) => reject(event.target.error);
-    } catch (e) {
-      reject(e);
-    }
   })
-};
-
-// ======== Online Manager ========
-const OnlineManager = {
-  isOnline: false,
-  statusElement: document.getElementById('online-status-label'),
-
-  init: () => {
-    const onlineSwitch = document.getElementById('online-switch');
-    onlineSwitch.addEventListener('change', (e) => {
-      OnlineManager.setOnline(e.target.checked);
-    });
-    
-    // Verificar status inicial
-    OnlineManager.setOnline(localStorage.getItem('onlineMode') === 'true');
-    onlineSwitch.checked = OnlineManager.isOnline;
-  },
-
-  setOnline: (status) => {
-    OnlineManager.isOnline = status;
-    localStorage.setItem('onlineMode', status);
-    
-    if (status) {
-      OnlineManager.statusElement.textContent = 'Online';
-      OnlineManager.statusElement.classList.add('online');
-      Utils.showStatus('Modo online ativado. Conectado ao Firebase.');
-      
-      // Tentar sincronizar automaticamente
-      setTimeout(() => FirebaseManager.syncLocalChanges(), 1000);
-    } else {
-      OnlineManager.statusElement.textContent = 'Offline';
-      OnlineManager.statusElement.classList.remove('online');
-      Utils.showStatus('Modo offline ativado. Trabalhando localmente.');
-    }
-  }
-};
-
-// ======== Firebase Manager ========
-const FirebaseManager = {
-  listTabImages: async (tabName) => {
-    try {
-      UI.showLoading();
-      const tabRef = storage.ref().child(`cifras/${tabName}`);
-      const res = await tabRef.listAll();
-      
-      const images = [];
-      for (const item of res.items) {
-        try {
-          const url = await item.getDownloadURL();
-          const blob = await fetch(url).then(r => r.blob());
-          images.push({
-            name: item.name,
-            blob: blob,
-            lastModified: (await item.getMetadata()).updated
-          });
-        } catch (error) {
-          console.error(`Error loading image ${item.name}:`, error);
-        }
-      }
-      return images;
-    } catch (error) {
-      console.error('Error listing tab images:', error);
-      Utils.showStatus('Erro ao carregar cifras da nuvem', 5000);
-      return [];
-    } finally {
-      UI.hideLoading();
-    }
-  },
-
-  uploadImage: async (tabName, imageName, blob) => {
-    try {
-      const tabRef = storage.ref().child(`cifras/${tabName}/${imageName}`);
-      await tabRef.put(blob);
-      return true;
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      return false;
-    }
-  },
-
-  deleteImage: async (tabName, imageName) => {
-    try {
-      const imageRef = storage.ref().child(`cifras/${tabName}/${imageName}`);
-      await imageRef.delete();
-      return true;
-    } catch (error) {
-      console.error('Error deleting image:', error);
-      return false;
-    }
-  },
-
-  syncLocalChanges: async () => {
-    if (!OnlineManager.isOnline) return;
-    
-    try {
-      UI.showLoading();
-      const unsyncedImages = await IndexedDBManager.getUnsyncedImages();
-      
-      if (unsyncedImages.length > 0) {
-        Utils.showStatus(`Sincronizando ${unsyncedImages.length} alterações...`);
-        
-        for (const img of unsyncedImages) {
-          // Encontrar em qual tab está a imagem
-          for (const [tab, images] of imageGalleryByTab.entries()) {
-            if (images.includes(img.name)) {
-              await FirebaseManager.uploadImage(tab, img.name, img.blob);
-              await IndexedDBManager.addImageBlob(img.name, img.blob, true);
-              break;
-            }
-          }
-        }
-        
-        Utils.showStatus('Sincronização concluída!');
-      }
-    } catch (error) {
-      console.error('Sync error:', error);
-      Utils.showStatus('Erro durante a sincronização', 5000);
-    } finally {
-      UI.hideLoading();
-    }
-  }
 };
 
 // ======= Estado do App =======
@@ -307,12 +143,10 @@ const DOM = {
   imageList: document.getElementById('image-list'),
   fileInput: document.getElementById('file-input'),
   openFileDialogButton: document.getElementById('open-file-dialog'),
-  openCloudFolderButton: document.getElementById('open-cloud-folder'),
   deleteSelectedBtn: document.getElementById('delete-selected-btn'),
   clearSelectionBtn: document.getElementById('clear-selection-btn'),
   selectAllBtn: document.getElementById('select-all-btn'),
   floatControls: document.getElementById('float-controls'),
-  syncBtn: document.getElementById('sync-btn'),
   darkModeToggle: document.getElementById('dark-mode-toggle'),
   loadingSpinner: document.getElementById('loading-spinner'),
   statusMessage: document.getElementById('status-message'),
@@ -901,13 +735,6 @@ const ImageManager = {
     
     UI.showLoading();
     try {
-      // Delete from Firebase if online
-      if (OnlineManager.isOnline) {
-        for (const name of selectedNames) {
-          await FirebaseManager.deleteImage(currentTab, name);
-        }
-      }
-      
       // Delete from local storage
       for (const name of selectedNames) {
         await IndexedDBManager.deleteImageBlob(name);
@@ -967,12 +794,6 @@ const ImageManager = {
             imageGalleryByTab.get(currentTab).push(processed.name);
           }
           
-          // Upload to Firebase if online
-          if (OnlineManager.isOnline) {
-            await FirebaseManager.uploadImage(currentTab, processed.name, processed.blob);
-            await IndexedDBManager.addImageBlob(processed.name, processed.blob, true);
-          }
-          
           loadedCount++;
         } catch (error) {
           console.error(`Error processing file ${file.name}:`, error);
@@ -1018,49 +839,6 @@ const EventManager = {
       DOM.fileInput.click();
     };
     DOM.fileInput.onchange = ImageManager.handleFileSelection;
-
-    // Cloud button
-    DOM.openCloudFolderButton.onclick = async () => {
-      if (!OnlineManager.isOnline) {
-        Utils.showStatus('Ative o modo online para acessar a nuvem.');
-        return;
-      }
-      
-      try {
-        const images = await FirebaseManager.listTabImages(currentTab);
-        let newImagesCount = 0;
-        
-        for (const img of images) {
-          const exists = imageGalleryByTab.get(currentTab).includes(img.name);
-          if (!exists) {
-            await IndexedDBManager.addImageBlob(img.name, img.blob, true);
-            imageGalleryByTab.get(currentTab).push(img.name);
-            newImagesCount++;
-          }
-        }
-        
-        await UI.renderImages();
-        StateManager.saveState();
-        
-        if (newImagesCount > 0) {
-          Utils.showStatus(`${newImagesCount} novas cifras carregadas da nuvem.`);
-        } else {
-          Utils.showStatus('Nenhuma cifra nova encontrada na nuvem.');
-        }
-      } catch (error) {
-        console.error('Error loading cloud images:', error);
-        Utils.showStatus('Erro ao carregar cifras: ' + error.message, 5000);
-      }
-    };
-
-    // Sync button
-    DOM.syncBtn.onclick = () => {
-      if (!OnlineManager.isOnline) {
-        Utils.showStatus('Ative o modo online para sincronizar.');
-        return;
-      }
-      FirebaseManager.syncLocalChanges();
-    };
 
     // Dark mode toggle
     DOM.darkModeToggle.onclick = () => {
@@ -1139,7 +917,6 @@ function detectDarkMode() {
 async function init() {
   // Set initial modes
   setDarkMode(detectDarkMode());
-  OnlineManager.init();
 
   // Load app state
   UI.showLoading();
