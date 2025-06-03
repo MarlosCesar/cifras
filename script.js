@@ -1,11 +1,11 @@
 // ======== Utilitários ========
 const Utils = {
   removeFileExtension: filename => filename.replace(/\.[^/.]+$/, ""),
-  showStatus: (message) => {
+  showStatus: (message, duration = 3000) => {
     const el = document.getElementById('status-message');
     el.textContent = message;
     el.classList.add('show');
-    setTimeout(() => el.classList.remove('show'), 3000);
+    setTimeout(() => el.classList.remove('show'), duration);
   },
   debounce: (func, timeout = 300) => {
     let timer;
@@ -28,9 +28,23 @@ const Utils = {
   }
 };
 
+// ======== Firebase Config ========
+const firebaseConfig = {
+  apiKey: "AIzaSyA10_i84FS8v2MmayKmbplHQwjQGnWGczY",
+  authDomain: "cifrassite.firebaseapp.com",
+  projectId: "cifrassite",
+  storageBucket: "cifrassite.appspot.com",
+  messagingSenderId: "478416827358",
+  appId: "1:478416827358:web:7944033bddd8e877dc634f"
+};
+
+// Initialize Firebase
+const firebaseApp = firebase.initializeApp(firebaseConfig);
+const storage = firebase.storage();
+
 // ======== IndexedDB =========
 const DB_NAME = 'ImageSelectorDB';
-const DB_VERSION = 2;
+const DB_VERSION = 3; // Incrementado para nova estrutura
 const STORE_IMAGES = 'images';
 const STORE_METADATA = 'metadata';
 
@@ -49,7 +63,8 @@ const IndexedDBManager = {
         db.createObjectStore(STORE_IMAGES, { keyPath: 'name' });
       }
       if (!db.objectStoreNames.contains(STORE_METADATA)) {
-        db.createObjectStore(STORE_METADATA, { keyPath: 'id' });
+        const store = db.createObjectStore(STORE_METADATA, { keyPath: 'id' });
+        store.createIndex('syncStatus', 'syncStatus', { unique: false });
       }
     };
     request.onsuccess = (event) => {
@@ -57,18 +72,26 @@ const IndexedDBManager = {
       resolve(IndexedDBManager.db);
     };
     request.onerror = (event) => {
-      console.error('IndexedDB error:', event.target.errorCode);
-      reject(event.target.errorCode);
+      console.error('IndexedDB error:', event.target.error);
+      reject(event.target.error);
     };
   }),
 
-  addImageBlob: (imageName, blob) => new Promise(async (resolve, reject) => {
+  addImageBlob: (imageName, blob, isSynced = false) => new Promise(async (resolve, reject) => {
     try {
       const db = await IndexedDBManager.open();
       const transaction = db.transaction([STORE_IMAGES], 'readwrite');
       const store = transaction.objectStore(STORE_IMAGES);
-      store.put({ name: imageName, blob: blob }).onsuccess = resolve;
-      store.put({ name: imageName, blob: blob }).onerror = (event) => reject(event.target.error);
+      
+      const record = { 
+        name: imageName, 
+        blob: blob,
+        lastModified: new Date().getTime(),
+        syncStatus: isSynced ? 'synced' : 'local'
+      };
+      
+      store.put(record).onsuccess = resolve;
+      store.put(record).onerror = (event) => reject(event.target.error);
     } catch (e) {
       reject(e);
     }
@@ -105,7 +128,11 @@ const IndexedDBManager = {
       const db = await IndexedDBManager.open();
       const transaction = db.transaction([STORE_METADATA], 'readwrite');
       const store = transaction.objectStore(STORE_METADATA);
-      const request = store.put({ id: 'appState', state: state });
+      const request = store.put({ 
+        id: 'appState', 
+        state: state,
+        lastSync: new Date().getTime()
+      });
       request.onsuccess = resolve;
       request.onerror = (event) => reject(event.target.error);
     } catch (e) {
@@ -124,15 +151,151 @@ const IndexedDBManager = {
     } catch (e) {
       reject(e);
     }
+  }),
+
+  getUnsyncedImages: () => new Promise(async (resolve, reject) => {
+    try {
+      const db = await IndexedDBManager.open();
+      const transaction = db.transaction([STORE_IMAGES], 'readonly');
+      const store = transaction.objectStore(STORE_IMAGES);
+      const request = store.getAll();
+      request.onsuccess = (event) => {
+        const unsynced = event.target.result.filter(img => img.syncStatus !== 'synced');
+        resolve(unsynced);
+      };
+      request.onerror = (event) => reject(event.target.error);
+    } catch (e) {
+      reject(e);
+    }
   })
+};
+
+// ======== Online Manager ========
+const OnlineManager = {
+  isOnline: false,
+  statusElement: document.getElementById('online-status-label'),
+
+  init: () => {
+    const onlineSwitch = document.getElementById('online-switch');
+    onlineSwitch.addEventListener('change', (e) => {
+      OnlineManager.setOnline(e.target.checked);
+    });
+    
+    // Verificar status inicial
+    OnlineManager.setOnline(localStorage.getItem('onlineMode') === 'true');
+    onlineSwitch.checked = OnlineManager.isOnline;
+  },
+
+  setOnline: (status) => {
+    OnlineManager.isOnline = status;
+    localStorage.setItem('onlineMode', status);
+    
+    if (status) {
+      OnlineManager.statusElement.textContent = 'Online';
+      OnlineManager.statusElement.classList.add('online');
+      Utils.showStatus('Modo online ativado. Conectado ao Firebase.');
+      
+      // Tentar sincronizar automaticamente
+      setTimeout(() => FirebaseManager.syncLocalChanges(), 1000);
+    } else {
+      OnlineManager.statusElement.textContent = 'Offline';
+      OnlineManager.statusElement.classList.remove('online');
+      Utils.showStatus('Modo offline ativado. Trabalhando localmente.');
+    }
+  }
+};
+
+// ======== Firebase Manager ========
+const FirebaseManager = {
+  listTabImages: async (tabName) => {
+    try {
+      UI.showLoading();
+      const tabRef = storage.ref().child(`cifras/${tabName}`);
+      const res = await tabRef.listAll();
+      
+      const images = [];
+      for (const item of res.items) {
+        try {
+          const url = await item.getDownloadURL();
+          const blob = await fetch(url).then(r => r.blob());
+          images.push({
+            name: item.name,
+            blob: blob,
+            lastModified: (await item.getMetadata()).updated
+          });
+        } catch (error) {
+          console.error(`Error loading image ${item.name}:`, error);
+        }
+      }
+      return images;
+    } catch (error) {
+      console.error('Error listing tab images:', error);
+      Utils.showStatus('Erro ao carregar cifras da nuvem', 5000);
+      return [];
+    } finally {
+      UI.hideLoading();
+    }
+  },
+
+  uploadImage: async (tabName, imageName, blob) => {
+    try {
+      const tabRef = storage.ref().child(`cifras/${tabName}/${imageName}`);
+      await tabRef.put(blob);
+      return true;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      return false;
+    }
+  },
+
+  deleteImage: async (tabName, imageName) => {
+    try {
+      const imageRef = storage.ref().child(`cifras/${tabName}/${imageName}`);
+      await imageRef.delete();
+      return true;
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      return false;
+    }
+  },
+
+  syncLocalChanges: async () => {
+    if (!OnlineManager.isOnline) return;
+    
+    try {
+      UI.showLoading();
+      const unsyncedImages = await IndexedDBManager.getUnsyncedImages();
+      
+      if (unsyncedImages.length > 0) {
+        Utils.showStatus(`Sincronizando ${unsyncedImages.length} alterações...`);
+        
+        for (const img of unsyncedImages) {
+          // Encontrar em qual tab está a imagem
+          for (const [tab, images] of imageGalleryByTab.entries()) {
+            if (images.includes(img.name)) {
+              await FirebaseManager.uploadImage(tab, img.name, img.blob);
+              await IndexedDBManager.addImageBlob(img.name, img.blob, true);
+              break;
+            }
+          }
+        }
+        
+        Utils.showStatus('Sincronização concluída!');
+      }
+    } catch (error) {
+      console.error('Sync error:', error);
+      Utils.showStatus('Erro durante a sincronização', 5000);
+    } finally {
+      UI.hideLoading();
+    }
+  }
 };
 
 // ======= Estado do App =======
 let tabs = [
   "Domingo Manhã", "Domingo Noite", "Segunda", "Quarta", "Culto Jovem", "Santa Ceia"
-]; // NÃO inclui "Outros" nem "+"
-let userTabs = []; // abas criadas pelo usuário
-
+];
+let userTabs = [];
 let imageGalleryByTab = new Map();
 let selectedImagesByTab = new Map();
 let currentTab = tabs[0];
@@ -150,25 +313,20 @@ const DOM = {
   selectAllBtn: document.getElementById('select-all-btn'),
   floatControls: document.getElementById('float-controls'),
   syncBtn: document.getElementById('sync-btn'),
-  settingsBtn: document.getElementById('settings-btn'),
+  darkModeToggle: document.getElementById('dark-mode-toggle'),
   loadingSpinner: document.getElementById('loading-spinner'),
   statusMessage: document.getElementById('status-message'),
-  darkModeToggle: document.getElementById('dark-mode-toggle'),
   body: document.body
 };
 
-// ====== Tabs Dinâmicas com "+" e Remoção ======
-function getAllTabs() {
-  return [...tabs, ...userTabs, "+"];
-}
-
+// ====== UI Functions ======
 const UI = {
   showLoading: () => DOM.loadingSpinner.classList.add('active'),
   hideLoading: () => DOM.loadingSpinner.classList.remove('active'),
 
   createTabs: function () {
     DOM.tabsContainer.innerHTML = '';
-    const allTabs = getAllTabs();
+    const allTabs = [...tabs, ...userTabs, "+"];
 
     allTabs.forEach((tab, idx) => {
       const isPlus = (tab === "+");
@@ -187,12 +345,7 @@ const UI = {
           let name = prompt("Nome da nova aba:");
           if (name) {
             name = name.trim();
-            if (
-              name.length > 0 &&
-              !tabs.includes(name) &&
-              !userTabs.includes(name) &&
-              name !== "+"
-            ) {
+            if (name.length > 0 && !tabs.includes(name) && !userTabs.includes(name) && name !== "+") {
               userTabs.push(name);
               imageGalleryByTab.set(name, []);
               selectedImagesByTab.set(name, new Set());
@@ -210,7 +363,6 @@ const UI = {
         btn.onclick = () => TabManager.switchTab(tab);
         btn.onkeydown = (e) => TabManager.keyNav(e, tab, idx);
 
-        // Abas de usuário: adiciona botão X
         if (isUserTab) {
           btn.style.position = "relative";
           const closeBtn = document.createElement('span');
@@ -226,14 +378,16 @@ const UI = {
           closeBtn.className = "close-tab-btn";
           closeBtn.onclick = (e) => {
             e.stopPropagation();
-            imageGalleryByTab.delete(tab);
-            selectedImagesByTab.delete(tab);
-            userTabs = userTabs.filter(t => t !== tab);
-            if (currentTab === tab) currentTab = tabs[0];
-            UI.createTabs();
-            UI.updateTabsUI();
-            UI.renderImages();
-            StateManager.saveState();
+            if (confirm(`Remover a aba "${tab}" e todas as suas cifras?`)) {
+              imageGalleryByTab.delete(tab);
+              selectedImagesByTab.delete(tab);
+              userTabs = userTabs.filter(t => t !== tab);
+              if (currentTab === tab) currentTab = tabs[0];
+              UI.createTabs();
+              UI.updateTabsUI();
+              UI.renderImages();
+              StateManager.saveState();
+            }
           };
           btn.appendChild(closeBtn);
 
@@ -249,7 +403,7 @@ const UI = {
   },
 
   updateTabsUI: function () {
-    const allTabs = getAllTabs();
+    const allTabs = [...tabs, ...userTabs, "+"];
     const buttons = DOM.tabsContainer.querySelectorAll('.tab');
     buttons.forEach((btn, idx) => {
       const tab = allTabs[idx];
@@ -278,127 +432,129 @@ const UI = {
       DOM.imageList.appendChild(p);
     } else {
       for (const name of imageNames) {
-        const blob = await IndexedDBManager.getImageBlob(name);
-        if (blob) {
-          DOM.imageList.appendChild(UI.createImageElement(name, blob));
+        try {
+          const blob = await IndexedDBManager.getImageBlob(name);
+          if (blob) {
+            DOM.imageList.appendChild(UI.createImageElement(name, blob));
+          }
+        } catch (error) {
+          console.error(`Error loading image ${name}:`, error);
         }
       }
     }
     UI.updateSelectionUI();
   },
 
-createImageElement: (imageName, imageBlob) => {
-  const container = document.createElement('div');
-  container.className = 'image-container';
-  container.setAttribute('draggable', 'true');
-  container.setAttribute('tabindex', '0');
-  container.setAttribute('role', 'checkbox');
-  container.setAttribute('aria-checked', selectedImagesByTab.get(currentTab).has(imageName));
-  container.dataset.name = imageName;
+  createImageElement: (imageName, imageBlob) => {
+    const container = document.createElement('div');
+    container.className = 'image-container';
+    container.setAttribute('draggable', 'true');
+    container.setAttribute('tabindex', '0');
+    container.setAttribute('role', 'checkbox');
+    container.setAttribute('aria-checked', selectedImagesByTab.get(currentTab).has(imageName));
+    container.dataset.name = imageName;
 
-  if (selectedImagesByTab.get(currentTab).has(imageName)) {
-    container.classList.add('selected');
-  }
+    if (selectedImagesByTab.get(currentTab).has(imageName)) {
+      container.classList.add('selected');
+    }
 
-  const checkbox = document.createElement('div');
-  checkbox.className = 'image-checkbox';
-  if (selectedImagesByTab.get(currentTab).has(imageName)) {
-    checkbox.classList.add('checked');
-  }
-  checkbox.onclick = (e) => {
-    e.stopPropagation();
-    ImageManager.toggleSelectImage(imageName, container);
-  };
+    const checkbox = document.createElement('div');
+    checkbox.className = 'image-checkbox';
+    if (selectedImagesByTab.get(currentTab).has(imageName)) {
+      checkbox.classList.add('checked');
+    }
+    checkbox.onclick = (e) => {
+      e.stopPropagation();
+      ImageManager.toggleSelectImage(imageName, container);
+    };
 
-  const img = document.createElement('img');
-  const objectURL = Utils.createObjectURL(imageBlob);
-  img.src = objectURL;
-  img.dataset.objectUrl = objectURL;
-  img.alt = Utils.removeFileExtension(imageName);
+    const img = document.createElement('img');
+    const objectURL = Utils.createObjectURL(imageBlob);
+    img.src = objectURL;
+    img.dataset.objectUrl = objectURL;
+    img.alt = Utils.removeFileExtension(imageName);
 
-  const nameSpan = document.createElement('span');
-  nameSpan.className = 'image-name';
-  nameSpan.textContent = Utils.removeFileExtension(imageName);
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'image-name';
+    nameSpan.textContent = Utils.removeFileExtension(imageName);
 
-  container.append(checkbox, img, nameSpan);
+    container.append(checkbox, img, nameSpan);
 
-  // --- LÓGICA DE SELEÇÃO WHATSAPP ---
-  let longPressTimer = null;
-  let longPressed = false;
+    // Long press/right click for selection
+    let longPressTimer = null;
+    let longPressed = false;
 
-  // desktop: botão esquerdo do mouse
-  container.addEventListener('mousedown', (e) => {
-    if (e.button !== 0) return;
-    longPressed = false;
-    longPressTimer = setTimeout(() => {
-      longPressed = true;
-      if (!isSelectionMode) {
-        ImageManager.enterSelectionMode();
+    container.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      longPressed = false;
+      longPressTimer = setTimeout(() => {
+        longPressed = true;
+        if (!isSelectionMode) {
+          ImageManager.enterSelectionMode();
+          ImageManager.toggleSelectImage(imageName, container);
+        }
+      }, 400);
+    });
+
+    container.addEventListener('mouseup', (e) => {
+      clearTimeout(longPressTimer);
+      if (isSelectionMode && !longPressed && e.button === 0) {
         ImageManager.toggleSelectImage(imageName, container);
       }
-    }, 400);
-  });
+      longPressed = false;
+    });
 
-  container.addEventListener('mouseup', (e) => {
-    clearTimeout(longPressTimer);
-    // Se estava em modo seleção e não foi long, faz seleção/deseleção
-    if (isSelectionMode && !longPressed && e.button === 0) {
-      ImageManager.toggleSelectImage(imageName, container);
-    }
-    longPressed = false;
-  });
+    container.addEventListener('mouseleave', () => {
+      clearTimeout(longPressTimer);
+      longPressed = false;
+    });
 
-  container.addEventListener('mouseleave', () => {
-    clearTimeout(longPressTimer);
-    longPressed = false;
-  });
+    // Touch events for mobile
+    container.addEventListener('touchstart', (e) => {
+      longPressed = false;
+      longPressTimer = setTimeout(() => {
+        longPressed = true;
+        if (!isSelectionMode) {
+          ImageManager.enterSelectionMode();
+          ImageManager.toggleSelectImage(imageName, container);
+        }
+      }, 400);
+    });
 
-  // mobile: touch
-  container.addEventListener('touchstart', (e) => {
-    longPressed = false;
-    longPressTimer = setTimeout(() => {
-      longPressed = true;
-      if (!isSelectionMode) {
-        ImageManager.enterSelectionMode();
+    container.addEventListener('touchend', (e) => {
+      clearTimeout(longPressTimer);
+      if (isSelectionMode && !longPressed) {
         ImageManager.toggleSelectImage(imageName, container);
       }
-    }, 400);
-  });
+      longPressed = false;
+    });
 
-  container.addEventListener('touchend', (e) => {
-    clearTimeout(longPressTimer);
-    // Se estava em modo seleção e não foi long, faz seleção/deseleção
-    if (isSelectionMode && !longPressed) {
-      ImageManager.toggleSelectImage(imageName, container);
-    }
-    longPressed = false;
-  });
+    // Double click for fullscreen
+    container.ondblclick = () => {
+      if (!isSelectionMode) {
+        UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
+      }
+    };
 
-  // Clique duplo abre tela cheia só se não estiver em seleção
-  container.ondblclick = () => {
-    if (!isSelectionMode) {
-      UI.openFullscreen(objectURL, Utils.removeFileExtension(imageName));
-    }
-  };
+    // Drag and drop for reordering
+    container.addEventListener('dragstart', (e) => {
+      container.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', imageName);
+    });
 
-  // DRAG & DROP PARA REORDENAR (mantém igual)
-  container.addEventListener('dragstart', (e) => {
-    container.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', imageName);
-  });
+    container.addEventListener('dragend', () => {
+      container.classList.remove('dragging');
+      DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    });
 
-  container.addEventListener('dragend', () => {
-    container.classList.remove('dragging');
-    DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-  });
-
-  return container;
-},
+    return container;
+  },
 
   updateSelectionUI: () => {
     const selectedCount = selectedImagesByTab.get(currentTab).size;
     const totalImages = imageGalleryByTab.get(currentTab).length;
+    
     if (selectedCount > 0) {
       DOM.floatControls.classList.add('show');
       const allSelected = selectedCount === totalImages;
@@ -411,45 +567,28 @@ createImageElement: (imageName, imageBlob) => {
     DOM.selectAllBtn.style.display = totalImages <= 1 ? 'none' : 'flex';
   },
 
-  // FULLSCREEN APRIMORADO
   openFullscreen: (src, alt) => {
     const overlay = document.createElement('div');
     overlay.className = 'fullscreen-image';
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
     overlay.setAttribute('aria-label', `Visualização da imagem ${alt}`);
-    overlay.style.backgroundColor = "rgba(0,0,0,1)";
-    overlay.style.position = "fixed";
-    overlay.style.left = "0";
-    overlay.style.top = "0";
-    overlay.style.width = "100vw";
-    overlay.style.height = "100vh";
-    overlay.style.zIndex = "9999";
-    overlay.style.overflow = "hidden";
 
-    // Zoom state
-    let scale = 1, startX = 0, startY = 0, posX = 0, posY = 0, dragging = false, lastTouchDist = null;
+    let scale = 1, posX = 0, posY = 0, dragging = false, startX = 0, startY = 0, lastTouchDist = null;
 
     const img = document.createElement('img');
     img.src = src;
     img.alt = alt;
     img.tabIndex = 0;
-    img.style.maxWidth = "100vw";
-    img.style.maxHeight = "100vh";
-    img.style.objectFit = "contain";
-    img.style.display = "block";
-    img.style.margin = "auto";
-    img.style.position = "absolute";
-    img.style.top = "0";
-    img.style.bottom = "0";
-    img.style.left = "0";
-    img.style.right = "0";
-    img.style.transition = "transform 0.1s";
-    img.style.cursor = "zoom-in";
+    img.style.maxWidth = '100vw';
+    img.style.maxHeight = '100vh';
+    img.style.objectFit = 'contain';
+    img.style.transition = 'transform 0.1s';
+    img.style.cursor = 'zoom-in';
 
     overlay.appendChild(img);
 
-    // Botão X para fechar
+    // Close button
     const closeBtn = document.createElement('button');
     closeBtn.innerHTML = '&times;';
     closeBtn.setAttribute('aria-label', 'Fechar imagem em tela cheia');
@@ -484,7 +623,7 @@ createImageElement: (imageName, imageBlob) => {
 
     overlay.appendChild(closeBtn);
 
-    // Fecha overlay
+    // Close overlay
     function closeOverlay() {
       if (document.fullscreenElement) {
         document.exitFullscreen();
@@ -493,67 +632,68 @@ createImageElement: (imageName, imageBlob) => {
         overlay.parentNode.removeChild(overlay);
       }
       Utils.revokeObjectURL(img.src);
-      document.removeEventListener("keydown", escListener);
+      document.removeEventListener('keydown', escListener);
     }
 
     closeBtn.onclick = closeOverlay;
 
-    // Clique/tap mostra ou oculta o X
-    let btnVisible = false;
+    // Toggle close button visibility
     function toggleCloseBtn() {
-      btnVisible = !btnVisible;
-      if (btnVisible) showCloseBtn();
-      else hideCloseBtn();
+      if (closeBtn.style.opacity === '0' || closeBtn.style.display === 'none') {
+        showCloseBtn();
+      } else {
+        hideCloseBtn();
+      }
     }
+
     img.addEventListener('click', toggleCloseBtn);
     img.addEventListener('touchend', toggleCloseBtn);
 
-    // ESC fecha
+    // ESC key to close
     function escListener(e) {
-      if (e.key === "Escape") closeOverlay();
+      if (e.key === 'Escape') closeOverlay();
     }
-    document.addEventListener("keydown", escListener);
+    document.addEventListener('keydown', escListener);
 
-    overlay.addEventListener("fullscreenchange", () => {
-      if (!document.fullscreenElement) closeOverlay();
-    });
-
-    // Fecha ao clicar fora da imagem (mas não no X)
-    overlay.addEventListener("click", (e) => {
+    // Close when clicking outside
+    overlay.addEventListener('click', (e) => {
       if (e.target === overlay) closeOverlay();
     });
 
-    // --- ZOOM & PAN: Mouse (desktop) ---
+    // Zoom with mouse wheel
     overlay.addEventListener('wheel', function(e) {
       e.preventDefault();
       let delta = e.deltaY > 0 ? -0.15 : 0.15;
       scale = Math.min(6, Math.max(1, scale + delta));
       img.style.transform = `scale(${scale}) translate(${posX / scale}px,${posY / scale}px)`;
-      img.style.cursor = scale > 1 ? "grab" : "zoom-in";
+      img.style.cursor = scale > 1 ? 'grab' : 'zoom-in';
     }, { passive: false });
 
+    // Pan with mouse
     img.addEventListener('mousedown', function(e) {
       if (scale === 1) return;
       dragging = true;
       startX = e.clientX - posX;
       startY = e.clientY - posY;
-      img.style.cursor = "grabbing";
+      img.style.cursor = 'grabbing';
       e.preventDefault();
     });
+
     window.addEventListener('mousemove', function(e) {
       if (!dragging) return;
       posX = e.clientX - startX;
       posY = e.clientY - startY;
       img.style.transform = `scale(${scale}) translate(${posX / scale}px,${posY / scale}px)`;
     });
-    window.addEventListener('mouseup', function(e) {
+
+    window.addEventListener('mouseup', function() {
       if (dragging) {
         dragging = false;
-        img.style.cursor = scale > 1 ? "grab" : "zoom-in";
+        img.style.cursor = scale > 1 ? 'grab' : 'zoom-in';
       }
     });
 
-    // --- ZOOM & PAN: Touch (mobile) ---
+    // Touch events for mobile
     img.addEventListener('touchstart', function(e) {
       if (e.touches.length === 2) {
         lastTouchDist = Math.hypot(
@@ -577,7 +717,7 @@ createImageElement: (imageName, imageBlob) => {
         scale = Math.min(6, Math.max(1, scale + delta));
         lastTouchDist = newDist;
         img.style.transform = `scale(${scale}) translate(${posX / scale}px,${posY / scale}px)`;
-        img.style.cursor = scale > 1 ? "grab" : "zoom-in";
+        img.style.cursor = scale > 1 ? 'grab' : 'zoom-in';
         e.preventDefault();
       } else if (e.touches.length === 1 && dragging) {
         posX = e.touches[0].clientX - startX;
@@ -587,34 +727,26 @@ createImageElement: (imageName, imageBlob) => {
       }
     }, { passive: false });
 
-    img.addEventListener('touchend', function(e) {
+    img.addEventListener('touchend', function() {
       dragging = false;
-      if (e.touches.length < 2) lastTouchDist = null;
-      img.style.cursor = scale > 1 ? "grab" : "zoom-in";
+      lastTouchDist = null;
+      img.style.cursor = scale > 1 ? 'grab' : 'zoom-in';
     });
 
     document.body.appendChild(overlay);
 
+    // Enter fullscreen
     if (overlay.requestFullscreen) {
       overlay.requestFullscreen();
     } else if (overlay.webkitRequestFullscreen) {
       overlay.webkitRequestFullscreen();
-    } else if (overlay.msRequestFullscreen) {
-      overlay.msRequestFullscreen();
     }
 
     img.focus();
-  },
-
-  _getValidTabIndex: function(idx, dir) {
-    const allTabs = getAllTabs();
-    do {
-      idx = (idx + dir + allTabs.length) % allTabs.length;
-    } while (allTabs[idx] === "+");
-    return idx;
   }
 };
 
+// ====== Tab Manager ======
 const TabManager = {
   switchTab: async (tabName) => {
     if (currentTab === tabName) return;
@@ -624,23 +756,25 @@ const TabManager = {
     StateManager.saveState();
   },
   keyNav: (e, tab, idx) => {
+    const allTabs = [...tabs, ...userTabs, "+"];
     if (e.key === 'ArrowRight') {
-      let nextIdx = UI._getValidTabIndex(idx, +1);
-      TabManager.switchTab(getAllTabs()[nextIdx]);
+      let nextIdx = (idx + 1) % allTabs.length;
+      if (allTabs[nextIdx] === "+") nextIdx = (nextIdx + 1) % allTabs.length;
+      TabManager.switchTab(allTabs[nextIdx]);
       DOM.tabsContainer.children[nextIdx].focus();
       e.preventDefault();
     } else if (e.key === 'ArrowLeft') {
-      let prevIdx = UI._getValidTabIndex(idx, -1);
-      TabManager.switchTab(getAllTabs()[prevIdx]);
+      let prevIdx = (idx - 1 + allTabs.length) % allTabs.length;
+      if (allTabs[prevIdx] === "+") prevIdx = (prevIdx - 1 + allTabs.length) % allTabs.length;
+      TabManager.switchTab(allTabs[prevIdx]);
       DOM.tabsContainer.children[prevIdx].focus();
       e.preventDefault();
     } else if (e.key === 'Home') {
-      TabManager.switchTab(getAllTabs()[0]);
+      TabManager.switchTab(allTabs[0]);
       DOM.tabsContainer.children[0].focus();
       e.preventDefault();
     } else if (e.key === 'End') {
-      let allTabs = getAllTabs();
-      let lastIdx = allTabs.length - 2;
+      let lastIdx = allTabs.length - 2; // Skip the "+" tab
       TabManager.switchTab(allTabs[lastIdx]);
       DOM.tabsContainer.children[lastIdx].focus();
       e.preventDefault();
@@ -648,7 +782,7 @@ const TabManager = {
   }
 };
 
-// ====== Estado Persistente =====
+// ====== State Manager ======
 const StateManager = {
   saveState: Utils.debounce(async () => {
     const state = {
@@ -679,7 +813,8 @@ const StateManager = {
       } else {
         StateManager.initEmptyState();
       }
-    } catch {
+    } catch (e) {
+      console.error('Erro ao carregar estado:', e);
       StateManager.initEmptyState();
     }
   },
@@ -695,7 +830,7 @@ const StateManager = {
   }
 };
 
-// ====== Processamento de Imagens =====
+// ====== Image Processor ======
 const ImageProcessor = {
   processImageFile: file => new Promise((resolve, reject) => {
     const img = new Image();
@@ -734,7 +869,7 @@ const ImageProcessor = {
   })
 };
 
-// ====== Imagens ======
+// ====== Image Manager ======
 const ImageManager = {
   enterSelectionMode: () => {
     isSelectionMode = true;
@@ -763,17 +898,32 @@ const ImageManager = {
   deleteSelected: async () => {
     const selectedNames = Array.from(selectedImagesByTab.get(currentTab));
     if (!selectedNames.length || !confirm(`Excluir ${selectedNames.length} imagem(ns) selecionada(s)?`)) return;
+    
     UI.showLoading();
     try {
-      for (const name of selectedNames) await IndexedDBManager.deleteImageBlob(name);
+      // Delete from Firebase if online
+      if (OnlineManager.isOnline) {
+        for (const name of selectedNames) {
+          await FirebaseManager.deleteImage(currentTab, name);
+        }
+      }
+      
+      // Delete from local storage
+      for (const name of selectedNames) {
+        await IndexedDBManager.deleteImageBlob(name);
+      }
+      
+      // Update UI
       const images = imageGalleryByTab.get(currentTab).filter(name => !selectedImagesByTab.get(currentTab).has(name));
       imageGalleryByTab.set(currentTab, images);
       selectedImagesByTab.get(currentTab).clear();
+      
       ImageManager.exitSelectionMode();
       await UI.renderImages();
       StateManager.saveState();
       Utils.showStatus(`${selectedNames.length} imagens excluídas.`);
     } catch (error) {
+      console.error('Error deleting images:', error);
       Utils.showStatus('Erro ao excluir imagens.');
     } finally {
       UI.hideLoading();
@@ -789,35 +939,52 @@ const ImageManager = {
   toggleSelectAll: () => {
     const allNames = imageGalleryByTab.get(currentTab) || [];
     const selectedSet = selectedImagesByTab.get(currentTab);
-    if (selectedSet.size === allNames.length) selectedSet.clear();
-      //ImageManager.exitSelectionMode();
-    else allNames.forEach(name => selectedSet.add(name));
+    
+    if (selectedSet.size === allNames.length) {
+      selectedSet.clear();
+    } else {
+      allNames.forEach(name => selectedSet.add(name));
+    }
+    
     UI.renderImages();
     StateManager.saveState();
   },
   handleFileSelection: async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
+    
     UI.showLoading();
     let loadedCount = 0;
     try {
       for (const file of files) {
         if (!file.type.startsWith('image/')) continue;
+        
         try {
           const processed = await ImageProcessor.processImageFile(file);
           await IndexedDBManager.addImageBlob(processed.name, processed.blob);
+          
           if (!imageGalleryByTab.get(currentTab).includes(processed.name)) {
             imageGalleryByTab.get(currentTab).push(processed.name);
           }
+          
+          // Upload to Firebase if online
+          if (OnlineManager.isOnline) {
+            await FirebaseManager.uploadImage(currentTab, processed.name, processed.blob);
+            await IndexedDBManager.addImageBlob(processed.name, processed.blob, true);
+          }
+          
           loadedCount++;
-        } catch {
+        } catch (error) {
+          console.error(`Error processing file ${file.name}:`, error);
           Utils.showStatus(`Erro ao carregar ${file.name}`);
         }
       }
+      
       await UI.renderImages();
       StateManager.saveState();
       Utils.showStatus(`${loadedCount} imagem(ns) carregada(s) com sucesso!`);
-    } catch {
+    } catch (error) {
+      console.error('Error handling file selection:', error);
       Utils.showStatus('Erro ao carregar imagens.');
     } finally {
       UI.hideLoading();
@@ -826,60 +993,108 @@ const ImageManager = {
   reorderImages: async (fromIndex, toIndex) => {
     const images = imageGalleryByTab.get(currentTab) || [];
     if (fromIndex < 0 || fromIndex >= images.length || toIndex < 0 || toIndex >= images.length) return;
+    
     const [moved] = images.splice(fromIndex, 1);
     images.splice(toIndex, 0, moved);
     imageGalleryByTab.set(currentTab, images);
     selectedImagesByTab.get(currentTab).clear();
+    
     await UI.renderImages();
     StateManager.saveState();
   }
 };
 
-// ====== Eventos ======
+// ====== Event Manager ======
 const EventManager = {
   setup: () => {
-    if (DOM.clearSelectionBtn) DOM.clearSelectionBtn.onclick = ImageManager.clearSelection;
-    if (DOM.deleteSelectedBtn) DOM.deleteSelectedBtn.onclick = ImageManager.deleteSelected;
-    if (DOM.selectAllBtn) DOM.selectAllBtn.onclick = ImageManager.toggleSelectAll;
+    // Selection buttons
+    DOM.clearSelectionBtn.onclick = ImageManager.clearSelection;
+    DOM.deleteSelectedBtn.onclick = ImageManager.deleteSelected;
+    DOM.selectAllBtn.onclick = ImageManager.toggleSelectAll;
 
-    if (DOM.openFileDialogButton) DOM.openFileDialogButton.onclick = () => {
+    // File input
+    DOM.openFileDialogButton.onclick = () => {
       DOM.fileInput.value = '';
       DOM.fileInput.click();
     };
-    if (DOM.fileInput) DOM.fileInput.onchange = ImageManager.handleFileSelection;
+    DOM.fileInput.onchange = ImageManager.handleFileSelection;
 
-    if (DOM.openCloudFolderButton) DOM.openCloudFolderButton.onclick = () => {
-      Utils.showStatus('Funcionalidade de busca em nuvem ainda não implementada.');
+    // Cloud button
+    DOM.openCloudFolderButton.onclick = async () => {
+      if (!OnlineManager.isOnline) {
+        Utils.showStatus('Ative o modo online para acessar a nuvem.');
+        return;
+      }
+      
+      try {
+        const images = await FirebaseManager.listTabImages(currentTab);
+        let newImagesCount = 0;
+        
+        for (const img of images) {
+          const exists = imageGalleryByTab.get(currentTab).includes(img.name);
+          if (!exists) {
+            await IndexedDBManager.addImageBlob(img.name, img.blob, true);
+            imageGalleryByTab.get(currentTab).push(img.name);
+            newImagesCount++;
+          }
+        }
+        
+        await UI.renderImages();
+        StateManager.saveState();
+        
+        if (newImagesCount > 0) {
+          Utils.showStatus(`${newImagesCount} novas cifras carregadas da nuvem.`);
+        } else {
+          Utils.showStatus('Nenhuma cifra nova encontrada na nuvem.');
+        }
+      } catch (error) {
+        console.error('Error loading cloud images:', error);
+        Utils.showStatus('Erro ao carregar cifras: ' + error.message, 5000);
+      }
     };
-    if (DOM.syncBtn) DOM.syncBtn.onclick = () => Utils.showStatus('Funcionalidade de Sincronização em desenvolvimento...');
-    if (DOM.settingsBtn) DOM.settingsBtn.onclick = () => Utils.showStatus('Funcionalidade de Configurações em desenvolvimento...');
 
-    if (DOM.darkModeToggle) DOM.darkModeToggle.onclick = () => {
+    // Sync button
+    DOM.syncBtn.onclick = () => {
+      if (!OnlineManager.isOnline) {
+        Utils.showStatus('Ative o modo online para sincronizar.');
+        return;
+      }
+      FirebaseManager.syncLocalChanges();
+    };
+
+    // Dark mode toggle
+    DOM.darkModeToggle.onclick = () => {
       const isDark = document.documentElement.classList.contains('dark');
       setDarkMode(!isDark);
     };
 
+    // Drag and drop for reordering
     if (DOM.imageList) {
       DOM.imageList.addEventListener('dragover', (e) => {
         e.preventDefault();
         const afterElement = getDragAfterElement(DOM.imageList, e.clientY);
         const dragging = document.querySelector('.dragging');
         if (!dragging) return;
+        
         DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
         if (afterElement) afterElement.classList.add('drag-over');
       });
+
       DOM.imageList.addEventListener('drop', (e) => {
         e.preventDefault();
         const dragging = document.querySelector('.dragging');
         if (!dragging) return;
+        
         const afterElement = getDragAfterElement(DOM.imageList, e.clientY);
         const containers = Array.from(DOM.imageList.children);
         const fromIndex = containers.indexOf(dragging);
         let toIndex = afterElement ? containers.indexOf(afterElement) : containers.length - 1;
+        
         if (fromIndex < toIndex) toIndex--;
         if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
           ImageManager.reorderImages(fromIndex, toIndex);
         }
+        
         dragging.classList.remove('dragging');
         DOM.imageList.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
       });
@@ -905,15 +1120,11 @@ function setDarkMode(on) {
   if (on) {
     document.documentElement.classList.add('dark');
     localStorage.setItem('darkMode', 'on');
-    if (DOM.darkModeToggle) {
-      DOM.darkModeToggle.querySelector('i').className = 'fas fa-sun';
-    }
+    DOM.darkModeToggle.querySelector('i').className = 'fas fa-sun';
   } else {
     document.documentElement.classList.remove('dark');
     localStorage.setItem('darkMode', 'off');
-    if (DOM.darkModeToggle) {
-      DOM.darkModeToggle.querySelector('i').className = 'fas fa-moon';
-    }
+    DOM.darkModeToggle.querySelector('i').className = 'fas fa-moon';
   }
 }
 
@@ -921,14 +1132,16 @@ function detectDarkMode() {
   const saved = localStorage.getItem('darkMode');
   if (saved === 'on') return true;
   if (saved === 'off') return false;
-  // Padrão: modo claro
-  return false;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
 }
 
-// ====== Inicialização ======
+// ====== Initialization ======
 async function init() {
+  // Set initial modes
   setDarkMode(detectDarkMode());
+  OnlineManager.init();
 
+  // Load app state
   UI.showLoading();
   try {
     await IndexedDBManager.open();
@@ -938,8 +1151,8 @@ async function init() {
     await UI.renderImages();
     EventManager.setup();
   } catch (e) {
+    console.error('Initialization error:', e);
     Utils.showStatus("Erro ao iniciar o aplicativo. Tente recarregar a página.");
-    console.error(e);
   } finally {
     UI.hideLoading();
   }
