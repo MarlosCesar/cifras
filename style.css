@@ -1,4 +1,4 @@
-/* Variaveis de design */
+/* Variáveis de design */
 :root {
   --primary-color: #3b82f6;
   --primary-dark: #2563eb;
@@ -14,6 +14,7 @@
   --header-bg: #1A202C;
   --header-text: #E2E8F0;
   --header-hover: #2D3748;
+  --online-indicator: #10b981;
 }
 
 /* Modo escuro */
@@ -32,20 +33,26 @@
   --header-bg: #18181b;
   --header-text: #e5e7eb;
   --header-hover: #27272a;
+  --online-indicator: #34d399;
 }
 
+/* Estilos base */
 html, body {
-  overflow-x: hidden; 
+  overflow-x: hidden;
   overflow-y: auto;
   background-color: var(--gray-light);
   font-family: 'Inter', sans-serif;
   color: var(--text-color-dark);
+  min-height: 100vh;
 }
 
+/* Header */
 .header-professional {
   background-color: var(--header-bg);
   color: var(--header-text);
   box-shadow: var(--shadow-base);
+  position: relative;
+  z-index: 50;
 }
 
 .header-professional button {
@@ -53,6 +60,9 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
 }
 
 .header-professional button:hover {
@@ -60,9 +70,35 @@ html, body {
 }
 
 .header-professional button:active {
-  transform: scale(0.98);
+  transform: scale(0.95);
 }
 
+/* Online Switch */
+#online-switch-bar {
+  background-color: var(--gray-light);
+  padding: 8px 16px;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: flex-end;
+  transition: all 0.3s ease;
+}
+
+#online-status-label {
+  color: var(--text-color-light);
+  font-size: 0.9rem;
+  transition: color 0.3s ease;
+}
+
+#online-status-label.online {
+  color: var(--online-indicator);
+  font-weight: 600;
+}
+
+/* Tabs */
 .tabs {
   display: flex;
   gap: 0.5rem;
@@ -70,6 +106,12 @@ html, body {
   margin-bottom: 1rem;
   flex-wrap: wrap;
   padding: 0 1rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .tab {
@@ -83,6 +125,7 @@ html, body {
   outline-offset: 2px;
   color: var(--text-color-light);
   font-weight: 500;
+  white-space: nowrap;
 }
 
 [role="tab"] {
@@ -105,6 +148,15 @@ html, body {
   box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
 }
 
+.dark .tab {
+  background-color: var(--gray-medium);
+}
+
+.dark .tab.active {
+  background-color: var(--gray-light);
+}
+
+/* Image Containers */
 .image-container {
   display: flex;
   align-items: center;
@@ -123,6 +175,11 @@ html, body {
   user-select: none;
 }
 
+.dark .image-container {
+  background-color: var(--gray-medium);
+  border-color: var(--gray-light);
+}
+
 .image-container:focus-visible {
   outline: 2px solid var(--primary-color);
   outline-offset: 3px;
@@ -139,6 +196,7 @@ html, body {
   background-color: var(--primary-hover);
 }
 
+/* Checkbox */
 .image-checkbox {
   position: absolute;
   left: -30px;
@@ -180,6 +238,7 @@ html, body {
   margin-top: -2px;
 }
 
+/* Selection Mode */
 .selection-mode .image-container {
   padding-left: 48px;
 }
@@ -194,6 +253,7 @@ html, body {
   transform: scale(0.98);
 }
 
+/* Images */
 .image-container img {
   width: 2.2cm;
   height: 3.3cm;
@@ -213,6 +273,11 @@ html, body {
   line-height: 1.4;
 }
 
+.dark .image-name {
+  color: var(--text-color-light);
+}
+
+/* Fullscreen View */
 .fullscreen-image {
   position: fixed;
   top: 0;
@@ -270,6 +335,7 @@ html, body {
   transform: scale(0.95);
 }
 
+/* Loading Spinner */
 .loading-spinner {
   display: none;
   position: fixed;
@@ -287,8 +353,14 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
 }
 
+.loading-spinner i {
+  margin-bottom: 10px;
+}
+
+/* Status Message */
 #status-message {
   position: fixed;
   bottom: 20px;
@@ -303,16 +375,18 @@ html, body {
   transition: opacity 0.3s ease-in-out;
   pointer-events: none;
   text-align: center;
+  max-width: 90%;
 }
 
 #status-message.show {
   opacity: 1;
 }
 
+/* Float Controls */
 .float-controls {
   display: none;
   position: fixed;
-  top: 80px; /* ajuste caso seu header tenha outra altura */
+  top: 80px;
   left: 50%;
   transform: translateX(-50%);
   background-color: white;
@@ -322,6 +396,11 @@ html, body {
   z-index: 100;
   align-items: center;
   gap: 16px;
+}
+
+.dark .float-controls {
+  background-color: var(--gray-medium);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
 }
 
 .float-controls.show {
@@ -348,6 +427,8 @@ html, body {
   border-radius: 6px;
   font-weight: 500;
   transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
 }
 
 .float-controls button i {
@@ -379,15 +460,20 @@ html, body {
   background-color: #fee2e2;
 }
 
+/* Responsividade */
 @media (max-width: 640px) {
   .header-professional h1 {
     font-size: 1.5rem;
   }
+  
   .header-professional .space-x-4 {
     gap: 0.5rem;
   }
+  
   .header-professional button {
     padding: 0.6rem;
+    width: 36px;
+    height: 36px;
   }
 
   .tabs {
@@ -396,6 +482,7 @@ html, body {
     gap: 0.35rem;
     padding: 0 0.5rem;
   }
+  
   .tab {
     padding: 0.5rem 0.8rem;
     font-size: 0.9rem;
@@ -426,10 +513,12 @@ html, body {
     flex-direction: column;
     width: 100%;
   }
+  
   .flex-wrap.gap-2 button {
     width: 100%;
     justify-content: center;
   }
+  
   .flex-wrap.gap-2 button i {
     margin-right: 0.5rem;
   }
@@ -439,6 +528,7 @@ html, body {
     gap: 10px;
     padding: 10px 15px;
   }
+  
   .zoom-btn {
     width: 45px;
     height: 45px;
@@ -449,6 +539,7 @@ html, body {
     width: calc(100% - 32px);
     justify-content: space-between;
     padding: 8px 12px;
+    top: 70px;
   }
 
   .float-controls button {
@@ -462,37 +553,29 @@ html, body {
     justify-content: flex-start;
     padding: 0 1.5rem;
   }
+  
   .tab {
     padding: 0.6rem 1.1rem;
     font-size: 0.95rem;
   }
+  
   .image-container {
     padding: 10px;
     gap: 10px;
   }
+  
   .image-container img {
     width: 2cm;
     height: 3cm;
   }
+  
   .image-name {
     font-size: 0.9rem;
     max-width: calc(100% - 2cm - 10px);
   }
 }
-#online-switch-bar {
-  position: relative;
-  z-index: 10;
-}
-label.inline-flex {
-  position: relative;
-  width: 44px;
-  height: 24px;
-}
-label.inline-flex input[type="checkbox"] + div {
-  position: relative;
-  z-index: 1;
-}
-label.inline-flex .absolute {
-  z-index: 2;
-  pointer-events: none;
+
+/* Transições suaves para modo escuro */
+body, .image-container, .tab, .float-controls {
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
