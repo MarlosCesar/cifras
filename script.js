@@ -906,16 +906,15 @@ function setDarkMode(on) {
   }
 }
 
+// Agora o padrão é claro, só fica escuro se localStorage === 'on'
 function detectDarkMode() {
   const saved = localStorage.getItem('darkMode');
-  if (saved === 'on') return true;
-  if (saved === 'off') return false;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  return saved === 'on';
 }
 
 // ====== Initialization ======
 async function init() {
-  // Set initial modes
+  // Sempre começa em modo claro, só ativa escuro se usuário já escolheu antes
   setDarkMode(detectDarkMode());
 
   // Load app state
