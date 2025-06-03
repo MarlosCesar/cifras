@@ -264,7 +264,7 @@ const AppState = {
     try {
       const state = await IndexedDBManager.loadMetadata(isOnline);
       
-      if (state) {
+      if (state && state.state) {
         this.current.tabs = [...this.defaultTabs, ...(state.state.userTabs || [])];
         this.current.userTabs = state.state.userTabs || [];
         this.current.currentTab = state.state.currentTab || this.defaultTabs[0];
@@ -879,33 +879,27 @@ const UIManager = {
   
   // Configurar event listeners
   setupEventListeners: function() {
-    // Upload de arquivos
+  // Upload de arquivos
+  if (this.elements.openFileDialogBtn && this.elements.fileInput) {
     this.elements.openFileDialogBtn.addEventListener('click', () => {
       if (AppState.current.isOnline) return;
       this.elements.fileInput.value = '';
       this.elements.fileInput.click();
     });
-    
+
     this.elements.fileInput.addEventListener('change', async (e) => {
       if (AppState.current.isOnline) return;
-      
       const files = Array.from(e.target.files);
       if (files.length === 0) return;
-      
+
       this.showLoading();
       let loadedCount = 0;
-      
+
       for (const file of files) {
         if (!file.type.startsWith('image/')) continue;
-        
         try {
-          // Processar imagem (redimensionar, converter para WebP)
           const processed = await this.processImageFile(file);
-          
-          // Salvar no IndexedDB
           await IndexedDBManager.addImageBlob(file.name, processed.blob);
-          
-          // Adicionar ao estado
           const count = AppState.addImages([{ name: file.name }]);
           if (count > 0) loadedCount++;
         } catch (error) {
@@ -913,22 +907,24 @@ const UIManager = {
           Utils.showStatus(`Erro ao processar ${file.name}`);
         }
       }
-      
       this.renderImages();
       this.hideLoading();
       Utils.showStatus(`${loadedCount} imagem(ns) carregada(s) com sucesso!`);
     });
-    
-    // Nuvem
+  }
+
+  // Nuvem
+  if (this.elements.openCloudBtn && this.elements.cloudModal && this.elements.closeCloudModal) {
     this.elements.openCloudBtn.addEventListener('click', () => this.showCloudModal());
     this.elements.closeCloudModal.addEventListener('click', () => {
       this.elements.cloudModal.classList.add('hidden');
     });
-    
-    // Modo online/offline
+  }
+
+  // Modo online/offline
+  if (this.elements.modeSwitch && this.elements.modeLabel) {
     this.elements.modeSwitch.addEventListener('change', async () => {
       const isOnline = this.elements.modeSwitch.checked;
-      
       this.showLoading();
       try {
         await AppState.init(isOnline);
@@ -943,46 +939,49 @@ const UIManager = {
         this.hideLoading();
       }
     });
-    
-    // Busca
+  }
+
+  // Busca
+  if (this.elements.searchInput) {
     this.elements.searchInput.addEventListener('input', Utils.debounce(() => {
       AppState.searchImages(this.elements.searchInput.value);
       this.renderImages();
     }, 300));
-    
-    // Controles de seleção
+  }
+
+  // Controles de seleção
+  if (this.elements.selectAllBtn) {
     this.elements.selectAllBtn.addEventListener('click', () => {
       AppState.toggleSelectAll();
       this.renderImages();
     });
-    
+  }
+
+  if (this.elements.clearSelectionBtn) {
     this.elements.clearSelectionBtn.addEventListener('click', () => {
       AppState.clearSelection();
       this.renderImages();
     });
-    
+  }
+
+  if (this.elements.deleteSelectedBtn) {
     this.elements.deleteSelectedBtn.addEventListener('click', async () => {
       const tab = AppState.current.currentTab;
       const selectedCount = AppState.current.selectedImages.get(tab).size;
-      
       if (selectedCount === 0 || !confirm(`Excluir ${selectedCount} cifra(s) selecionada(s)?`)) {
         return;
       }
-      
       this.showLoading();
       try {
         if (!AppState.current.isOnline) {
-          // Para modo offline, remover do IndexedDB
           const selected = AppState.current.selectedImages.get(tab);
           const images = AppState.current.imageGallery.get(tab) || [];
-          
           for (const img of images) {
             if (selected.has(img.name)) {
               await IndexedDBManager.deleteImageBlob(img.name);
             }
           }
         }
-        
         const removedCount = AppState.removeSelectedImages();
         this.renderImages();
         Utils.showStatus(`${removedCount} cifra(s) removida(s).`);
@@ -993,7 +992,8 @@ const UIManager = {
         this.hideLoading();
       }
     });
-  },
+  }
+},
   
   // Processar imagem (redimensionar, converter para WebP)
   processImageFile: function(file) {
