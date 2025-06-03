@@ -641,10 +641,9 @@ const UIManager = {
     const selected = AppState.current.selectedImages.get(AppState.current.currentTab);
     
     for (const image of images) {
-      try {
-        const blob = await IndexedDBManager.getImageBlob(image.name);
-        if (!blob) continue;
-        
+  try {
+    const blob = await IndexedDBManager.getImageBlob(image.name);
+    if (!blob || !(blob instanceof Blob)) continue;
         const url = Utils.createObjectURL(blob);
         const container = this.createImageElement({
           id: image.name,
