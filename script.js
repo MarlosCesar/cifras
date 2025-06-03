@@ -147,7 +147,6 @@ const DOM = {
   clearSelectionBtn: document.getElementById('clear-selection-btn'),
   selectAllBtn: document.getElementById('select-all-btn'),
   floatControls: document.getElementById('float-controls'),
-  darkModeToggle: document.getElementById('dark-mode-toggle'),
   loadingSpinner: document.getElementById('loading-spinner'),
   statusMessage: document.getElementById('status-message'),
   body: document.body
@@ -893,31 +892,9 @@ const EventManager = {
   }
 };
 
-// ====== Dark Mode ======
-function setDarkMode(on) {
-  if (on) {
-    document.documentElement.classList.add('dark');
-    localStorage.setItem('darkMode', 'on');
-    DOM.darkModeToggle.querySelector('i').className = 'fas fa-sun';
-  } else {
-    document.documentElement.classList.remove('dark');
-    localStorage.setItem('darkMode', 'off');
-    DOM.darkModeToggle.querySelector('i').className = 'fas fa-moon';
-  }
-}
-
-// Agora o padrão é claro, só fica escuro se localStorage === 'on'
-function detectDarkMode() {
-  const saved = localStorage.getItem('darkMode');
-  return saved === 'on';
-}
-
 // ====== Initialization ======
 async function init() {
-  // Sempre começa em modo claro, só ativa escuro se usuário já escolheu antes
-  setDarkMode(detectDarkMode());
-
-  // Load app state
+  // Não existe mais tema escuro ou load de modo escuro!
   UI.showLoading();
   try {
     await IndexedDBManager.open();
