@@ -364,24 +364,27 @@ const AppState = {
   },
   
   // Adicionar imagens
-  addImages: function(images) {
-    const currentImages = this.current.imageGallery.get(this.current.currentTab) || [];
-    const newImages = images.filter(img => 
-      !currentImages.some(existing => 
-        this.current.isOnline ? existing.id === img.id : existing.name === img.name
-      )
+addImages: function(images) {
+  console.log('addImages', images, 'currentTab:', this.current.currentTab); // <-- LOG ADICIONADO
+
+  const currentImages = this.current.imageGallery.get(this.current.currentTab) || [];
+  const newImages = images.filter(img => 
+    !currentImages.some(existing => 
+      this.current.isOnline ? existing.id === img.id : existing.name === img.name
+    )
+  );
+
+  if (newImages.length > 0) {
+    this.current.imageGallery.set(
+      this.current.currentTab, 
+      [...currentImages, ...newImages]
     );
-    
-    if (newImages.length > 0) {
-      this.current.imageGallery.set(
-        this.current.currentTab, 
-        [...currentImages, ...newImages]
-      );
-      this.saveState();
-    }
-    
-    return newImages.length;
-  },
+    console.log('imageGallery', this.current.imageGallery); // <-- LOG ADICIONADO
+    this.saveState();
+  }
+
+  return newImages.length;
+},
   
   // Remover imagens selecionadas
   removeSelectedImages: function() {
@@ -513,7 +516,10 @@ const UIManager = {
       if (isAddTab) {
         tabElement.addEventListener('click', () => this.showAddTabDialog());
       } else {
-        tabElement.addEventListener('click', () => AppState.switchTab(tab));
+        tabElement.addEventListener('click', () => {
+  AppState.switchTab(tab);
+  UIManager.renderImages();
+});
         tabElement.addEventListener('keydown', (e) => this.handleTabKeyNavigation(e, tab, index));
         
         if (isUserTab) {
