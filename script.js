@@ -806,8 +806,8 @@ openFullscreenViewer: function(src, alt) {
 
     img.focus();
   }
-};
-
+},
+  
   updateSelectionUI: function() {
     const tab = AppState.current.currentTab;
     const selectedCount = AppState.current.selectedImages.get(tab).size;
