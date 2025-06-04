@@ -379,6 +379,7 @@ const AppState = {
   getFilteredImages: function() {
     const tab = this.current.currentTab;
     const images = this.current.imageGallery.get(tab) || [];
+    console.log('Imagens para renderizar:', images);
     if (!this.current.searchQuery) return images;
     return images.filter(img => 
       img.name.toLowerCase().includes(this.current.searchQuery)
