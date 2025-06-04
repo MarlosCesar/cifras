@@ -415,64 +415,65 @@ const UIManager = {
     this.setupEventListeners();
     this.updateUI();
   },
-  renderTabs: function() {
-    this.elements.tabsContainer.innerHTML = '';
-    AppState.current.tabs.forEach((tab, idx) => {
-    const allTabs = [...AppState.defaultTabs, ...(AppState.current.userTabs || []), '+'];
-    allTabs.forEach((tab, idx) => {
-      const isPlus = (tab === '+');
-      const isUserTab = AppState.current.userTabs.includes(tab);
-      const btn = document.createElement('button');
-      btn.className = 'tab px-4 py-2 rounded-t focus:outline-none';
-      btn.setAttribute('role', 'tab');
-      btn.setAttribute('tabindex', idx === 0 ? '0' : '-1');
-      btn.setAttribute('aria-selected', AppState.current.currentTab === tab);
-      btn.id = `tab-${tab.replace(/\s+/g, '-').toLowerCase()}`;
-      btn.textContent = tab;
-      if (isPlus) {
-        btn.classList.add('bg-green-500', 'text-white', 'ml-2');
-        btn.onclick = () => {
-          this.showAddTabDialog();
-        };
+ renderTabs: function() {
+  this.elements.tabsContainer.innerHTML = '';
+  const allTabs = [...AppState.defaultTabs, ...(AppState.current.userTabs || []), '+'];
+  allTabs.forEach((tab, idx) => {
+    const isPlus = (tab === '+');
+    const isUserTab = AppState.current.userTabs.includes(tab);
+    const btn = document.createElement('button');
+    btn.className = 'tab px-4 py-2 rounded-t focus:outline-none';
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('tabindex', idx === 0 ? '0' : '-1');
+    btn.setAttribute('aria-selected', AppState.current.currentTab === tab);
+    btn.id = `tab-${tab.replace(/\s+/g, '-').toLowerCase()}`;
+    btn.textContent = tab;
+
+    if (isPlus) {
+      btn.classList.add('bg-green-500', 'text-white', 'ml-2');
+      btn.onclick = () => {
+        this.showAddTabDialog();
+      };
+    } else {
+      if (AppState.current.currentTab === tab) {
+        btn.classList.add('active', 'bg-blue-500', 'text-white');
       } else {
-        if (AppState.current.currentTab === tab) {
-          btn.classList.add('active', 'bg-blue-500', 'text-white');
-        } else {
-          btn.classList.add('bg-gray-200', 'text-gray-700');
-        }
-        btn.onclick = () => {
-          AppState.switchTab(tab);
-          this.renderTabs();
-          this.renderImages();
-        }};
-        btn.onkeydown = (e) => this.handleTabKeyNavigation(e, tab, idx);
-        if (isUserTab) {
-          btn.style.position = "relative";
-          const closeBtn = document.createElement('span');
-          closeBtn.textContent = "×";
-          closeBtn.title = "Remover aba";
-          closeBtn.style.position = "absolute";
-          closeBtn.style.right = "6px";
-          closeBtn.style.top = "4px";
-          closeBtn.style.color = "#ef4444";
-          closeBtn.style.fontWeight = "bold";
-          closeBtn.style.cursor = "pointer";
-          closeBtn.style.display = "none";
-          closeBtn.className = "close-tab-btn";
-          closeBtn.onclick = (e) => {
-            e.stopPropagation();
-            this.showRemoveTabDialog(tab);
-          };
-          btn.appendChild(closeBtn);
-          btn.onmouseenter = () => (closeBtn.style.display = "block");
-          btn.onmouseleave = () => (closeBtn.style.display = "none");
-          btn.onfocus = () => (closeBtn.style.display = "block");
-          btn.onblur = () => (closeBtn.style.display = "none");
-        }
+        btn.classList.add('bg-gray-200', 'text-gray-700');
       }
-      this.elements.tabsContainer.appendChild(btn);
-    });
-  },
+      btn.onclick = () => {
+        AppState.switchTab(tab);
+        this.renderTabs();
+        this.renderImages();
+      };
+      btn.onkeydown = (e) => this.handleTabKeyNavigation(e, tab, idx);
+
+      if (isUserTab) {
+        btn.style.position = "relative";
+        const closeBtn = document.createElement('span');
+        closeBtn.textContent = "×";
+        closeBtn.title = "Remover aba";
+        closeBtn.style.position = "absolute";
+        closeBtn.style.right = "6px";
+        closeBtn.style.top = "4px";
+        closeBtn.style.color = "#ef4444";
+        closeBtn.style.fontWeight = "bold";
+        closeBtn.style.cursor = "pointer";
+        closeBtn.style.display = "none";
+        closeBtn.className = "close-tab-btn";
+        closeBtn.onclick = (e) => {
+          e.stopPropagation();
+          this.showRemoveTabDialog(tab);
+        };
+        btn.appendChild(closeBtn);
+        btn.onmouseenter = () => (closeBtn.style.display = "block");
+        btn.onmouseleave = () => (closeBtn.style.display = "none");
+        btn.onfocus = () => (closeBtn.style.display = "block");
+        btn.onblur = () => (closeBtn.style.display = "none");
+      }
+    }
+    this.elements.tabsContainer.appendChild(btn);
+  });
+},
   handleTabKeyNavigation: function(e, tab, index) {
     const allTabs = [...AppState.defaultTabs, ...(AppState.current.userTabs || []), '+'];
     switch (e.key) {
