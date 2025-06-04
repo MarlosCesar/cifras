@@ -595,8 +595,6 @@ const UIManager = {
       Utils.revokeObjectURL(img.dataset.objectUrl);
     });
     
-    const images = AppState.getFilteredImages();
-    
     if (images.length === 0) {
       const emptyMessage = document.createElement('p');
       emptyMessage.className = 'text-center text-gray-500 py-8';
