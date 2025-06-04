@@ -417,6 +417,7 @@ const UIManager = {
   },
   renderTabs: function() {
     this.elements.tabsContainer.innerHTML = '';
+    AppState.current.tabs.forEach((tab, idx) => {
     const allTabs = [...AppState.defaultTabs, ...(AppState.current.userTabs || []), '+'];
     allTabs.forEach((tab, idx) => {
       const isPlus = (tab === '+');
