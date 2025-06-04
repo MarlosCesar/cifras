@@ -444,7 +444,7 @@ const UIManager = {
           AppState.switchTab(tab);
           this.renderTabs();
           this.renderImages();
-        };
+        }};
         btn.onkeydown = (e) => this.handleTabKeyNavigation(e, tab, idx);
         if (isUserTab) {
           btn.style.position = "relative";
