@@ -588,7 +588,7 @@ const UIManager = {
  renderImages: async function() {
   this.elements.imageList.innerHTML = '';
   const images = AppState.getFilteredImages();
-  console.log('renderImages - imagens para renderizar:', images);
+  console.log('renderImages - imagens para renderizar:', images, 'aba atual:', AppState.current.currentTab, 'filtro:', AppState.current.searchQuery);
     
     // Limpar URLs de objetos antigos
     this.elements.imageList.querySelectorAll('img[data-object-url]').forEach(img => {
@@ -648,10 +648,10 @@ const UIManager = {
   renderOfflineImages: async function(images) {
   const selected = AppState.current.selectedImages.get(AppState.current.currentTab);
   for (const image of images) {
-    try {
-      const blob = await IndexedDBManager.getImageBlob(image.name);
-      console.log('offline render', image.name, 'blob:', blob);
-      if (!blob || !(blob instanceof Blob)) continue;
+  try {
+    const blob = await IndexedDBManager.getImageBlob(image.name);
+    console.log('offline render', image.name, 'blob:', blob);
+    if (!blob || !(blob instanceof Blob)) continue;
         const url = Utils.createObjectURL(blob);
         const container = this.createImageElement({
           id: image.name,
