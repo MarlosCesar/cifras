@@ -1091,3 +1091,95 @@ const UIManager = {
         });
         }
     },
+
+
+    // Adiciona a lógica de inicialização que estava faltando
+    updateUI: function() {
+        // Atualiza o estado dos botões com base no modo online/offline
+        const isOnline = AppState.current.isOnline;
+        if (this.elements.openFileDialogBtn) {
+            this.elements.openFileDialogBtn.disabled = isOnline;
+            this.elements.openFileDialogBtn.title = isOnline ? "Disponível apenas offline" : "Buscar cifras localmente";
+            this.elements.openFileDialogBtn.classList.toggle('opacity-50', isOnline);
+            this.elements.openFileDialogBtn.classList.toggle('cursor-not-allowed', isOnline);
+        }
+        if (this.elements.openCloudBtn) {
+            this.elements.openCloudBtn.disabled = !isOnline;
+            this.elements.openCloudBtn.title = !isOnline ? "Disponível apenas online" : "Buscar cifras na nuvem";
+            this.elements.openCloudBtn.classList.toggle('opacity-50', !isOnline);
+            this.elements.openCloudBtn.classList.toggle('cursor-not-allowed', !isOnline);
+        }
+        if (this.elements.modeLabel) {
+            this.elements.modeLabel.textContent = isOnline ? 'Online' : 'Offline';
+        }
+        // Atualiza a lista de imagens e abas
+        this.renderTabs();
+        this.renderImages();
+        this.updateSelectionUI(); // Garante que os controles de seleção sejam atualizados
+    }
+}; // Fecha o objeto UIManager
+
+// ======== Inicialização do Aplicativo ========
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        await IndexedDBManager.open();
+        const isOnline = navigator.onLine;
+        // Define o estado inicial do switch online/offline
+        if (UIManager.elements.modeSwitch) {
+            UIManager.elements.modeSwitch.checked = isOnline;
+        }
+        await AppState.init(isOnline);
+        UIManager.init(); // Inicializa a UI após carregar o estado
+
+        // Adiciona listener para o switch online/offline
+        if (UIManager.elements.modeSwitch) {
+            UIManager.elements.modeSwitch.addEventListener('change', async (e) => {
+                const newOnlineState = e.target.checked;
+                UIManager.showLoading();
+                try {
+                    await AppState.init(newOnlineState); // Re-inicializa o estado para o novo modo
+                    UIManager.init(); // Re-renderiza a UI
+                    Utils.showStatus(`Modo alterado para ${newOnlineState ? 'Online' : 'Offline'}.`);
+                } catch (error) {
+                    console.error("Erro ao mudar de modo:", error);
+                    Utils.showStatus("Erro ao alterar modo.");
+                    // Reverte o switch em caso de erro
+                    e.target.checked = !newOnlineState;
+                    await AppState.init(!newOnlineState);
+                    UIManager.init();
+                } finally {
+                    UIManager.hideLoading();
+                }
+            });
+        }
+
+        // Listener para status online/offline do navegador
+        window.addEventListener('online', async () => {
+            if (UIManager.elements.modeSwitch) UIManager.elements.modeSwitch.checked = true;
+            UIManager.showLoading();
+            await AppState.init(true);
+            UIManager.init();
+            UIManager.hideLoading();
+            Utils.showStatus("Conexão reestabelecida. Modo Online ativado.");
+        });
+
+        window.addEventListener('offline', async () => {
+            if (UIManager.elements.modeSwitch) UIManager.elements.modeSwitch.checked = false;
+            UIManager.showLoading();
+            await AppState.init(false);
+            UIManager.init();
+            UIManager.hideLoading();
+            Utils.showStatus("Conexão perdida. Modo Offline ativado.");
+        });
+
+    } catch (error) {
+        console.error("Erro fatal na inicialização:", error);
+        Utils.showStatus("Falha crítica ao inicializar a aplicação.");
+        // Opcional: Mostrar uma mensagem mais visível para o usuário
+        const body = document.querySelector('body');
+        if (body) {
+            body.innerHTML = '<div style="padding: 20px; text-align: center; color: red;">Ocorreu um erro grave ao carregar a aplicação. Por favor, tente recarregar a página ou limpar os dados do site.</div>';
+        }
+    }
+});
+
