@@ -805,7 +805,6 @@ openFullscreenViewer: function(src, alt) {
     }
 
     img.focus();
-  }
 },
   
   updateSelectionUI: function() {
