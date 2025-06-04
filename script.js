@@ -493,56 +493,41 @@ const UIManager = {
     this.setupEventListeners();
     this.updateUI();
   },
-  
-  // Renderizar abas
-  renderTabs: function() {
-    this.elements.tabsContainer.innerHTML = '';
-    
-    const allTabs = [...AppState.current.tabs, '+'];
-    
-    allTabs.forEach((tab, index) => {
-      const isAddTab = tab === '+';
-      const isUserTab = AppState.current.userTabs.includes(tab);
-      const isActive = tab === AppState.current.currentTab;
-      
-      const tabElement = document.createElement('button');
-      tabElement.className = `tab ${isActive ? 'active' : ''}`;
-      tabElement.textContent = tab;
-      tabElement.setAttribute('role', 'tab');
-      tabElement.setAttribute('aria-selected', isActive);
-      tabElement.setAttribute('tabindex', isActive ? '0' : '-1');
-      tabElement.id = `tab-${tab.replace(/\s+/g, '-').toLowerCase()}`;
-      
-      if (isAddTab) {
-        tabElement.addEventListener('click', () => this.showAddTabDialog());
-      } else {
-        tabElement.addEventListener('click', () => {
-  AppState.switchTab(tab);
-  UIManager.renderImages();
-});
-        tabElement.addEventListener('keydown', (e) => this.handleTabKeyNavigation(e, tab, index));
-        
-        if (isUserTab) {
-          tabElement.style.position = 'relative';
-          
-          const closeBtn = document.createElement('span');
-          closeBtn.className = 'close-tab-btn';
-          closeBtn.innerHTML = '&times;';
-          closeBtn.title = 'Remover aba';
-          closeBtn.setAttribute('aria-label', `Remover aba ${tab}`);
-          
-          closeBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.showRemoveTabDialog(tab);
-          });
-          
-          tabElement.appendChild(closeBtn);
-        }
-      }
-      
-      this.elements.tabsContainer.appendChild(tabElement);
+  // Renderizar abas das cifras
+renderTabs: function() {
+  // Limpa as abas existentes
+  this.elements.tabsContainer.innerHTML = '';
+
+  // Para cada aba do usuário
+  AppState.current.userTabs.forEach((tab, idx) => {
+    const tabElement = document.createElement('button');
+    tabElement.textContent = tab;
+    tabElement.className = 'tab px-4 py-2 rounded-t focus:outline-none';
+    // Adiciona a classe 'active' se for a aba atual
+    if (AppState.current.currentTab === tab) {
+      tabElement.classList.add('active', 'bg-blue-500', 'text-white');
+    } else {
+      tabElement.classList.add('bg-gray-200', 'text-gray-700');
+    }
+    // Handler de clique: troca a aba e rerenderiza as imagens e abas!
+    tabElement.addEventListener('click', () => {
+      AppState.switchTab(tab);
+      UIManager.renderTabs();      // <- Para atualizar o visual das abas
+      UIManager.renderImages();    // <- Para atualizar a lista de cifras
     });
-  },
+    this.elements.tabsContainer.appendChild(tabElement);
+  });
+
+  // Botão de adicionar aba (opcional)
+  const addTabBtn = document.createElement('button');
+  addTabBtn.textContent = '+';
+  addTabBtn.className = 'tab px-4 py-2 rounded-t bg-green-500 text-white focus:outline-none ml-2';
+  addTabBtn.addEventListener('click', () => {
+    UIManager.showAddTabModal();
+  });
+  this.elements.tabsContainer.appendChild(addTabBtn);
+},
+  
   
   // Navegação por teclado nas abas
   handleTabKeyNavigation: function(e, tab, index) {
