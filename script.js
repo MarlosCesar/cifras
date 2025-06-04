@@ -496,7 +496,7 @@ const UIManager = {
         this.elements.tabsContainer.innerHTML = '';
 
         // Para cada aba do usuário
-        AppState.current.userTabs.forEach((tab, idx) => {
+        AppState.defaultTabs.forEach(tab => {
             const tabElement = document.createElement('button');
             tabElement.textContent = tab;
             tabElement.className = 'tab px-4 py-2 rounded-t focus:outline-none';
