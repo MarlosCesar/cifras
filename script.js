@@ -443,6 +443,8 @@ const UIManager = {
       }
       btn.onclick = () => {
         AppState.switchTab(tab);
+        this.elements.searchInput.value = '';
+        AppState.searchImages('');
         this.renderTabs();
         this.renderImages();
       };
