@@ -1077,6 +1077,7 @@ const UIManager = {
                         Utils.showStatus(`Erro ao processar ${file.name}`);
                     }
                 }
+                AppState.saveState();
                 this.renderImages();
                 this.hideLoading();
                 Utils.showStatus(`${loadedCount} imagem(ns) carregada(s) com sucesso!`);
