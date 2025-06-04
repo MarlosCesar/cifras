@@ -496,7 +496,7 @@ const UIManager = {
         this.elements.tabsContainer.innerHTML = '';
 
         // Para cada aba do usuário
-        AppState.defaultTabs.forEach(tab => {
+        AppState.current.tabs.forEach((tab, index) => { // Add index
             const tabElement = document.createElement('button');
             tabElement.textContent = tab;
             tabElement.className = 'tab px-4 py-2 rounded-t focus:outline-none';
@@ -511,6 +511,10 @@ const UIManager = {
                 AppState.switchTab(tab);
                 UIManager.renderTabs();      // <- Para atualizar o visual das abas
                 UIManager.renderImages();    // <- Para atualizar a lista de cifras
+            });
+            // Adicionar navegação por teclado
+            tabElement.addEventListener('keydown', (e) => {
+                UIManager.handleTabKeyNavigation(e, tab, index);
             });
             this.elements.tabsContainer.appendChild(tabElement);
         });
@@ -1033,6 +1037,14 @@ const UIManager = {
 
     hideLoading: function () {
         this.elements.loadingSpinner.classList.remove('active');
+    },
+
+    // Processar arquivo de imagem (função ausente)
+    processImageFile: async function (file) {
+        // Por enquanto, apenas retorna o blob original.
+        // Adicione aqui lógica de processamento se necessário (ex: redimensionar)
+        console.log(`Processando arquivo: ${file.name}`); // Log para depuração
+        return { blob: file };
     },
 
     // Configurar event listeners
