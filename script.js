@@ -1073,7 +1073,8 @@ const UIManager = {
 
         // Nuvem
         if (this.elements.openCloudBtn && this.elements.cloudModal && this.elements.closeCloudModal) {
-            this.elements.openCloudBtn.addEventListener('click', () => this.showCloudModal());
-            this.elements.closeCloudModal.addEventListener('click', () => {
-                this.elements.cloudModal.
-            }
+        this.elements.openCloudBtn.addEventListener('click', () => this.showCloudModal());
+        this.elements.closeCloudModal.addEventListener('click', () => {
+        this.elements.cloudModal.classList.add('hidden');
+    });
+}
