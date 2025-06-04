@@ -442,12 +442,14 @@ const UIManager = {
         btn.classList.add('bg-gray-200', 'text-gray-700');
       }
       btn.onclick = () => {
-        AppState.switchTab(tab);
-        this.elements.searchInput.value = '';
-        AppState.searchImages('');
-        this.renderTabs();
-        this.renderImages();
-      };
+  AppState.switchTab(tab);
+  if (this.elements.searchInput) {
+    this.elements.searchInput.value = '';
+    AppState.searchImages('');
+  }
+  this.renderTabs();
+  this.renderImages();
+};
       btn.onkeydown = (e) => this.handleTabKeyNavigation(e, tab, idx);
 
       if (isUserTab) {
