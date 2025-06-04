@@ -1123,12 +1123,12 @@ const UIManager = {
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         await IndexedDBManager.open();
-        const isOnline = navigator.onLine;
+        const isOnline = false;
         // Define o estado inicial do switch online/offline
         if (UIManager.elements.modeSwitch) {
-            UIManager.elements.modeSwitch.checked = isOnline;
+            UIManager.elements.modeSwitch.checked = false;
         }
-        await AppState.init(isOnline);
+        await AppState.init(false);
         UIManager.init(); // Inicializa a UI após carregar o estado
 
         // Adiciona listener para o switch online/offline
