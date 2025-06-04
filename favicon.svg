@@ -1,5 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <path fill="url(#gradient)" d="M50 15 Q30 40 40 45 Q65 50 50 75 Q35 90 45 80 Q55 70 50 60 Q45 40 40 45"/>
+  <g transform="scale(1.2) translate(-8,-8)">
+    <path fill="url(#gradient)" d="M50 15 Q30 40 40 45 Q65 50 50 75 Q35 90 45 80 Q55 70 50 60 Q45 40 40 45"/>
+  </g>
   <defs>
     <linearGradient id="gradient" x1="0" y1="0" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#3b82f6"/>
