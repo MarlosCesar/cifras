@@ -1076,3 +1076,4 @@ const UIManager = {
             this.elements.openCloudBtn.addEventListener('click', () => this.showCloudModal());
             this.elements.closeCloudModal.addEventListener('click', () => {
                 this.elements.cloudModal.
+            }
