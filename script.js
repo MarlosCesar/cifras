@@ -520,7 +520,7 @@ const UIManager = {
         addTabBtn.textContent = '+';
         addTabBtn.className = 'tab px-4 py-2 rounded-t bg-green-500 text-white focus:outline-none ml-2';
         addTabBtn.addEventListener('click', () => {
-            UIManager.showAddTabModal();
+            UIManager.showAddTabDialog();
         });
         this.elements.tabsContainer.appendChild(addTabBtn);
     },
