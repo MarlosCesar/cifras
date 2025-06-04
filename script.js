@@ -1078,4 +1078,4 @@ const UIManager = {
         this.elements.cloudModal.classList.add('hidden');
         });
         }
-    }
+    },
